@@ -335,14 +335,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b1a6e;outline-offset
     <h2>Sign In</h2>
     <p>Select your profile to access your workspace</p>
     <label>User Profile</label>
-    <select id="l-sel" onchange="lPrev()">
-      <option value="1" selected>Josh O. — Operations Manager</option>
-      <option value="2">Sarah K. — Consultant</option>
-      <option value="3">Megan T. — Consultant</option>
-      <option value="4">Raj P. — Consultant</option>
-      <option value="5">Lisa B. — Admin</option>
-      <option value="6">Tom W. — Admin</option>
-    </select>
+    <select id="l-sel" onchange="lPrev()"><option value="">Select profile</option></select>
     <div class="lc-prev" id="l-prev"></div>
     <button class="lc-btn" onclick="doLogin()">Continue</button>
   </div>
@@ -439,6 +432,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b1a6e;outline-offset
 </div>
 <div class="toast" id="toast"></div>
 <script>
+
+
 // ══════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════
@@ -731,20 +726,155 @@ function vc(){
   if(CU.role==="admin"){var cs=candidates.filter(function(c){return CU.adminFor.indexOf(c.consultantId)>=0;});if(VCon)cs=cs.filter(function(c){return c.consultantId===VCon;});return cs;}
   return[];
 }
-function initLogin(){
-  var sel=document.getElementById("l-sel");
-  if(!sel||!Array.isArray(users)||!users.length)return;
-  var current=sel.value||"1";
-  sel.innerHTML="";
-  users.forEach(function(u){
-    var o=document.createElement("option");
-    o.value=String(u.id);
-    o.textContent=u.name+" — "+ROLES[u.role];
-    sel.appendChild(o);
+function parseCSV(text){
+  var lines=text.trim().split('\n');
+  if(!lines.length)return[];
+  var headers=lines[0].split(',').map(function(h){return h.trim().replace(/^"|"$/g,'').toLowerCase().replace(/\s+/g,'_');});
+  return lines.slice(1).filter(function(l){return l.trim();}).map(function(line){
+    var vals=[];var cur='';var inQ=false;
+    for(var i=0;i<line.length;i++){
+      var ch=line[i];
+      if(ch==='"'&&!inQ){inQ=true;}
+      else if(ch==='"'&&inQ){inQ=false;}
+      else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}
+      else{cur+=ch;}
+    }
+    vals.push(cur.trim());
+    var obj={};
+    headers.forEach(function(h,i){obj[h]=vals[i]||'';});
+    return obj;
   });
-  sel.value=users.some(function(u){return String(u.id)===String(current);})?String(current):"1";
-  lPrev();
 }
+
+function importCSV(type){
+  var input=document.createElement('input');
+  input.type='file';
+  input.accept='.csv,.xlsx,.xls';
+  input.onchange=function(e){
+    var file=e.target.files[0];
+    if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var text=ev.target.result;
+      var rows=parseCSV(text);
+      if(!rows.length){showToast('No data found in file.',3000);return;}
+      var added=0;var skipped=0;
+      if(type==='candidates'){
+        rows.forEach(function(row){
+          var name=row.name||row.full_name||row.candidate_name||'';
+          if(!name){skipped++;return;}
+          var consName=row.consultant||row.consultant_name||'';
+          var cons=users.find(function(u){return u.role==='consultant'&&u.name.toLowerCase().indexOf(consName.toLowerCase())>=0;});
+          var newCand={
+            id:uid(),
+            name:name,
+            classification:row.classification||row.role||row.job_title||'RN',
+            clinicalSkills:(row.skills||row.clinical_skills||'').split(';').map(function(s){return s.trim();}).filter(Boolean),
+            phase:row.phase||row.stage||'New Lead',
+            priority:row.priority||'med',
+            consultantId:cons?cons.id:(users.find(function(u){return u.role==='consultant';})||{id:2}).id,
+            adminId:5,hot:false,
+            phone:row.phone||row.mobile||'',
+            email:row.email||'',
+            state:row.state||'QLD',
+            availableFrom:row.available_from||row.available||new Date().toISOString().slice(0,10),
+            lastCheckin:new Date().toISOString().slice(0,10),
+            regions:[],travelLocations:[],tags:[],
+            activity:[{id:uid(),type:'System',content:'Imported from CSV',author:'System',ts:new Date().toISOString()}],
+            compliance:{items:{}},submissions:[],
+            travel:{flights:[],accommodation:[],carHire:[],expenses:[]},
+            contracts:[],notes:'',preferences:''
+          };
+          candidates.push(newCand);
+          added++;
+        });
+        showToast('Imported '+added+' candidates'+(skipped?' ('+skipped+' skipped - no name)':'')+'.', 4000);
+        nav('candidates');
+      } else if(type==='consultants'){
+        rows.forEach(function(row){
+          var name=row.name||row.full_name||row.consultant_name||'';
+          if(!name){skipped++;return;}
+          var exists=users.find(function(u){return u.name.toLowerCase()===name.toLowerCase();});
+          if(exists){skipped++;return;}
+          var colors=['#e84393','#00bcd4','#ff9800','#4caf50','#9c27b0','#f44336'];
+          users.push({
+            id:uid(),
+            name:name,
+            role:row.role||'consultant',
+            email:row.email||'',
+            initials:name.split(' ').map(function(n){return n[0];}).join('').slice(0,2).toUpperCase(),
+            color:colors[users.length%colors.length],
+            targets:{p:parseInt(row.placement_target)||4,s:parseInt(row.submission_target)||20},
+            adminFor:[],
+            consultantId:null
+          });
+          added++;
+        });
+        showToast('Imported '+added+' users'+(skipped?' ('+skipped+' skipped)':'')+'.', 4000);
+        nav('team');
+      }
+      updateBadges();
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function showImportModal(){
+  document.getElementById('m-ttl').textContent='Bulk Import';
+  document.getElementById('m-info').innerHTML='';
+  document.getElementById('m-tabs').innerHTML='';
+  document.getElementById('m-foot').innerHTML='<button class="btn btn-g" onclick="closeModal()">Close</button>';
+  document.getElementById('m-body').innerHTML=
+    '<div style="padding:8px 0">'
+    +'<p style="font-size:12px;color:var(--t2);margin-bottom:16px">Upload a CSV file to bulk-add candidates or consultants. '
+    +'Download a template below to see the required format.</p>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">'
+    +'<div class="card" style="padding:16px;text-align:center">'
+    +'<div style="font-size:24px;margin-bottom:8px">&#128101;</div>'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:4px">Candidates</div>'
+    +'<div style="font-size:10px;color:var(--t3);margin-bottom:12px">name, classification, phone, email, state, available_from, phase, skills, consultant</div>'
+    +'<button class="btn btn-p btn-sm" onclick="importCSV(&apos;candidates&apos;)" style="width:100%;margin-bottom:6px">Upload CSV</button>'
+    +'<button class="btn btn-g btn-sm" onclick="downloadTemplate(&apos;candidates&apos;)" style="width:100%">Download Template</button>'
+    +'</div>'
+    +'<div class="card" style="padding:16px;text-align:center">'
+    +'<div style="font-size:24px;margin-bottom:8px">&#128188;</div>'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:4px">Consultants</div>'
+    +'<div style="font-size:10px;color:var(--t3);margin-bottom:12px">name, email, role, placement_target, submission_target</div>'
+    +'<button class="btn btn-p btn-sm" onclick="importCSV(&apos;consultants&apos;)" style="width:100%;margin-bottom:6px">Upload CSV</button>'
+    +'<button class="btn btn-g btn-sm" onclick="downloadTemplate(&apos;consultants&apos;)" style="width:100%">Download Template</button>'
+    +'</div></div>'
+    +'<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px;font-size:11px;color:#166534">'
+    +'<strong>Tip:</strong> Excel files need to be saved as CSV first: File → Save As → CSV (Comma delimited).'
+    +'</div></div>';
+  document.getElementById('mo').style.display='flex';
+}
+
+function downloadTemplate(type){
+  var rows,filename;
+  if(type==='candidates'){
+    rows=[
+      'name,classification,phone,email,state,available_from,phase,skills,consultant',
+      'Jane Smith,ICU/CCU RN,0412000001,jane@email.com,QLD,2026-08-01,New Lead,ICU/CCU;Emergency,Sarah K.',
+      'Tom Jones,Theatre Scrub,0412000002,tom@email.com,NT,2026-07-15,Screening,Theatre,Megan T.'
+    ];
+    filename='candidate_import_template.csv';
+  } else {
+    rows=[
+      'name,email,role,placement_target,submission_target',
+      'Alex Brown,alex@hca.com,consultant,4,20',
+      'Kim Lee,kim@hca.com,consultant,5,25'
+    ];
+    filename='consultant_import_template.csv';
+  }
+  var blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+}
+
+function initLogin(){var sel=document.getElementById("l-sel");users.forEach(function(u){var o=document.createElement("option");o.value=u.id;o.textContent=u.name+" — "+ROLES[u.role];sel.appendChild(o);});}
 function lPrev(){var id=parseInt(document.getElementById("l-sel").value);var u=users.find(function(x){return x.id===id;});var div=document.getElementById("l-prev");if(!u){div.innerHTML="";return;}var rc={ops:"b-pu",consultant:"b-bl",admin:"b-tl"}[u.role]||"b-gr";var rl={ops:"Full platform — all candidates, team, settings",consultant:"Your pipeline, targets and alerts",admin:"Candidates across assigned consultants"}[u.role]||"";div.innerHTML='<span class="badge '+rc+'" style="margin-bottom:4px;display:inline-block">'+ROLES[u.role]+'</span><div style="font-size:10px;color:var(--t3)">'+rl+'</div>';}
 function doLogin(){var id=parseInt(document.getElementById("l-sel").value);if(!id){alert("Please select a profile.");return;}CU=users.find(function(u){return u.id===id;});VCon=CU.role==="consultant"?CU.id:null;document.getElementById("ls").style.display="none";document.getElementById("app").style.display="flex";var av=document.getElementById("sb-av");av.textContent=CU.initials;av.style.background=CU.color;document.getElementById("sb-name").textContent=CU.name;document.getElementById("sb-role").textContent=ROLES[CU.role];if(CU.role==="consultant")document.getElementById("sb-mgmt").style.display="none";candidates.filter(function(c){return ["On Assignment","Redeployment"].indexOf(c.phase)>=0;}).forEach(function(c){BC.reduce(function(a,s){return a.concat(s.items);},[]).forEach(function(item){c.compliance.items[item.key]={checked:true,expiry:item.hasExpiry?"2026-06-30":"",docName:""};});});updateBadges();nav("home");}
 function showSwitch(){document.getElementById("app").style.display="none";document.getElementById("ls").style.display="flex";document.getElementById("l-sel").value="";document.getElementById("l-prev").innerHTML="";}
@@ -1199,15 +1329,7 @@ function renderMgmtDash(){
   document.getElementById("page").innerHTML=topRow+tbl+ovl+stl;
 };
 
-
-// Boot the login screen after the page has loaded.
-// Extra calls are intentional: GitHub Pages / mobile Safari can be weird with cached single-file apps.
-function bootLoginSafely(){try{initLogin();}catch(e){console.error("Login boot failed",e);}}
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootLoginSafely);
-else bootLoginSafely();
-window.addEventListener("load", bootLoginSafely);
-setTimeout(bootLoginSafely,100);
-setTimeout(bootLoginSafely,750);
+initLogin();
 </script>
 </body>
 </html>

@@ -335,7 +335,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b1a6e;outline-offset
     <h2>Sign In</h2>
     <p>Select your profile to access your workspace</p>
     <label>User Profile</label>
-    <select id="l-sel" onchange="lPrev()"><option value="">Select profile</option></select>
+    <select id="l-sel" onchange="lPrev()">
+      <option value="1" selected>Josh O. — Operations Manager</option>
+      <option value="2">Sarah K. — Consultant</option>
+      <option value="3">Megan T. — Consultant</option>
+      <option value="4">Raj P. — Consultant</option>
+      <option value="5">Lisa B. — Admin</option>
+      <option value="6">Tom W. — Admin</option>
+    </select>
     <div class="lc-prev" id="l-prev"></div>
     <button class="lc-btn" onclick="doLogin()">Continue</button>
   </div>
@@ -724,7 +731,20 @@ function vc(){
   if(CU.role==="admin"){var cs=candidates.filter(function(c){return CU.adminFor.indexOf(c.consultantId)>=0;});if(VCon)cs=cs.filter(function(c){return c.consultantId===VCon;});return cs;}
   return[];
 }
-function initLogin(){var sel=document.getElementById("l-sel");users.forEach(function(u){var o=document.createElement("option");o.value=u.id;o.textContent=u.name+" — "+ROLES[u.role];sel.appendChild(o);});}
+function initLogin(){
+  var sel=document.getElementById("l-sel");
+  if(!sel||!Array.isArray(users)||!users.length)return;
+  var current=sel.value||"1";
+  sel.innerHTML="";
+  users.forEach(function(u){
+    var o=document.createElement("option");
+    o.value=String(u.id);
+    o.textContent=u.name+" — "+ROLES[u.role];
+    sel.appendChild(o);
+  });
+  sel.value=users.some(function(u){return String(u.id)===String(current);})?String(current):"1";
+  lPrev();
+}
 function lPrev(){var id=parseInt(document.getElementById("l-sel").value);var u=users.find(function(x){return x.id===id;});var div=document.getElementById("l-prev");if(!u){div.innerHTML="";return;}var rc={ops:"b-pu",consultant:"b-bl",admin:"b-tl"}[u.role]||"b-gr";var rl={ops:"Full platform — all candidates, team, settings",consultant:"Your pipeline, targets and alerts",admin:"Candidates across assigned consultants"}[u.role]||"";div.innerHTML='<span class="badge '+rc+'" style="margin-bottom:4px;display:inline-block">'+ROLES[u.role]+'</span><div style="font-size:10px;color:var(--t3)">'+rl+'</div>';}
 function doLogin(){var id=parseInt(document.getElementById("l-sel").value);if(!id){alert("Please select a profile.");return;}CU=users.find(function(u){return u.id===id;});VCon=CU.role==="consultant"?CU.id:null;document.getElementById("ls").style.display="none";document.getElementById("app").style.display="flex";var av=document.getElementById("sb-av");av.textContent=CU.initials;av.style.background=CU.color;document.getElementById("sb-name").textContent=CU.name;document.getElementById("sb-role").textContent=ROLES[CU.role];if(CU.role==="consultant")document.getElementById("sb-mgmt").style.display="none";candidates.filter(function(c){return ["On Assignment","Redeployment"].indexOf(c.phase)>=0;}).forEach(function(c){BC.reduce(function(a,s){return a.concat(s.items);},[]).forEach(function(item){c.compliance.items[item.key]={checked:true,expiry:item.hasExpiry?"2026-06-30":"",docName:""};});});updateBadges();nav("home");}
 function showSwitch(){document.getElementById("app").style.display="none";document.getElementById("ls").style.display="flex";document.getElementById("l-sel").value="";document.getElementById("l-prev").innerHTML="";}
@@ -1178,6 +1198,16 @@ function renderMgmtDash(){
   }
   document.getElementById("page").innerHTML=topRow+tbl+ovl+stl;
 };
+
+
+// Boot the login screen after the page has loaded.
+// Extra calls are intentional: GitHub Pages / mobile Safari can be weird with cached single-file apps.
+function bootLoginSafely(){try{initLogin();}catch(e){console.error("Login boot failed",e);}}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootLoginSafely);
+else bootLoginSafely();
+window.addEventListener("load", bootLoginSafely);
+setTimeout(bootLoginSafely,100);
+setTimeout(bootLoginSafely,750);
 </script>
 </body>
 </html>

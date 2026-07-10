@@ -1,0 +1,9 @@
+node_modules/
+
+# OS junk
+Thumbs.db
+.DS_Store
+
+# Old backup/draft folders
+Archive/
+New folder/

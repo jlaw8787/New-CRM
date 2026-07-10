@@ -1,0 +1,2481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Andrew Cheli — Monthly Tracker | Affinity Nursing</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  --navy:#192269;--navy-dk:#0e1540;--navy-lt:#eceef7;--navy-mid:#2d3a8c;
+  --gold:#F8B213;--gold-lt:#FBD98F;--gold-pale:#fef7e0;
+  --grey:#7F7F7F;--grey-lt:#f5f5f5;--grey-md:#e4e4e4;
+  --white:#fff;--tx:#192269;--tx2:#3d4470;--tx3:#7F7F7F;
+  --ok:#196B24;--ok-bg:#e6f4e7;
+  --warn:#b87000;--warn-bg:#fff3cd;
+  --err:#b83232;--err-bg:#fdecea;
+  --accent:#1D9E75;--accent-lt:#E1F5EE;--accent-dk:#085041;
+  --r:9px;--rl:13px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --navy-lt:#1a1f3a;--grey-lt:#1e1e28;--grey-md:#2a2a3a;
+    --white:#141420;--tx:#d8d4f0;--tx2:#9096c0;--tx3:#686a80;
+    --gold-pale:#1f1a08;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter','Segoe UI',sans-serif;background:#f0f0ec;color:var(--tx);font-size:13px;line-height:1.5}
+.page{max-width:900px;margin:0 auto;padding:0 0 60px}
+
+/* ── Top bar ── */
+.top-bar{background:var(--navy);padding:12px 22px;display:flex;align-items:center;justify-content:space-between}
+.logo{color:#fff;font-size:16px;font-weight:600;letter-spacing:.02em}
+.logo span{color:var(--gold)}
+.saved-txt{font-size:11px;color:rgba(255,255,255,.5)}
+
+/* ── Profile ── */
+.profile{background:var(--navy-dk);padding:16px 22px;display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--gold)}
+.av{width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.profile h1{font-size:17px;font-weight:600;color:#fff}
+.profile p{font-size:11px;color:rgba(255,255,255,.55);margin-top:1px}
+.tpill{background:rgba(248,178,19,.18);color:var(--gold);font-size:10px;font-weight:600;padding:2px 9px;border-radius:20px;margin-top:4px;display:inline-block;border:1px solid rgba(248,178,19,.3)}
+.month-display{margin-left:auto;text-align:right;flex-shrink:0}
+.month-display .ml{font-size:10px;color:rgba(255,255,255,.4)}
+.month-display .mv{font-size:15px;font-weight:600;color:var(--gold);margin-top:1px}
+
+/* ── Tabs ── */
+.tab-bar{background:var(--white);border-bottom:2px solid var(--grey-md);display:flex;padding:0 20px;position:sticky;top:0;z-index:50;overflow-x:auto}
+.tab-btn{padding:11px 15px;font-size:12px;font-weight:500;color:var(--tx3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .15s}
+.tab-btn:hover{color:var(--navy)}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
+
+.body{padding:16px 20px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── Sections ── */
+.sec{background:var(--white);border-radius:var(--rl);border:1.5px solid var(--grey-md);padding:16px 18px;margin-bottom:12px}
+.sec-ttl{font-size:10px;font-weight:700;color:var(--navy);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sec-ttl::after{content:'';flex:1;height:1px;background:var(--grey-md)}
+.sec-note{font-size:11px;color:var(--tx3);margin-bottom:10px;font-style:italic}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── Tiles ── */
+.tile{background:var(--grey-lt);border-radius:var(--r);padding:12px 14px;border:1px solid var(--grey-md)}
+.tile.accent{border-left:3px solid var(--accent)}
+.tile-lbl{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.tile-val{font-size:22px;font-weight:600;color:var(--navy);line-height:1}
+.tile-sub{font-size:11px;color:var(--tx2);margin-top:3px}
+
+/* ── Rings ── */
+.ring-card{background:var(--grey-lt);border-radius:var(--r);padding:14px 10px;text-align:center;border:1px solid var(--grey-md)}
+.ring-lbl{font-size:11px;color:var(--tx3);margin-top:5px;font-weight:500}
+.ring-sub{font-size:11px;color:var(--tx2);margin-top:2px}
+.ring-sub strong{color:var(--navy)}
+
+/* ── Inputs ── */
+.col-h{font-size:10px;color:var(--tx3);font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding-left:8px}
+.wk-row{display:grid;gap:8px;align-items:center}
+.wk-lbl{font-size:12px;color:var(--tx2);font-weight:600}
+.inp{width:100%;background:var(--grey-lt);border:1.5px solid var(--grey-md);border-radius:var(--r);padding:7px 9px;font-size:13px;color:var(--navy);font-family:inherit;transition:border-color .15s;-moz-appearance:textfield}
+.inp::-webkit-outer-spin-button,.inp::-webkit-inner-spin-button{-webkit-appearance:none}
+.inp:focus{outline:none;border-color:var(--navy)}
+.sum-tile{background:var(--grey-lt);border-radius:var(--r);padding:9px 11px;border:1px solid var(--grey-md)}
+.sum-lbl{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.sum-val{font-size:18px;font-weight:600;color:var(--navy);line-height:1}
+.sum-st{font-size:10px;margin-top:2px;font-weight:500}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.err{color:var(--err)}
+
+/* ── Buttons ── */
+.btn{border-radius:var(--r);padding:8px 18px;font-size:13px;cursor:pointer;font-family:inherit;border:none;font-weight:600;transition:opacity .15s}
+.btn-p{background:var(--navy);color:#fff}.btn-p:hover{opacity:.85}
+.btn-gold{background:var(--gold);color:var(--navy)}.btn-gold:hover{opacity:.88}
+.btn-s{background:transparent;border:1.5px solid var(--grey-md);color:var(--tx2)}.btn-s:hover{background:var(--grey-lt)}
+.btn-ok{background:var(--ok);color:#fff}.btn-ok:hover{opacity:.88}
+.save-ok{font-size:11px;color:var(--ok);display:none;margin-left:6px;font-weight:600}
+
+/* ── Chart ── */
+.hw{position:relative;width:100%}
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:7px;font-size:11px;color:var(--tx2)}
+.leg span{display:flex;align-items:center;gap:4px}
+.lsq{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.chip{display:inline-flex;font-size:9px;font-weight:600;padding:2px 6px;border-radius:20px;margin-top:3px;border:1px solid transparent}
+.cup{background:var(--ok-bg);color:var(--ok)}.cdn{background:var(--err-bg);color:var(--err)}.cfl{background:var(--grey-lt);color:var(--tx3);border-color:var(--grey-md)}
+
+/* ── Goals ── */
+.g-item{display:flex;gap:8px;align-items:flex-start;padding:9px 11px;background:var(--grey-lt);border-radius:var(--r);margin-bottom:7px;border:1px solid var(--grey-md);transition:all .15s}
+.g-item:hover{background:var(--navy-lt);border-color:rgba(25,34,105,.15)}
+.g-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);margin-top:5px;flex-shrink:0;border:1.5px solid rgba(25,34,105,.3)}
+.g-ta{flex:1;background:transparent;border:none;font-family:inherit;font-size:12px;color:var(--tx);line-height:1.5;resize:none;outline:none;overflow:hidden}
+.g-ta::placeholder{color:var(--tx3)}
+.g-del{background:transparent;border:none;color:var(--tx3);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;opacity:0;transition:opacity .15s}
+.g-item:hover .g-del{opacity:1}.g-del:hover{color:var(--err)}
+.btn-add{background:transparent;border:1.5px dashed rgba(25,34,105,.22);color:var(--tx3);border-radius:var(--r);padding:7px 12px;font-size:11px;cursor:pointer;font-family:inherit;width:100%;text-align:left;transition:all .15s;margin-top:6px;font-weight:500}
+.btn-add:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-lt)}
+
+/* ── Notes ── */
+.notes-area{width:100%;background:var(--grey-lt);border:1.5px solid var(--grey-md);border-radius:var(--r);padding:10px;font-family:inherit;font-size:12px;color:var(--tx);resize:vertical;outline:none;min-height:70px}
+.notes-area:focus{border-color:var(--navy)}
+
+/* ── History ── */
+.hm-header{display:grid;background:var(--navy);padding:7px 12px;gap:8px;border-radius:var(--r) var(--r) 0 0}
+.hm-hcell{font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em;text-align:center}
+.hm-hcell:first-child{text-align:left}
+.hm-row{display:grid;padding:8px 12px;gap:8px;align-items:center;border-top:1px solid var(--grey-md)}
+.hm-row:nth-child(even){background:var(--grey-lt)}
+.hm-row:hover{background:var(--navy-lt)}
+.hm-row.live{background:var(--gold-pale)!important;border-left:3px solid var(--gold)}
+.hm-month{font-size:12px;font-weight:600;color:var(--navy)}
+.hm-cell{font-size:12px;color:var(--tx2);text-align:center}
+.hm-cell.best{font-weight:700;color:var(--ok)}
+.hm-tbl{border:1px solid var(--grey-md);border-radius:var(--r);overflow:hidden;margin-bottom:0}
+.archive-card{background:var(--grey-lt);border-radius:var(--r);border:1px solid var(--grey-md);padding:12px 14px;margin-bottom:8px}
+.archive-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.archive-badge{background:var(--navy);color:var(--gold);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.archive-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:0}
+.am-lbl{font-size:10px;color:var(--tx3);margin-bottom:2px;font-weight:500}
+.am-val{font-size:16px;font-weight:600;color:var(--navy)}
+.am-tgt{font-size:10px}.tgt-hit{color:var(--ok)}.tgt-miss{color:var(--err)}
+
+/* ── Contribution bars ── */
+.cb-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.cb-lbl{font-size:11px;color:var(--tx2);font-weight:500;width:110px;flex-shrink:0}
+.bar-track{flex:1;height:9px;background:var(--grey-md);border-radius:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;transition:width .5s}
+.cb-pct{font-size:12px;font-weight:700;color:var(--navy);min-width:36px;text-align:right}
+.cb-team{font-size:10px;color:var(--tx3);min-width:70px;text-align:right}
+
+/* ══════════════════════════════════════════════════════════════
+   NEW MONTH PROMPT — full-screen, can't-miss modal
+   ══════════════════════════════════════════════════════════════ */
+.nm-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(14,21,64,.92);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+  backdrop-filter:blur(4px);
+}
+.nm-overlay.open{opacity:1;pointer-events:all}
+
+.nm-modal{
+  background:var(--white);border-radius:16px;
+  max-width:520px;width:92%;
+  box-shadow:0 32px 80px rgba(0,0,0,.35);
+  overflow:hidden;
+  transform:translateY(20px);transition:transform .3s;
+}
+.nm-overlay.open .nm-modal{transform:translateY(0)}
+
+.nm-header{
+  background:var(--navy);padding:28px 28px 22px;
+  position:relative;overflow:hidden;
+}
+.nm-header::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;border-radius:50%;
+  background:rgba(248,178,19,.12);
+}
+.nm-header::after{
+  content:'';position:absolute;bottom:-60px;left:-20px;
+  width:200px;height:200px;border-radius:50%;
+  background:rgba(248,178,19,.07);
+}
+.nm-eyebrow{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;position:relative;z-index:1}
+.nm-title{font-size:22px;font-weight:700;color:#fff;line-height:1.2;position:relative;z-index:1}
+.nm-title span{color:var(--gold)}
+.nm-sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:6px;position:relative;z-index:1}
+
+.nm-body{padding:22px 26px 26px}
+.nm-section-ttl{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.nm-section-ttl::after{content:'';flex:1;height:1px;background:var(--grey-md)}
+
+/* Previous month recap (shown only when rolling over) */
+.nm-recap{background:var(--grey-lt);border-radius:var(--r);padding:12px 14px;margin-bottom:18px;border:1px solid var(--grey-md)}
+.nm-recap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.nm-recap-cell{text-align:center}
+.nm-recap-lbl{font-size:10px;color:var(--tx3);margin-bottom:2px}
+.nm-recap-val{font-size:17px;font-weight:700;color:var(--navy)}
+.nm-recap-vs{font-size:10px;margin-top:1px}
+
+/* Month + year selector */
+.nm-month-row{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:18px}
+.nm-field label{font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:5px}
+.nm-field select,.nm-field input{
+  width:100%;background:var(--grey-lt);border:1.5px solid var(--grey-md);
+  border-radius:var(--r);padding:9px 11px;font-size:14px;font-weight:500;
+  color:var(--navy);font-family:inherit;outline:none;
+}
+.nm-field select:focus,.nm-field input:focus{border-color:var(--navy)}
+.nm-field input{-moz-appearance:textfield;text-align:center}
+.nm-field input::-webkit-outer-spin-button,.nm-field input::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* Target cards */
+.nm-targets{display:grid;gap:8px;margin-bottom:18px}
+.nm-target-card{
+  background:var(--navy-lt);border-radius:var(--r);
+  border:1.5px solid rgba(25,34,105,.12);
+  padding:12px 14px;
+  display:flex;align-items:center;gap:12px;
+}
+.nm-target-icon{
+  width:36px;height:36px;border-radius:8px;
+  background:var(--navy);color:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;font-weight:700;
+}
+.nm-target-info{flex:1;min-width:0}
+.nm-target-lbl{font-size:11px;font-weight:600;color:var(--navy);margin-bottom:2px}
+.nm-target-hint{font-size:10px;color:var(--tx3)}
+.nm-target-input{
+  width:90px;background:var(--white);border:1.5px solid var(--grey-md);
+  border-radius:var(--r);padding:7px 10px;font-size:16px;font-weight:700;
+  color:var(--navy);font-family:inherit;outline:none;text-align:center;
+  -moz-appearance:textfield;flex-shrink:0;
+}
+.nm-target-input::-webkit-outer-spin-button,.nm-target-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.nm-target-input:focus{border-color:var(--navy)}
+
+/* Focus areas inside modal */
+.nm-goals-area{margin-bottom:18px}
+.nm-g-item{
+  display:flex;gap:8px;align-items:flex-start;
+  padding:8px 10px;background:var(--grey-lt);
+  border-radius:var(--r);margin-bottom:6px;
+  border:1px solid var(--grey-md);
+}
+.nm-g-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:5px;flex-shrink:0}
+.nm-g-ta{
+  flex:1;background:transparent;border:none;
+  font-family:inherit;font-size:12px;color:var(--tx);
+  line-height:1.5;resize:none;outline:none;overflow:hidden;
+}
+.nm-g-ta::placeholder{color:var(--tx3)}
+.nm-g-del{background:transparent;border:none;color:var(--tx3);cursor:pointer;font-size:15px;line-height:1;padding:0;flex-shrink:0;opacity:0;transition:opacity .15s}
+.nm-g-item:hover .nm-g-del{opacity:1}.nm-g-del:hover{color:var(--err)}
+.nm-btn-add{
+  background:transparent;border:1.5px dashed rgba(25,34,105,.2);
+  color:var(--tx3);border-radius:var(--r);padding:6px 12px;
+  font-size:11px;cursor:pointer;font-family:inherit;
+  width:100%;text-align:left;transition:all .15s;font-weight:500;
+}
+.nm-btn-add:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-lt)}
+
+.nm-cta{
+  width:100%;padding:13px;font-size:14px;font-weight:700;
+  background:var(--navy);color:#fff;border:none;
+  border-radius:var(--r);cursor:pointer;font-family:inherit;
+  transition:opacity .15s;letter-spacing:.01em;
+}
+.nm-cta:hover{opacity:.88}
+.nm-cta-sub{font-size:11px;color:var(--tx3);text-align:center;margin-top:8px}
+
+/* ══ Close month modal (smaller) ══ */
+.cm-overlay{position:fixed;inset:0;z-index:150;background:rgba(14,21,64,.7);display:flex;align-items:center;justify-content:center;display:none;backdrop-filter:blur(3px)}
+.cm-overlay.open{display:flex}
+.cm-modal{background:var(--white);border-radius:var(--rl);max-width:460px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+.cm-header{background:var(--navy-dk);padding:18px 22px;border-bottom:3px solid var(--gold)}
+.cm-header h2{font-size:15px;font-weight:600;color:#fff}
+.cm-header p{font-size:11px;color:rgba(255,255,255,.55);margin-top:3px}
+.cm-body{padding:18px 22px}
+.cm-section{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em;margin:14px 0 8px}
+.cm-section:first-child{margin-top:0}
+.cm-grid{display:grid;gap:8px}
+.cm-field label{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px}
+.cm-field input{width:100%;background:var(--grey-lt);border:1.5px solid var(--grey-md);border-radius:var(--r);padding:7px 10px;font-size:14px;font-weight:600;color:var(--navy);font-family:inherit;outline:none;text-align:center;-moz-appearance:textfield}
+.cm-field input::-webkit-outer-spin-button,.cm-field input::-webkit-inner-spin-button{-webkit-appearance:none}
+.cm-field input:focus{border-color:var(--navy)}
+.cm-actions{display:flex;gap:8px;padding:16px 22px;border-top:1px solid var(--grey-md);background:var(--grey-lt)}
+
+@media(max-width:540px){
+  .grid3,.grid2{grid-template-columns:1fr}
+  .nm-targets .nm-target-input{width:72px}
+  .nm-modal{margin:8px}
+}
+
+/* ── Profile month nav ── */
+.mnav-profile-btn{background:rgba(255,255,255,.15);border:none;color:rgba(255,255,255,.8);
+  width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.mnav-profile-btn:hover{background:rgba(255,255,255,.3);color:#fff}
+.mnav-profile-btn:disabled{opacity:.2;cursor:default}
+
+/* ── Month picker dropdown ── */
+.month-picker{display:none;position:absolute;right:0;top:calc(100% + 6px);
+  background:var(--white);border:1.5px solid var(--grey-md);border-radius:var(--r);
+  box-shadow:0 8px 28px rgba(0,0,0,.15);z-index:300;min-width:180px;overflow:hidden}
+.picker-divider{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;
+  letter-spacing:.08em;padding:7px 14px 3px;background:var(--grey-lt);border-top:1px solid var(--grey-md)}
+.picker-item{padding:8px 14px;font-size:12px;font-weight:500;cursor:pointer;
+  transition:background .12s;display:flex;align-items:center;justify-content:space-between;color:var(--navy)}
+.picker-item:hover{background:var(--navy-lt)}
+.picker-item.active-month{background:var(--navy);color:var(--gold);font-weight:700}
+.picker-item.q-month{border-left:2px solid var(--gold)}
+
+/* ── Streak bar ── */
+.streak-bar{background:var(--navy-dk);padding:5px 22px;display:flex;
+  align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid rgba(248,178,19,.2);
+  min-height:32px}
+.streak-item{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.6)}
+.streak-val{font-weight:700;color:var(--gold)}
+.xp-bar-wrap{flex:1;min-width:80px;max-width:160px}
+.xp-bar-bg{height:3px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+.xp-bar-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .5s}
+.level-chip{background:rgba(248,178,19,.2);color:var(--gold);font-size:9px;font-weight:700;
+  padding:1px 7px;border-radius:20px;white-space:nowrap;border:1px solid rgba(248,178,19,.3)}
+.badge-panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.badge{padding:10px;background:var(--grey-lt);border-radius:var(--r);
+  border:1px solid var(--grey-md);text-align:center;transition:all .15s}
+.badge.earned{background:var(--gold-pale);border-color:rgba(248,178,19,.4)}
+.badge.locked{opacity:.4;filter:grayscale(.7)}
+.badge-icon{font-size:22px;margin-bottom:4px}
+.badge-name{font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em}
+.badge-desc{font-size:9px;color:var(--tx3);margin-top:2px;line-height:1.3}
+
+/* ── Soft achievement ── */
+.achieve-card{border-radius:var(--r);padding:12px 14px;margin-bottom:8px;
+  display:flex;gap:12px;align-items:flex-start;border:1.5px solid transparent}
+.achieve-card.hit {background:#f0faf2;border-color:rgba(25,107,36,.15)}
+.achieve-card.near{background:#fffdf0;border-color:rgba(184,112,0,.15)}
+.achieve-card.soft{background:#fdfaf8;border-color:rgba(154,96,96,.1)}
+.achieve-card.go  {background:var(--grey-lt);border-color:var(--grey-md)}
+.achieve-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+.achieve-body{flex:1;min-width:0}
+.achieve-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.achieve-card.hit  .achieve-label{color:var(--ok)}
+.achieve-card.near .achieve-label{color:var(--warn)}
+.achieve-card.soft .achieve-label{color:#9a6060}
+.achieve-card.go   .achieve-label{color:var(--tx3)}
+.achieve-title{font-size:14px;font-weight:600;color:var(--navy);margin-bottom:2px}
+.achieve-note{font-size:11px;color:var(--tx2);line-height:1.5;margin-bottom:6px}
+.achieve-bar-track{height:5px;background:var(--grey-md);border-radius:3px;overflow:hidden}
+.achieve-bar-fill{height:100%;border-radius:3px;transition:width .6s}
+.achieve-card.hit  .achieve-bar-fill{background:var(--ok)}
+.achieve-card.near .achieve-bar-fill{background:var(--gold)}
+.achieve-card.soft .achieve-bar-fill{background:#d08080}
+.achieve-card.go   .achieve-bar-fill{background:var(--grey)}
+.achieve-nums{font-size:10px;color:var(--tx3);margin-top:3px;display:flex;justify-content:space-between}
+
+/* ── Year rhythm ── */
+.yr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px}
+.yr-month{border-radius:var(--r);border:1.5px solid var(--grey-md);padding:9px 8px;
+  text-align:center;transition:all .15s;position:relative}
+.yr-month.clickable{cursor:pointer}.yr-month.clickable:hover{border-color:var(--navy);background:var(--navy-lt)}
+.yr-month.done{background:var(--ok-bg);border-color:rgba(25,107,36,.25)}
+.yr-month.live{background:var(--gold-pale);border-color:rgba(248,178,19,.4)}
+.yr-month.future{opacity:.45}
+.yr-month.qr-month{background:var(--navy-lt);border-color:rgba(25,34,105,.2)}
+.yr-month.qr-month.done{background:#eceef7}
+.yr-check{position:absolute;top:3px;right:5px;font-size:9px;font-weight:700}
+.yr-done .yr-check{color:var(--ok)}.yr-live .yr-check{color:var(--warn)}
+.yr-icon{font-size:14px;margin-bottom:2px}
+.yr-name{font-size:11px;font-weight:700;color:var(--navy)}
+.yr-type{font-size:8px;color:var(--tx3);margin-top:1px;font-weight:500}
+
+/* ── 1:1 tab ── */
+.oneon-nav{display:flex;align-items:center;gap:0;margin-bottom:12px;
+  background:var(--white);border-radius:var(--r);border:1.5px solid var(--grey-md);overflow:hidden}
+.oneon-nav-btn{background:transparent;border:none;padding:8px 14px;font-size:16px;
+  color:var(--tx3);cursor:pointer;transition:all .15s;flex-shrink:0}
+.oneon-nav-btn:hover{background:var(--navy-lt);color:var(--navy)}
+.oneon-nav-btn:disabled{opacity:.2;cursor:default}
+.oneon-nav-center{flex:1;text-align:center;padding:8px 10px;
+  border-left:1px solid var(--grey-md);border-right:1px solid var(--grey-md)}
+.oneon-nav-label{font-size:13px;font-weight:600;color:var(--navy)}
+.oneon-nav-sub{font-size:10px;color:var(--tx3);margin-top:1px}
+.oneon-pill{font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+.oneon-pill.live{background:var(--ok-bg);color:var(--ok)}
+.oneon-pill.past{background:var(--grey-lt);color:var(--tx3);border:1px solid var(--grey-md)}
+.readonly-banner{background:var(--warn-bg);border:1.5px solid rgba(184,112,0,.2);
+  border-radius:var(--r);padding:8px 12px;margin-bottom:10px;font-size:11px;
+  color:var(--warn);display:flex;align-items:center;gap:6px}
+.field-label{font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:4px;display:block}
+.field-hint{font-size:10px;color:var(--tx3);margin-bottom:5px;font-style:italic}
+.ta{width:100%;background:var(--grey-lt);border:1.5px solid var(--grey-md);border-radius:var(--r);
+  padding:8px 10px;font-family:inherit;font-size:13px;color:var(--tx);resize:none;
+  outline:none;min-height:60px;line-height:1.5;transition:border-color .15s}
+.ta:focus{border-color:var(--navy)}
+.ta.sm{min-height:44px}
+.ta[readonly]{background:var(--white);color:var(--tx3);cursor:default}
+.entry-list{display:flex;flex-direction:column;gap:6px}
+.entry-row{display:flex;gap:8px;align-items:flex-start}
+.entry-num{width:22px;height:22px;border-radius:50%;background:var(--navy);color:var(--gold);
+  font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:7px}
+.entry-ta{flex:1;background:var(--grey-lt);border:1.5px solid var(--grey-md);border-radius:var(--r);
+  padding:7px 10px;font-family:inherit;font-size:13px;color:var(--tx);resize:none;
+  outline:none;min-height:40px;line-height:1.5;transition:border-color .15s}
+.entry-ta:focus{border-color:var(--navy)}
+.entry-ta[readonly]{background:var(--white);color:var(--tx3)}
+.entry-del{background:transparent;border:none;color:var(--tx3);cursor:pointer;font-size:15px;
+  padding:0 2px;flex-shrink:0;opacity:0;margin-top:8px;transition:opacity .15s}
+.entry-row:hover .entry-del{opacity:1}.entry-del:hover{color:var(--err)}
+.entry-add{background:transparent;border:1.5px dashed rgba(25,34,105,.2);color:var(--tx3);
+  border-radius:var(--r);padding:6px 12px;font-size:11px;cursor:pointer;font-family:inherit;
+  width:100%;text-align:left;transition:all .15s;margin-top:4px;font-weight:500}
+.entry-add:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-lt)}
+.metrics-table{width:100%;border-collapse:collapse;font-size:12px}
+.metrics-table th{background:var(--navy);color:var(--gold);padding:7px 10px;text-align:left;
+  font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.metrics-table td{padding:7px 10px;border-bottom:1px solid var(--grey-md);vertical-align:middle}
+.metrics-table tr:nth-child(even) td{background:var(--grey-lt)}
+.metric-inp{width:100%;background:transparent;border:none;font-family:inherit;
+  font-size:12px;color:var(--tx);outline:none;padding:2px 4px}
+.metric-inp:focus{background:var(--white);border-radius:4px}
+.trend-sel{background:transparent;border:none;font-family:inherit;font-size:12px;color:var(--tx);
+  outline:none;cursor:pointer;padding:2px 4px}
+.t-up{color:var(--ok)}.t-dn{color:var(--err)}.t-st{color:var(--warn)}
+.tl-box{background:var(--navy-lt);border-radius:var(--r);
+  border:1.5px solid rgba(25,34,105,.12);padding:14px 16px}
+.tl-box-label{font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;
+  letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.tl-box-label::after{content:'';flex:1;height:1px;background:rgba(25,34,105,.15)}
+.link-row{display:flex;gap:8px;align-items:center}
+.link-inp{flex:1;background:var(--grey-lt);border:1.5px solid var(--grey-md);border-radius:var(--r);
+  padding:7px 10px;font-family:inherit;font-size:12px;color:var(--tx);outline:none}
+.link-inp:focus{border-color:var(--navy)}
+.link-btn{padding:7px 14px;background:var(--navy);color:#fff;border:none;
+  border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.link-btn:hover{opacity:.85}
+.export-bar{background:var(--navy-lt);border-radius:var(--r);
+  border:1.5px solid rgba(25,34,105,.12);padding:11px 14px;margin-top:10px;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.exp-lbl{font-size:11px;color:var(--tx2);font-weight:600;flex-shrink:0}
+.btn-exp{padding:7px 13px;font-size:11px;font-weight:600;border:none;border-radius:var(--r);
+  cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap}
+.btn-exp:hover{opacity:.85}
+.btn-exp-pdf{background:var(--navy);color:#fff}
+.btn-exp-email{background:var(--gold);color:var(--navy)}
+.btn-exp-copy{background:var(--white);color:var(--navy);border:1.5px solid var(--grey-md)}
+
+/* ── Quarterly builder ── */
+.qdoc-tabs{display:flex;gap:0;margin-bottom:0;
+  background:var(--white);border-radius:var(--rl) var(--rl) 0 0;
+  border:1.5px solid var(--grey-md);border-bottom:none;overflow:hidden}
+.qdoc-tab{flex:1;padding:11px 8px;font-size:12px;font-weight:500;cursor:pointer;
+  border:none;background:transparent;border-right:1px solid var(--grey-md);
+  color:var(--tx3);transition:all .15s;font-family:inherit;text-align:center}
+.qdoc-tab:last-child{border-right:none}
+.qdoc-tab:hover{color:var(--navy);background:var(--navy-lt)}
+.qdoc-tab.active{color:var(--navy);background:var(--gold-pale);font-weight:600;
+  border-bottom:2px solid var(--gold)}
+.qdoc-tab.has-data{color:var(--navy)}
+.qdoc-panel{display:none}
+.qdoc-panel.active{display:block}
+.q-doc-wrap{background:var(--white);border:1.5px solid var(--grey-md);
+  border-top:none;border-radius:0 0 var(--rl) var(--rl);padding:18px 20px;margin-bottom:12px}
+.q-hdr{background:linear-gradient(135deg,var(--navy-dk),var(--navy-mid,#2d3a8c));
+  border-radius:var(--r);padding:18px 20px;margin-bottom:14px;position:relative;overflow:hidden}
+.q-hdr::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;
+  border-radius:50%;background:rgba(248,178,19,.1)}
+.q-hdr-eyebrow{font-size:10px;font-weight:700;color:var(--gold-lt,#FBD98F);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;position:relative}
+.q-hdr-title{font-size:17px;font-weight:700;color:#fff;position:relative;margin-bottom:3px}
+.q-hdr-sub{font-size:11px;color:rgba(255,255,255,.55);position:relative}
+.q-month-pills{display:flex;gap:7px;margin-top:10px;position:relative;flex-wrap:wrap}
+.q-mpill{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;
+  border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65)}
+.q-mpill.done{background:rgba(25,107,36,.3);border-color:rgba(25,107,36,.5);color:#a0f0b8}
+.q-mpill.live{background:rgba(248,178,19,.2);border-color:rgba(248,178,19,.4);color:var(--gold)}
+.q-mpill.future{opacity:.35}
+.q-mpill.reflection{border-color:var(--gold);color:var(--gold)}
+.q-sec{margin-bottom:14px}
+.q-sec-hdr{display:flex;align-items:center;gap:9px;margin-bottom:10px;
+  padding-bottom:8px;border-bottom:1.5px solid var(--grey-md)}
+.q-sec-num{width:26px;height:26px;border-radius:50%;background:var(--navy);color:var(--gold);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.q-sec-title{font-size:13px;font-weight:600;color:var(--navy)}
+.q-sec-sub{font-size:10px;color:var(--tx3);margin-top:1px}
+.q-entry{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;
+  background:var(--grey-lt);border-radius:var(--r);margin-bottom:5px;
+  border:1px solid var(--grey-md)}
+.q-entry.live{background:var(--warn-bg);border-color:rgba(184,112,0,.15);
+  border-left:2px solid var(--warn)}
+.q-entry-badge{font-size:9px;font-weight:700;color:#fff;background:var(--navy);
+  padding:2px 7px;border-radius:20px;flex-shrink:0;margin-top:2px;white-space:nowrap}
+.q-entry-text{font-size:12px;color:var(--tx);line-height:1.5}
+.q-perf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:4px}
+.q-perf-tile{background:var(--grey-lt);border-radius:var(--r);padding:10px 12px;
+  border:1px solid var(--grey-md);text-align:center}
+.q-perf-tile.live{background:var(--gold-pale);border-color:rgba(248,178,19,.35)}
+.q-perf-lbl{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:3px}
+.q-perf-val{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:3px}
+.q-perf-vs{font-size:10px;color:var(--tx3)}
+.q-perf-vs.hit{color:var(--ok);font-weight:600}
+.q-ref-field{margin-bottom:13px}
+.q-empty{font-size:12px;color:var(--tx3);font-style:italic;padding:6px 0}
+.q-progress-bar{height:4px;background:var(--grey-md);border-radius:2px;overflow:hidden;margin-top:6px}
+.q-progress-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* ── Focus suggestions ── */
+.focus-box{background:var(--navy-lt);border-radius:var(--rl);
+  border:1.5px solid rgba(25,34,105,.12);padding:15px 17px;margin-bottom:12px}
+.focus-box-ttl{font-size:10px;font-weight:700;color:var(--navy);
+  text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px}
+.focus-box-sub{font-size:11px;color:var(--tx2);margin-bottom:11px}
+.sug-item{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;
+  background:var(--white);border-radius:var(--r);margin-bottom:6px;
+  border:1px solid rgba(25,34,105,.08);cursor:pointer;transition:all .15s}
+.sug-item:hover{background:var(--navy-lt);border-color:rgba(25,34,105,.2)}
+.sug-item.adopted{background:var(--ok-bg);border-color:rgba(25,107,36,.2);cursor:default}
+.sug-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.sug-dot.opportunity{background:var(--gold)}
+.sug-dot.maintain{background:var(--ok)}
+.sug-dot.recover{background:#d08080}
+.sug-dot.develop{background:var(--navy)}
+.sug-text{font-size:12px;color:var(--tx);flex:1;line-height:1.5}
+.sug-add{font-size:10px;font-weight:600;flex-shrink:0;align-self:center;color:var(--accent)}
+.sug-item.adopted .sug-add{color:var(--ok)}
+
+/* ── Momentum ── */
+.mom-row{display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-radius:var(--r);margin-bottom:6px;border:1px solid var(--grey-md)}
+.mom-row.up{background:#f0faf2;border-color:rgba(25,107,36,.15)}
+.mom-row.dn{background:#fdf8f8;border-color:rgba(184,50,50,.1)}
+.mom-row.fl{background:var(--grey-lt)}
+.mom-arrow{font-size:15px;width:22px;text-align:center;flex-shrink:0}
+.mom-row.up .mom-arrow{color:var(--ok)}
+.mom-row.dn .mom-arrow{color:#b04040}
+.mom-row.fl .mom-arrow{color:var(--tx3)}
+.mom-text{font-size:12px;color:var(--tx2);flex:1;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="top-bar">
+  <div class="logo">Affinity <span>Nursing</span></div>
+  <span class="saved-txt" id="saved-txt">Not saved yet</span>
+</div>
+
+<div class="profile">
+  <div class="av">AC</div>
+  <div>
+    <h1>Andrew Cheli</h1>
+    <p>Placements consultant</p>
+    <span class="tpill">Placements</span>
+  </div>
+  <div class="month-display" style="margin-left:auto;text-align:right;flex-shrink:0">
+    <div class="ml">Active month</div>
+    <div style="display:flex;align-items:center;gap:0;margin-top:3px">
+      <button class="mnav-profile-btn" id="profile-prev" onclick="profileNav(-1)" title="Previous month">&#8592;</button>
+      <div style="position:relative">
+        <div class="mv" id="month-display" onclick="togglePicker()" title="Click to pick a month"
+             style="cursor:pointer;user-select:none;padding:0 6px">—</div>
+        <div id="month-picker" class="month-picker">
+          <div style="background:var(--navy);padding:7px 12px;font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.07em;text-transform:uppercase">Jump to month</div>
+          <div id="month-picker-list" style="max-height:200px;overflow-y:auto;padding:4px 0"></div>
+        </div>
+      </div>
+      <button class="mnav-profile-btn" id="profile-next" onclick="profileNav(1)" title="Next month">&#8594;</button>
+    </div>
+  </div>
+</div>
+
+<div class="streak-bar" id="streak-bar"></div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('tracker',this)">This month</button>
+  <button class="tab-btn" onclick="switchTab('oneon',this)">1:1 &amp; goals</button>
+  <button class="tab-btn" onclick="switchTab('quarterly',this)">Quarterly builder</button>
+  <button class="tab-btn" onclick="switchTab('history',this)">History</button>
+  <button class="tab-btn" onclick="switchTab('performance',this)">Performance</button>
+</div>
+
+<div class="body">
+
+<!-- THIS MONTH -->
+<div class="tab-panel active" id="panel-tracker">
+  <div class="sec">
+    <div class="sec-ttl">
+      Monthly averages &amp; targets —
+      <span id="tracker-month-lbl" style="color:var(--accent);text-transform:none;letter-spacing:0;font-size:12px;font-weight:600"></span>
+      <button onclick="openNewMonthModal(true)" style="font-size:10px;color:var(--tx3);background:none;border:1px solid var(--grey-md);border-radius:20px;padding:2px 8px;cursor:pointer;font-family:inherit;margin-left:auto" id="edit-targets-btn">Edit targets</button>
+    </div>
+    <div class="grid3" id="rings" style="margin-bottom:10px"></div>
+    <div style="font-size:11px;color:var(--tx3);margin-top:4px" id="targets-row"></div>
+    <div style="font-size:11px;color:var(--tx3);background:var(--gold-pale);border-radius:var(--r);padding:7px 10px;margin-top:8px;border:1px solid rgba(248,178,19,.3)">
+      &#9432;&nbsp;These rings show your <strong>monthly averages and totals</strong> — enter numbers week by week below and the month picture builds automatically.
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">Weekly data entry</div>
+    <p class="sec-note" style="margin-bottom:10px">Enter each week as you go — the monthly view above updates live. Focus on the month, not the week.</p>
+    <div style="display:grid;gap:8px;margin-bottom:8px" id="col-hdrs"></div>
+    <div style="display:flex;flex-direction:column;gap:7px" id="inp-grid"></div>
+    <div style="display:grid;gap:8px;margin-top:10px;padding-top:10px;border-top:1.5px solid var(--grey-md)" id="totals"></div>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">Month trend</div>
+    <div class="leg" id="may-leg"></div>
+    <div class="hw" style="height:185px"><canvas id="mChart" role="img" aria-label="Monthly trend">Enter weekly data to see your trend.</canvas></div>
+  </div>
+  <div id="tracker-momentum"></div>
+  <div class="sec">
+    <div class="sec-ttl">Focus areas</div>
+    <p class="sec-note">Click any item to edit. Saves with your progress.</p>
+    <div id="goals"></div>
+    <button class="btn-add" onclick="addGoal()">+ Add a focus area</button>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">Month notes</div>
+    <textarea class="notes-area" id="month-notes" placeholder="Wins, blockers, things to follow up..."></textarea>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;padding:2px 0;margin-top:2px">
+    <button class="btn btn-p" onclick="saveAll()">Save progress</button>
+    <button class="btn btn-ok" onclick="openCloseMonth()">Close month &amp; start next →</button>
+    <span class="save-ok" id="save-ok">Saved!</span>
+  </div>
+</div>
+
+<!-- 1:1 & GOALS -->
+<div class="tab-panel" id="panel-oneon"></div>
+
+<!-- QUARTERLY BUILDER -->
+<div class="tab-panel" id="panel-quarterly">
+  <div id="q-year-view"></div>
+  <div class="qdoc-tabs">
+    <button class="qdoc-tab active" id="qdoc-btn-q1">Q1 · Jan–Mar</button>
+    <button class="qdoc-tab" id="qdoc-btn-q2">Q2 · Apr–Jun</button>
+    <button class="qdoc-tab" id="qdoc-btn-q3">Q3 · Jul–Sep</button>
+    <button class="qdoc-tab" id="qdoc-btn-q4">Q4 · Oct–Dec</button>
+  </div>
+  <div class="qdoc-panel active" id="qdoc-q1"></div>
+  <div class="qdoc-panel" id="qdoc-q2"></div>
+  <div class="qdoc-panel" id="qdoc-q3"></div>
+  <div class="qdoc-panel" id="qdoc-q4"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="tab-panel" id="panel-history">
+  <div class="sec">
+    <div class="sec-ttl">Month by month</div>
+    <p class="sec-note">Completed months archive here automatically. Best values highlighted in green. Click any month row to view its 1:1.</p>
+    <div class="hm-tbl">
+      <div class="hm-header" id="hm-header"></div>
+      <div id="history-rows"></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">Trend — all months</div>
+    <div class="leg" id="hist-leg"></div>
+    <div class="hw" style="height:195px"><canvas id="hChart" role="img" aria-label="Full history trend">Full history trend.</canvas></div>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">Monthly archive</div>
+    <div id="archive-cards"><p style="font-size:12px;color:var(--tx3)">Completed months will appear here.</p></div>
+  </div>
+</div>
+
+<!-- PERFORMANCE -->
+<div class="tab-panel" id="panel-performance">
+  <div class="sec">
+    <div class="sec-ttl">Full team totals — Jan to Apr 2026</div>
+    <p class="sec-note">Includes all team members for reporting purposes.</p>
+    <div class="grid3" id="team-stats" style="margin-bottom:12px"></div>
+    <div class="leg" id="team-leg"></div>
+    <div class="hw" style="height:160px"><canvas id="ttChart" role="img" aria-label="Team totals">Team totals.</canvas></div>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">April contribution to team totals</div>
+    <p class="sec-note">Your share of the full team's April output.</p>
+    <div style="background:var(--navy-lt);border-radius:var(--r);padding:12px 14px;border:1.5px solid rgba(25,34,105,.12)">
+      <div id="contrib"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .body -->
+</div><!-- .page -->
+
+<!-- NEW MONTH MODAL -->
+<div class="nm-overlay" id="nm-overlay">
+  <div class="nm-modal">
+    <div class="nm-header">
+      <button id="nm-close-btn" onclick="closeNMModal()"
+        style="display:none;position:absolute;top:14px;right:16px;background:rgba(255,255,255,.15);
+               border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:18px;
+               line-height:1;cursor:pointer;z-index:2;font-family:inherit"
+        onmouseover="this.style.background='rgba(255,255,255,.28)'"
+        onmouseout="this.style.background='rgba(255,255,255,.15)'"
+        title="Keep current targets and close">&times;</button>
+      <div class="nm-eyebrow" id="nm-eyebrow">New month</div>
+      <div class="nm-title" id="nm-title">Set your goals for <span id="nm-month-name">May 2026</span></div>
+      <div class="nm-sub" id="nm-sub">Choose your targets and focus areas below.</div>
+    </div>
+    <div class="nm-body">
+      <div id="nm-recap" style="display:none">
+        <div class="nm-section-ttl">Last month recap</div>
+        <div class="nm-recap">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2)" id="nm-recap-label"></div>
+          <div class="nm-recap-grid" id="nm-recap-grid"></div>
+        </div>
+      </div>
+      <div class="nm-section-ttl">Which month are you setting up?</div>
+      <div class="nm-month-row" style="margin-bottom:18px">
+        <div class="nm-field">
+          <label>Month</label>
+          <select id="nm-month">
+            <option>Jan</option><option>Feb</option><option>Mar</option>
+            <option>Apr</option><option selected>May</option><option>Jun</option>
+            <option>Jul</option><option>Aug</option><option>Sep</option>
+            <option>Oct</option><option>Nov</option><option>Dec</option>
+          </select>
+        </div>
+        <div class="nm-field"><label>Year</label><input type="number" id="nm-year" value="2026"></div>
+      </div>
+      <div class="nm-section-ttl">Set your targets</div>
+      <div class="nm-targets" id="nm-targets"></div>
+      <div class="nm-section-ttl">Focus areas for the month</div>
+      <div class="nm-goals-area">
+        <div id="nm-goals-list"></div>
+        <button class="nm-btn-add" onclick="addNMGoal()">+ Add a focus area</button>
+      </div>
+      <button class="nm-cta" onclick="confirmNewMonth()" id="nm-cta-btn">Start month →</button>
+      <div class="nm-cta-sub" id="nm-cta-sub">Your weekly data and history will be kept.</div>
+    </div>
+  </div>
+</div>
+
+<!-- CLOSE MONTH MODAL -->
+<div class="cm-overlay" id="cm-overlay">
+  <div class="cm-modal">
+    <div class="cm-header">
+      <h2>Close month &amp; start next</h2>
+      <p>Confirm your final actuals — they will be archived and your chart will update.</p>
+    </div>
+    <div class="cm-body">
+      <div class="cm-section">Confirm final actuals for <span id="cm-month-label" style="color:var(--gold)"></span></div>
+      <div class="cm-grid" id="cm-actuals-grid"></div>
+    </div>
+    <div class="cm-actions">
+      <button class="btn btn-s" onclick="closeCMModal()">Cancel</button>
+      <button class="btn btn-ok" onclick="confirmCloseMonth()">Archive &amp; open next month →</button>
+    </div>
+  </div>
+</div>
+
+<script>const C = {"id": "andrew_cheli", "name": "Andrew Cheli", "type": "placement", "hist": {"labels": ["Jan", "Feb", "Mar", "Apr"], "oc": [19.4, 23.75, 20.2, 20.25], "nc": [12.51, 25.79, 17.4, 43.32], "tw": [192.34, 193.75, 162.48, 235.14]}, "team_totals": {"months": ["Jan", "Feb", "Mar", "Apr"], "oc": [205.0, 243.75, 243.2, 224.5], "nc": [238.04, 270.65, 180.88, 234.49], "tw": [1919.95, 2066.34, 1858.31, 1791.66]}, "contrib": {"oc": 9.0, "nc": 18.5, "tw": 13.1, "team_oc": 224.5, "team_nc": 234.49, "team_tw": 1791.66}};
+const SK = 'an_tracker_andrew_cheli';
+const IS_P = C.type === 'placement';
+const NAVY='#192269', GOLD='#F8B213', GREY='#7F7F7F', ACCENT='#1D9E75';
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let hChart=null, ttChart=null, mChart=null;
+
+// ── Storage ───────────────────────────────────────────────────────────────
+function load(){ try{ return JSON.parse(localStorage.getItem(SK))||{}; }catch(e){ return {}; } }
+function store(d){ d._saved=new Date().toISOString(); localStorage.setItem(SK,JSON.stringify(d)); updateSavedLbl(); }
+function updateSavedLbl(){
+  const d=load(); if(!d._saved) return;
+  const dt=new Date(d._saved);
+  document.getElementById('saved-txt').textContent='Saved '+dt.toLocaleDateString('en-AU',{day:'numeric',month:'short'})+' '+dt.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+}
+
+function getCM(){ return load()._cm||null; }
+function getArchived(){ return load()._archived||[]; }
+
+function gv(id){ const e=document.getElementById(id); if(!e) return null; const v=parseFloat(e.value); return isNaN(v)?null:v; }
+function f(v,d=1){ return v==null||v===undefined?'—':Number(v).toFixed(d); }
+function autoR(ta){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+
+function getArchived(){ return load()._archived||[]; }
+
+// ══════════════════════════════════════════════════════════════════
+//  NEW MONTH MODAL
+// ══════════════════════════════════════════════════════════════════
+function openNewMonthModal(isEdit=false){
+  const cm=getCM();
+  const archived=getArchived();
+  const lastArchived=archived[archived.length-1]||null;
+
+  // Header text
+  const overlay=document.getElementById('nm-overlay');
+  if(isEdit && cm){
+    document.getElementById('nm-eyebrow').textContent='Edit targets';
+    document.getElementById('nm-title').innerHTML='Adjust your goals for <span id="nm-month-name">'+cm.month+' '+cm.year+'</span>';
+    document.getElementById('nm-sub').textContent="Update your targets or focus areas below.";
+    document.getElementById('nm-cta-btn').textContent='Save changes →';
+    document.getElementById('nm-cta-sub').textContent='';
+    document.getElementById('nm-recap').style.display='none';
+    // Pre-fill month
+    document.getElementById('nm-month').value=cm.month;
+    document.getElementById('nm-year').value=cm.year;
+    // Pre-fill targets
+    buildNMTargets(cm.targets);
+    // Pre-fill goals
+    renderNMGoals(load()._goals||C.goals);
+  } else if(isEdit===false && cm){
+    // Rollover — next month
+    const nextIdx=(MONTHS.indexOf(cm.month)+1)%12;
+    const nextMonth=MONTHS[nextIdx];
+    const nextYear=nextIdx===0?cm.year+1:cm.year;
+    document.getElementById('nm-eyebrow').textContent='New month — '+nextMonth+' '+nextYear;
+    document.getElementById('nm-title').innerHTML='Set your goals for <span id="nm-month-name">'+nextMonth+' '+nextYear+'</span>';
+    document.getElementById('nm-sub').textContent="Your previous goals are carried forward as a starting point. Update them below.";
+    document.getElementById('nm-cta-btn').textContent='Start '+nextMonth+' →';
+    document.getElementById('nm-cta-sub').textContent="This month's data will be archived to your history.";
+    document.getElementById('nm-month').value=nextMonth;
+    document.getElementById('nm-year').value=nextYear;
+    // Show last month recap
+    if(lastArchived||cm){
+      const recap=lastArchived||{month:cm.month,year:cm.year,actuals:{},targets:cm.targets};
+      document.getElementById('nm-recap').style.display='block';
+      document.getElementById('nm-recap-label').textContent=(recap.month||cm.month)+' '+(recap.year||cm.year)+' actuals vs targets';
+      buildRecapGrid(recap);
+    }
+    buildNMTargets(null);
+    renderNMGoals(load()._goals||C.goals);
+  } else {
+    // First open ever
+    document.getElementById('nm-eyebrow').textContent='Welcome — first time setup';
+    document.getElementById('nm-title').innerHTML='Set your goals for <span id="nm-month-name">May 2026</span>';
+    document.getElementById('nm-sub').textContent="This only takes a minute. Set your targets and focus areas to get started.";
+    document.getElementById('nm-cta-btn').textContent='Start tracking →';
+    document.getElementById('nm-cta-sub').textContent="You can change these at any time.";
+    document.getElementById('nm-recap').style.display='none';
+    document.getElementById('nm-month').value='May';
+    document.getElementById('nm-year').value=2026;
+    buildNMTargets(null);
+    renderNMGoals([]);
+  }
+  overlay.classList.add('open');
+  // Sync month name span when selector changes
+  ['nm-month','nm-year'].forEach(id=>{
+    document.getElementById(id).addEventListener('change',syncNMTitle);
+  });
+}
+
+function syncNMTitle(){
+  const m=document.getElementById('nm-month').value;
+  const y=document.getElementById('nm-year').value;
+  const el=document.getElementById('nm-month-name');
+  if(el) el.textContent=m+' '+y;
+}
+
+function closeNMModal(){ document.getElementById('nm-overlay').classList.remove('open'); }
+
+function buildRecapGrid(recap){
+  const grid=document.getElementById('nm-recap-grid');
+  const a=recap.actuals||{};
+  const t=recap.targets||{};
+  if(IS_P){
+    const hitOC=t.oc&&a.oc>=t.oc, hitNC=t.nc&&a.nc>=t.nc, hitTW=t.tw&&a.tw>=t.tw;
+    grid.innerHTML=`
+      <div class="nm-recap-cell"><div class="nm-recap-lbl">On contract</div><div class="nm-recap-val">${f(a.oc)}</div><div class="nm-recap-vs ${hitOC?'tgt-hit':'tgt-miss'}">${t.oc?'target '+t.oc:'—'}</div></div>
+      <div class="nm-recap-cell"><div class="nm-recap-lbl">Net change wks</div><div class="nm-recap-val">${f(a.nc)}</div><div class="nm-recap-vs ${hitNC?'tgt-hit':'tgt-miss'}">${t.nc?'target '+t.nc:'—'}</div></div>
+      <div class="nm-recap-cell"><div class="nm-recap-lbl">Total weeks</div><div class="nm-recap-val">${f(a.tw,0)}</div><div class="nm-recap-vs ${hitTW?'tgt-hit':'tgt-miss'}">${t.tw?'target '+t.tw:'—'}</div></div>`;
+  } else {
+    const hitH=t.h&&a.h>=t.h, hitW=t.w&&a.w>=t.w;
+    grid.innerHTML=`
+      <div class="nm-recap-cell"><div class="nm-recap-lbl">Handovers</div><div class="nm-recap-val">${a.h??'—'}</div><div class="nm-recap-vs ${hitH?'tgt-hit':'tgt-miss'}">${t.h?'target '+t.h:'—'}</div></div>
+      <div class="nm-recap-cell"><div class="nm-recap-lbl">Total weeks</div><div class="nm-recap-val">${f(a.w)}</div><div class="nm-recap-vs ${hitW?'tgt-hit':'tgt-miss'}">${t.w?'target '+t.w:'—'}</div></div>
+      <div></div>`;
+  }
+}
+
+function buildNMTargets(prefill){
+  const el=document.getElementById('nm-targets');
+  // Get last month's actuals as hint
+  const archived=getArchived();
+  const last=archived[archived.length-1];
+  const cm=getCM();
+  if(IS_P){
+    const hintOC=last?.actuals?.oc||cm?.targets?.oc||'';
+    const hintNC=last?.actuals?.nc||cm?.targets?.nc||'';
+    const hintTW=last?.actuals?.tw||cm?.targets?.tw||'';
+    el.innerHTML=`
+      <div class="nm-target-card">
+        <div class="nm-target-icon">OC</div>
+        <div class="nm-target-info"><div class="nm-target-lbl">On contract</div><div class="nm-target-hint">Average nurses on contract for the month${hintOC?' · last month: '+f(hintOC):''}</div></div>
+        <input class="nm-target-input" type="number" step="0.5" id="nm-t-oc" value="${prefill?.oc||''}" placeholder="${hintOC||'e.g. 25'}">
+      </div>
+      <div class="nm-target-card">
+        <div class="nm-target-icon">NC</div>
+        <div class="nm-target-info"><div class="nm-target-lbl">Net change weeks</div><div class="nm-target-hint">Weekly net change target${hintNC?' · last month: '+f(hintNC):''}</div></div>
+        <input class="nm-target-input" type="number" step="0.5" id="nm-t-nc" value="${prefill?.nc||''}" placeholder="${hintNC||'e.g. 36'}">
+      </div>
+      <div class="nm-target-card">
+        <div class="nm-target-icon">TW</div>
+        <div class="nm-target-info"><div class="nm-target-lbl">Total weeks</div><div class="nm-target-hint">Cumulative weeks placed${hintTW?' · last month: '+f(hintTW,0):''}</div></div>
+        <input class="nm-target-input" type="number" step="1" id="nm-t-tw" value="${prefill?.tw||''}" placeholder="${hintTW||'e.g. 210'}">
+      </div>`;
+  } else {
+    const hintH=last?.actuals?.h||cm?.targets?.h||'';
+    const hintW=last?.actuals?.w||cm?.targets?.w||'';
+    el.innerHTML=`
+      <div class="nm-target-card">
+        <div class="nm-target-icon">H</div>
+        <div class="nm-target-info"><div class="nm-target-lbl">Handovers</div><div class="nm-target-hint">Total handovers for the month${hintH?' · last month: '+hintH:''}</div></div>
+        <input class="nm-target-input" type="number" step="1" id="nm-t-h" value="${prefill?.h||''}" placeholder="${hintH||'e.g. 8'}">
+      </div>
+      <div class="nm-target-card">
+        <div class="nm-target-icon">TW</div>
+        <div class="nm-target-info"><div class="nm-target-lbl">Total weeks</div><div class="nm-target-hint">Combined contract weeks${hintW?' · last month: '+f(hintW):''}</div></div>
+        <input class="nm-target-input" type="number" step="1" id="nm-t-w" value="${prefill?.w||''}" placeholder="${hintW||'e.g. 50'}">
+      </div>`;
+  }
+}
+
+function getNMTargets(){
+  return IS_P
+    ? { oc:gv('nm-t-oc')||0, nc:gv('nm-t-nc')||0, tw:gv('nm-t-tw')||0 }
+    : { h:gv('nm-t-h')||0, w:gv('nm-t-w')||0 };
+}
+
+function renderNMGoals(goals){
+  const el=document.getElementById('nm-goals-list');
+  el.innerHTML=(goals||[]).map(g=>`
+    <div class="nm-g-item">
+      <div class="nm-g-dot"></div>
+      <textarea class="nm-g-ta" rows="1">${g}</textarea>
+      <button class="nm-g-del" onclick="this.closest('.nm-g-item').remove()">&times;</button>
+    </div>`).join('');
+  el.querySelectorAll('.nm-g-ta').forEach(ta=>{ autoR(ta); ta.addEventListener('input',()=>autoR(ta)); });
+}
+
+function addNMGoal(){
+  const el=document.getElementById('nm-goals-list');
+  const d=document.createElement('div'); d.className='nm-g-item';
+  d.innerHTML=`<div class="nm-g-dot"></div><textarea class="nm-g-ta" rows="1" placeholder="Add a focus area..."></textarea><button class="nm-g-del" onclick="this.closest('.nm-g-item').remove()">&times;</button>`;
+  el.appendChild(d);
+  const ta=d.querySelector('.nm-g-ta'); autoR(ta); ta.addEventListener('input',()=>autoR(ta)); ta.focus();
+}
+
+function getNMGoals(){
+  return Array.from(document.querySelectorAll('.nm-g-ta')).map(t=>t.value.trim()).filter(v=>v);
+}
+
+function confirmNewMonth(){
+  const month=document.getElementById('nm-month').value;
+  const year=parseInt(document.getElementById('nm-year').value)||2026;
+  const targets=getNMTargets();
+  const goals=getNMGoals();
+  const d=load();
+  const isEdit=!!getCM()&&document.getElementById('nm-cta-btn').textContent.startsWith('Save');
+
+  if(!isEdit){
+    // Clear weekly data for fresh month
+    ['oc','nc','tw','h','w'].forEach(p=>{
+      for(let w=1;w<=5;w++) delete d[p+w];
+    });
+    d._month_notes='';
+  }
+  d._cm={ month, year, targets };
+  d._goals=goals;
+  store(d);
+  closeNMModal();
+  refreshTracker();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CLOSE MONTH MODAL
+// ══════════════════════════════════════════════════════════════════
+function openCloseMonth(){
+  const cm=getCM();
+  if(!cm){ openNewMonthModal(false); return; }
+  document.getElementById('cm-month-label').textContent=cm.month+' '+cm.year;
+  const d=load();
+  // Pre-fill actuals from entered data
+  const latestOC=(()=>{ for(let w=5;w>=1;w--){ const v=d['oc'+w]; if(v!=null)return v; } return ''; })();
+  const avgNC=(()=>{ const v=[1,2,3,4,5].map(w=>d['nc'+w]).filter(v=>v!=null); return v.length?(v.reduce((a,b)=>a+b)/v.length).toFixed(2):''; })();
+  const latestTW=(()=>{ for(let w=5;w>=1;w--){ const v=d['tw'+w]; if(v!=null)return v; } return ''; })();
+  const totalH=(()=>{ return [1,2,3,4,5].map(w=>d['h'+w]).filter(v=>v!=null).reduce((a,b)=>a+b,0)||''; })();
+  const totalW=(()=>{ const v=[1,2,3,4,5].map(w=>d['w'+w]).filter(v=>v!=null).reduce((a,b)=>a+b,0); return v?v.toFixed(1):''; })();
+
+  const grid=document.getElementById('cm-actuals-grid');
+  if(IS_P){
+    grid.style.gridTemplateColumns='repeat(3,1fr)';
+    grid.innerHTML=`
+      <div class="cm-field"><label>On contract (final)</label><input type="number" step="0.1" id="cm-oc" value="${latestOC}" placeholder="OC"></div>
+      <div class="cm-field"><label>Avg net change wks</label><input type="number" step="0.1" id="cm-nc" value="${avgNC}" placeholder="NC"></div>
+      <div class="cm-field"><label>Total weeks (final)</label><input type="number" step="0.1" id="cm-tw" value="${latestTW}" placeholder="TW"></div>`;
+  } else {
+    grid.style.gridTemplateColumns='1fr 1fr';
+    grid.innerHTML=`
+      <div class="cm-field"><label>Total handovers</label><input type="number" step="1" id="cm-h" value="${totalH}" placeholder="Handovers"></div>
+      <div class="cm-field"><label>Total weeks</label><input type="number" step="0.1" id="cm-w" value="${totalW}" placeholder="Weeks"></div>`;
+  }
+  document.getElementById('cm-overlay').classList.add('open');
+}
+
+function closeCMModal(){ document.getElementById('cm-overlay').classList.remove('open'); }
+
+function confirmCloseMonth(){
+  const cm=getCM();
+  const d=load();
+  const actuals=IS_P
+    ? { oc:gv('cm-oc'), nc:gv('cm-nc'), tw:gv('cm-tw') }
+    : { h:gv('cm-h'), w:gv('cm-w') };
+
+  // Archive current month
+  const archived=d._archived||[];
+  archived.push({
+    month:cm.month, year:cm.year, label:cm.month+' '+cm.year,
+    actuals, targets:cm.targets,
+    notes:d._month_notes||'',
+    goals:d._goals||[],
+  });
+  d._archived=archived;
+
+  // Clear tracker data
+  ['oc','nc','tw','h','w'].forEach(p=>{ for(let w=1;w<=5;w++) delete d[p+w]; });
+  d._month_notes='';
+  delete d._cm;
+  store(d);
+  closeCMModal();
+
+  // Celebrate based on targets hit
+  if(cm&&cm.targets){
+    const t=cm.targets; let hits=0,total=0;
+    if(IS_P){
+      if(t.oc){total++;if(actuals.oc!=null&&actuals.oc>=t.oc)hits++;}
+      if(t.nc){total++;if(actuals.nc!=null&&actuals.nc>=t.nc)hits++;}
+      if(t.tw){total++;if(actuals.tw!=null&&actuals.tw>=t.tw)hits++;}
+    } else {
+      if(t.h){total++;if(actuals.h!=null&&actuals.h>=t.h)hits++;}
+      if(t.w){total++;if(actuals.w!=null&&actuals.w>=t.w)hits++;}
+    }
+    if(total>0){
+      if(hits===total)      setTimeout(()=>window.confetti&&window.confetti.fire('celebrate'),400);
+      else if(hits>=total*.5) setTimeout(()=>window.confetti&&window.confetti.fire('cheer'),400);
+    }
+  }
+
+  // Open new month modal (rollover mode)
+  openNewMonthModal(false);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  TRACKER
+// ══════════════════════════════════════════════════════════════════
+function refreshTracker(){
+  const cm=getCM();
+  if(!cm) return;
+  const label=cm.month+' '+cm.year;
+  document.getElementById('tracker-month-lbl').textContent=label;
+  document.getElementById('month-display').textContent=label;
+  if(IS_P){
+    document.getElementById('targets-row').innerHTML=`Targets: <strong style="color:var(--navy)">OC ${cm.targets.oc||'—'} · NC ${cm.targets.nc||'—'} · TW ${cm.targets.tw||'—'}</strong>`;
+  } else {
+    document.getElementById('targets-row').innerHTML=`Targets: <strong style="color:var(--navy)">Handovers ${cm.targets.h||'—'} · Weeks ${cm.targets.w||'—'}</strong>`;
+  }
+  buildInputs();
+  const d=load();
+  updateTotals(cm.targets);
+  updateRings(d, cm.targets);
+  updateMonthChart();
+  renderGoals(d._goals||C.goals);
+  if(d._month_notes) document.getElementById('month-notes').value=d._month_notes;
+  else document.getElementById('month-notes').value='';
+}
+
+
+
+function updateRings(data,targets){
+  const el=document.getElementById('rings'); if(!el) return;
+  const t=targets||{oc:1,nc:1,tw:1,h:1,w:1};
+  if(IS_P){
+    const ocV=[1,2,3,4,5].map(w=>data['oc'+w]).filter(v=>v!=null);
+    const ncV=[1,2,3,4,5].map(w=>data['nc'+w]).filter(v=>v!=null);
+    const twV=[1,2,3,4,5].map(w=>data['tw'+w]).filter(v=>v!=null);
+    const oc=ocV.length?ocV[ocV.length-1]:0;
+    const nc=ncV.length?ncV.reduce((a,b)=>a+b)/ncV.length:0;
+    const tw=twV.length?twV[twV.length-1]:0;
+    el.innerHTML=ring(t.oc?oc/t.oc*100:0,'On contract',oc,t.oc)
+      +ring(t.nc?Math.max(0,nc)/t.nc*100:0,'Net change wks',nc,t.nc)
+      +ring(t.tw?tw/t.tw*100:0,'Total weeks',tw,t.tw);
+  } else {
+    const hV=[1,2,3,4,5].map(w=>data['h'+w]).filter(v=>v!=null);
+    const wV=[1,2,3,4,5].map(w=>data['w'+w]).filter(v=>v!=null);
+    const h=hV.reduce((a,b)=>a+b,0), wk=wV.reduce((a,b)=>a+b,0);
+    el.innerHTML=ring(t.h?h/t.h*100:0,'Handovers',h,t.h)
+      +ring(t.w?wk/t.w*100:0,'Total weeks',wk,t.w)
+      +`<div class="ring-card" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px"><div style="font-size:28px;font-weight:700;color:${NAVY}">${h>0?(wk/h).toFixed(1):'—'}</div><div class="ring-lbl">Avg wks/handover</div><div class="ring-sub">Target 5.5+</div></div>`;
+  }
+}
+
+function buildInputs(){
+  const data=load();
+  const hdrs=document.getElementById('col-hdrs');
+  const grid=document.getElementById('inp-grid');
+  if(!hdrs||!grid) return;
+  if(IS_P){
+    hdrs.style.gridTemplateColumns='72px 1fr 1fr 1fr';
+    hdrs.innerHTML='<div></div><div class="col-h">On contract</div><div class="col-h">Net change wks</div><div class="col-h">Total weeks</div>';
+    grid.innerHTML=Array.from({length:5},(_,i)=>{const w=i+1;
+      return `<div class="wk-row" style="grid-template-columns:72px 1fr 1fr 1fr">
+        <div class="wk-lbl">Week ${w}</div>
+        <div><input class="inp" type="number" step="0.1" id="oc${w}" value="${data['oc'+w]??''}" placeholder="—" oninput="onIn()"></div>
+        <div><input class="inp" type="number" step="0.1" id="nc${w}" value="${data['nc'+w]??''}" placeholder="—" oninput="onIn()"></div>
+        <div><input class="inp" type="number" step="0.1" id="tw${w}" value="${data['tw'+w]??''}" placeholder="—" oninput="onIn()"></div>
+      </div>`;}).join('');
+  } else {
+    hdrs.style.gridTemplateColumns='72px 1fr 1fr';
+    hdrs.innerHTML='<div></div><div class="col-h">Handovers</div><div class="col-h">Total weeks</div>';
+    grid.innerHTML=Array.from({length:5},(_,i)=>{const w=i+1;
+      return `<div class="wk-row" style="grid-template-columns:72px 1fr 1fr">
+        <div class="wk-lbl">Week ${w}</div>
+        <div><input class="inp" type="number" step="1" id="h${w}" value="${data['h'+w]??''}" placeholder="—" oninput="onIn()"></div>
+        <div><input class="inp" type="number" step="0.1" id="w${w}" value="${data['w'+w]??''}" placeholder="—" oninput="onIn()"></div>
+      </div>`;}).join('');
+  }
+}
+
+
+
+function updateMonthChart(){
+  const WL=['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
+  const t=getCM()?.targets;
+  document.getElementById('may-leg').innerHTML=IS_P
+    ? `<span><span class="lsq" style="background:${NAVY}"></span>On contract</span><span><span class="lsq" style="background:${NAVY};opacity:.5"></span>Net change wks</span><span><span class="lsq" style="background:${GOLD}"></span>Total weeks ÷10</span>`
+    : `<span><span class="lsq" style="background:${NAVY};opacity:.6;outline:1px solid ${NAVY}"></span>Handovers</span><span><span class="lsq" style="background:${GOLD}"></span>Total weeks</span>`;
+  if(mChart) mChart.destroy();
+  if(IS_P){
+    const oc=Array.from({length:5},(_,i)=>gv('oc'+(i+1)));
+    const nc=Array.from({length:5},(_,i)=>gv('nc'+(i+1)));
+    const tw=Array.from({length:5},(_,i)=>gv('tw'+(i+1)));
+    mChart=new Chart(document.getElementById('mChart'),{type:'line',data:{labels:WL,datasets:[
+      {label:'On contract',data:oc,borderColor:NAVY,backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,tension:.3,spanGaps:false},
+      {label:'Net change wks',data:nc,borderColor:NAVY,backgroundColor:'transparent',borderWidth:2,borderDash:[6,4],pointRadius:4,tension:.3,spanGaps:false},
+      {label:'Total wks ÷10',data:tw.map(v=>v==null?null:+(v/10).toFixed(2)),borderColor:GOLD,backgroundColor:'transparent',borderWidth:2.5,pointRadius:4,tension:.3,spanGaps:false},
+      ...(t?.oc?[{label:'OC target',data:Array(5).fill(t.oc),borderColor:'rgba(0,0,0,.15)',borderDash:[3,3],pointRadius:0,borderWidth:1.5}]:[]),
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label.includes('÷10')?'Total weeks: '+(ctx.parsed.y*10).toFixed(1):ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)}}},scales:{x:{ticks:{font:{size:11},color:GREY},grid:{color:'rgba(0,0,0,.05)'}},y:{ticks:{font:{size:11},color:GREY},grid:{color:'rgba(0,0,0,.05)'}}}}});
+  } else {
+    const h=Array.from({length:5},(_,i)=>gv('h'+(i+1)));
+    const w=Array.from({length:5},(_,i)=>gv('w'+(i+1)));
+    mChart=new Chart(document.getElementById('mChart'),{type:'bar',data:{labels:WL,datasets:[
+      {label:'Handovers',data:h,backgroundColor:NAVY+'88',borderColor:NAVY,borderWidth:1.5,yAxisID:'y'},
+      {label:'Total weeks',type:'line',data:w,borderColor:GOLD,backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,tension:.3,spanGaps:false,yAxisID:'y2'},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11},color:GREY},grid:{display:false}},y:{ticks:{font:{size:11},color:GREY,stepSize:1},position:'left',grid:{color:'rgba(0,0,0,.05)'}},y2:{ticks:{font:{size:11},color:GREY},position:'right',grid:{display:false}}}}});
+  }
+}
+
+function onIn(){
+  const cm=getCM();
+  updateTotals(cm?.targets);
+  updateRings(load(),cm?.targets);
+  updateMonthChart();
+  // Celebrate first time a metric hits 100%
+  if(cm&&cm.targets){
+    const t=cm.targets;
+    const ocV=[1,2,3,4,5].map(w=>gv('oc'+w)).filter(v=>v!=null);
+    const twV=[1,2,3,4,5].map(w=>gv('tw'+w)).filter(v=>v!=null);
+    const oc=ocV.length?ocV[ocV.length-1]:0;
+    const tw=twV.length?twV[twV.length-1]:0;
+    const d2=load(); const key='_celebrated_'+cm.month+cm.year;
+    const cel=d2[key]||{};
+    if(!cel.oc&&t.oc&&oc>=t.oc){ cel.oc=true; d2[key]=cel; store(d2); setTimeout(()=>window.confetti&&window.confetti.fire('cheer'),200); }
+    else if(!cel.tw&&t.tw&&tw>=t.tw){ cel.tw=true; d2[key]=cel; store(d2); setTimeout(()=>window.confetti&&window.confetti.fire('pop'),200); }
+  }
+}
+
+// ── Goals ─────────────────────────────────────────────────────────────────
+function getGoals(){ return Array.from(document.querySelectorAll('#goals .g-ta')).map(t=>t.value.trim()).filter(v=>v); }
+function renderGoals(goals){
+  const el=document.getElementById('goals'); if(!el) return;
+  el.innerHTML=goals.map(g=>`<div class="g-item"><div class="g-dot"></div><textarea class="g-ta" rows="1">${g}</textarea><button class="g-del" onclick="delGoal(this)">&times;</button></div>`).join('');
+  el.querySelectorAll('.g-ta').forEach(ta=>{ autoR(ta); ta.addEventListener('input',()=>autoR(ta)); });
+}
+function addGoal(){ const el=document.getElementById('goals'); const d=document.createElement('div'); d.className='g-item'; d.innerHTML=`<div class="g-dot"></div><textarea class="g-ta" rows="1" placeholder="Add a focus area..."></textarea><button class="g-del" onclick="delGoal(this)">&times;</button>`; el.appendChild(d); const ta=d.querySelector('.g-ta'); autoR(ta); ta.addEventListener('input',()=>autoR(ta)); ta.focus(); }
+function delGoal(btn){ if(!confirm('Remove?'))return; btn.closest('.g-item').remove(); }
+
+// ── Save ──────────────────────────────────────────────────────────────────
+function saveAll(){
+  const d=load();
+  if(IS_P){ for(let w=1;w<=5;w++){d['oc'+w]=gv('oc'+w);d['nc'+w]=gv('nc'+w);d['tw'+w]=gv('tw'+w);} }
+  else { for(let w=1;w<=5;w++){d['h'+w]=gv('h'+w);d['w'+w]=gv('w'+w);} }
+  d._goals=getGoals();
+  d._month_notes=document.getElementById('month-notes').value;
+  store(d);
+  const ok=document.getElementById('save-ok'); ok.style.display='inline'; setTimeout(()=>ok.style.display='none',2200);
+}
+
+// ── History tab ───────────────────────────────────────────────────────────
+function buildHistory(){
+  const archived=getArchived();
+  const cm=getCM();
+  const d=load();
+
+  const all=[
+    ...(IS_P
+      ? C.hist.labels.map((m,i)=>({label:m,oc:C.hist.oc[i],nc:C.hist.nc[i],tw:C.hist.tw[i],targets:{},seed:true}))
+      : C.hist.labels.map((m,i)=>({label:m,h:C.hist.handovers?.[i],w:C.hist.weeks?.[i],targets:{},seed:true}))),
+    ...archived.map(a=>({label:a.label,...a.actuals,targets:a.targets||{}})),
+  ];
+
+  if(cm){
+    const ocV=[1,2,3,4,5].map(w=>d['oc'+w]).filter(v=>v!=null);
+    const ncV=[1,2,3,4,5].map(w=>d['nc'+w]).filter(v=>v!=null);
+    const twV=[1,2,3,4,5].map(w=>d['tw'+w]).filter(v=>v!=null);
+    const hV=[1,2,3,4,5].map(w=>d['h'+w]).filter(v=>v!=null);
+    const wV=[1,2,3,4,5].map(w=>d['w'+w]).filter(v=>v!=null);
+    all.push({label:cm.month+' '+cm.year,oc:ocV.length?ocV[ocV.length-1]:null,nc:ncV.length?ncV.reduce((a,b)=>a+b)/ncV.length:null,tw:twV.length?twV[twV.length-1]:null,h:hV.length?hV.reduce((a,b)=>a+b):null,w:wV.length?wV.reduce((a,b)=>a+b):null,targets:cm.targets,live:true});
+  }
+
+  const bestOC=IS_P?Math.max(...all.map(r=>r.oc||0).filter(v=>v)):0;
+  const bestTW=Math.max(...all.map(r=>(IS_P?r.tw:r.w)||0).filter(v=>v));
+
+  const cols=IS_P?'80px 1fr 1fr 1fr':'80px 1fr 1fr';
+  const hdr=IS_P
+    ?`<div class="hm-hcell" style="text-align:left">Month</div><div class="hm-hcell">On contract</div><div class="hm-hcell">Net change wks</div><div class="hm-hcell">Total weeks</div>`
+    :`<div class="hm-hcell" style="text-align:left">Month</div><div class="hm-hcell">Handovers</div><div class="hm-hcell">Total weeks</div>`;
+  document.getElementById('hm-header').style.gridTemplateColumns=cols;
+  document.getElementById('hm-header').innerHTML=hdr;
+
+  document.getElementById('history-rows').innerHTML=all.map(r=>`
+    <div class="hm-row${r.live?' live':''}" style="grid-template-columns:${cols}">
+      <div class="hm-month">${r.label}${r.live?' <span style="font-size:9px;color:var(--warn);font-weight:600">live</span>':''}</div>
+      ${IS_P
+        ?`<div class="hm-cell${r.oc>=bestOC?' best':''}">${f(r.oc)}</div><div class="hm-cell${r.nc>=30?' best':''}">${f(r.nc)}</div><div class="hm-cell${r.tw>=bestTW?' best':''}">${f(r.tw)}</div>`
+        :`<div class="hm-cell${r.h>=10?' best':''}">${r.h??'—'}</div><div class="hm-cell${r.w>=bestTW?' best':''}">${f(r.w)}</div>`
+      }
+    </div>`).join('');
+
+  // Trend chart
+  document.getElementById('hist-leg').innerHTML=IS_P
+    ?`<span><span class="lsq" style="background:${NAVY}"></span>On contract</span><span><span class="lsq" style="background:${NAVY};opacity:.5"></span>Net change wks</span><span><span class="lsq" style="background:${GOLD}"></span>Total weeks ÷10</span>`
+    :`<span><span class="lsq" style="background:${NAVY};opacity:.6;outline:1px solid ${NAVY}"></span>Handovers</span><span><span class="lsq" style="background:${GOLD}"></span>Total weeks ÷10</span>`;
+  if(hChart) hChart.destroy();
+  if(IS_P){
+    hChart=new Chart(document.getElementById('hChart'),{type:'line',data:{labels:all.map(r=>r.label),datasets:[
+      {label:'On contract',data:all.map(r=>r.oc),borderColor:NAVY,backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,tension:.35},
+      {label:'Net change wks',data:all.map(r=>r.nc),borderColor:NAVY,backgroundColor:'transparent',borderWidth:2,borderDash:[6,4],pointRadius:4,tension:.35},
+      {label:'Total wks ÷10',data:all.map(r=>r.tw!=null?+(r.tw/10).toFixed(2):null),borderColor:GOLD,backgroundColor:'transparent',borderWidth:2.5,pointRadius:4,tension:.35},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label.includes('÷10')?'Total weeks: '+(ctx.parsed.y*10).toFixed(1):ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)}}},scales:{x:{ticks:{font:{size:11},color:GREY},grid:{color:'rgba(0,0,0,.05)'}},y:{ticks:{font:{size:11},color:GREY,callback:v=>v.toFixed(0)},grid:{color:'rgba(0,0,0,.05)'}}}}});
+  } else {
+    hChart=new Chart(document.getElementById('hChart'),{type:'bar',data:{labels:all.map(r=>r.label),datasets:[
+      {label:'Handovers',data:all.map(r=>r.h),backgroundColor:NAVY+'88',borderColor:NAVY,borderWidth:1.5,yAxisID:'y'},
+      {label:'Total wks ÷10',type:'line',data:all.map(r=>r.w!=null?+(r.w/10).toFixed(2):null),borderColor:GOLD,backgroundColor:'transparent',borderWidth:2.5,pointRadius:4,tension:.35,yAxisID:'y'},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label.includes('÷10')?'Total weeks: '+(ctx.parsed.y*10).toFixed(1):ctx.dataset.label+': '+ctx.parsed.y}}},scales:{x:{ticks:{font:{size:11},color:GREY},grid:{display:false}},y:{ticks:{font:{size:11},color:GREY,stepSize:1},grid:{color:'rgba(0,0,0,.05)'}}}}});
+  }
+
+  // Archive cards
+  const el=document.getElementById('archive-cards');
+  if(!archived.length){ el.innerHTML='<p style="font-size:12px;color:var(--tx3);padding:8px 0">Completed months will appear here.</p>'; return; }
+  el.innerHTML=[...archived].reverse().map(a=>{
+    const at=a.targets||{};const aa=a.actuals||{};
+    const m=IS_P
+      ?`<div><div class="am-lbl">On contract</div><div class="am-val">${f(aa.oc)}</div><div class="am-tgt ${at.oc&&aa.oc>=at.oc?'tgt-hit':'tgt-miss'}">${at.oc?'tgt '+at.oc:''}</div></div>
+         <div><div class="am-lbl">Net change wks</div><div class="am-val">${f(aa.nc)}</div><div class="am-tgt ${at.nc&&aa.nc>=at.nc?'tgt-hit':'tgt-miss'}">${at.nc?'tgt '+at.nc:''}</div></div>
+         <div><div class="am-lbl">Total weeks</div><div class="am-val">${f(aa.tw,0)}</div><div class="am-tgt ${at.tw&&aa.tw>=at.tw?'tgt-hit':'tgt-miss'}">${at.tw?'tgt '+at.tw:''}</div></div>`
+      :`<div><div class="am-lbl">Handovers</div><div class="am-val">${aa.h??'—'}</div><div class="am-tgt ${at.h&&aa.h>=at.h?'tgt-hit':'tgt-miss'}">${at.h?'tgt '+at.h:''}</div></div>
+         <div><div class="am-lbl">Total weeks</div><div class="am-val">${f(aa.w)}</div><div class="am-tgt ${at.w&&aa.w>=at.w?'tgt-hit':'tgt-miss'}">${at.w?'tgt '+at.w:''}</div></div><div></div>`;
+    const goalsHtml=a.goals?.length?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--grey-md)">${a.goals.map(g=>`<div style="font-size:11px;color:var(--tx2);display:flex;gap:5px;padding:2px 0"><span style="color:var(--gold)">•</span>${g}</div>`).join('')}</div>`:'';
+    const notesHtml=a.notes?`<div style="font-size:11px;color:var(--tx2);background:var(--white);border-radius:6px;padding:8px 10px;border:1px solid var(--grey-md);margin-top:8px">${a.notes}</div>`:'';
+    return `<div class="archive-card"><div class="archive-hdr"><span class="archive-badge">${a.label}</span></div><div class="archive-metrics">${m}</div>${notesHtml}${goalsHtml}</div>`;
+  }).join('');
+}
+
+// ── Performance tab ───────────────────────────────────────────────────────
+function chip(arr){ const v=arr.filter(x=>x!=null); if(v.length<2)return ''; const d=v[v.length-1]-v[v.length-2]; if(d>0.3)return '<span class="chip cup">▲ up</span>'; if(d<-0.3)return '<span class="chip cdn">▼ down</span>'; return '<span class="chip cfl">— stable</span>'; }
+function buildPerformance(){
+  const t=C.team_totals; const li=t.months.length-1;
+  document.getElementById('team-stats').innerHTML=`
+    <div class="tile accent"><div class="tile-lbl">Apr on contract</div><div class="tile-val">${t.oc[li].toFixed(0)}</div><div class="tile-sub">full team</div>${chip(t.oc)}</div>
+    <div class="tile accent"><div class="tile-lbl">Apr net change wks</div><div class="tile-val">${t.nc[li].toFixed(1)}</div><div class="tile-sub">combined</div>${chip(t.nc)}</div>
+    <div class="tile accent"><div class="tile-lbl">Apr total weeks</div><div class="tile-val">${t.tw[li].toFixed(0)}</div><div class="tile-sub">combined</div>${chip(t.tw)}</div>`;
+  document.getElementById('team-leg').innerHTML=`<span><span class="lsq" style="background:${NAVY}"></span>On contract</span><span><span class="lsq" style="background:${GOLD}"></span>Net change wks</span><span><span class="lsq" style="background:${GREY};opacity:.7"></span>Total weeks ÷10</span>`;
+  if(ttChart) ttChart.destroy();
+  ttChart=new Chart(document.getElementById('ttChart'),{type:'line',data:{labels:t.months,datasets:[
+    {label:'OC',data:t.oc,borderColor:NAVY,backgroundColor:'transparent',borderWidth:2.5,pointRadius:4,tension:.35},
+    {label:'NC',data:t.nc,borderColor:GOLD,backgroundColor:'transparent',borderWidth:2.5,borderDash:[6,4],pointRadius:3,tension:.35},
+    {label:'TW÷10',data:t.tw.map(v=>+(v/10).toFixed(1)),borderColor:GREY,backgroundColor:'transparent',borderWidth:2,borderDash:[2,5],pointRadius:3,tension:.35},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label==='TW÷10'?'Total weeks: '+(ctx.parsed.y*10).toFixed(0):ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)}}},scales:{x:{ticks:{font:{size:11},color:GREY},grid:{color:'rgba(0,0,0,.05)'}},y:{ticks:{font:{size:11},color:GREY,callback:v=>v.toFixed(0)},grid:{color:'rgba(0,0,0,.05)'}}}}});
+  const c=C.contrib;
+  document.getElementById('contrib').innerHTML=`
+    <div class="cb-row"><div class="cb-lbl">On contract</div><div class="bar-track"><div class="bar-fill" style="width:${c.oc}%;background:${NAVY}"></div></div><div class="cb-pct">${c.oc}%</div><div class="cb-team">of ${c.team_oc}</div></div>
+    <div class="cb-row"><div class="cb-lbl">Net change wks</div><div class="bar-track"><div class="bar-fill" style="width:${c.nc}%;background:${GOLD}"></div></div><div class="cb-pct">${c.nc}%</div><div class="cb-team">of ${c.team_nc}</div></div>
+    <div class="cb-row" style="margin-bottom:0"><div class="cb-lbl">Total weeks</div><div class="bar-track"><div class="bar-fill" style="width:${Math.min(c.tw,100)}%;background:${GREY}"></div></div><div class="cb-pct">${c.tw}%</div><div class="cb-team">of ${c.team_tw}</div></div>`;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════
+//  CONSTANTS — declared at top so always available
+// ══════════════════════════════════════════════════════════════════
+const QUARTERS = {
+  q1:{label:'Q1',months:['Jan','Feb','Mar'],rMonth:'Mar',title:'Q1 · Jan–Mar'},
+  q2:{label:'Q2',months:['Apr','May','Jun'],rMonth:'Jun',title:'Q2 · Apr–Jun'},
+  q3:{label:'Q3',months:['Jul','Aug','Sep'],rMonth:'Sep',title:'Q3 · Jul–Sep'},
+  q4:{label:'Q4',months:['Oct','Nov','Dec'],rMonth:'Dec',title:'Q4 · Oct–Dec'},
+};
+const BADGES = [
+  {id:'first_month', icon:'🌱', name:'First month',   desc:'Close your first month',
+   check:()=>getArchived().length>=1},
+  {id:'streak_3',    icon:'🔥', name:'On a roll',     desc:'3 months with 1:1s logged',
+   check:d=>getArchived().filter(a=>d['oneon_'+a.label]&&(d['oneon_'+a.label].wins||[]).some(w=>w.trim())).length>=3},
+  {id:'first_q',     icon:'⭐', name:'First quarter', desc:'Complete a quarterly reflection',
+   check:d=>Object.keys(d).some(k=>k.startsWith('_qr_')&&d[k].overall&&d[k].overall.trim())},
+  {id:'target_hit',  icon:'🎯', name:'On target',     desc:'Hit all targets in a month',
+   check:()=>getArchived().some(a=>a.targets&&a.actuals&&a.targets.oc&&a.actuals.oc>=a.targets.oc&&a.targets.tw&&a.actuals.tw>=a.targets.tw)},
+  {id:'win_logger',  icon:'🏆', name:'Win logger',    desc:'Log 10 wins across months',
+   check:d=>Object.keys(d).filter(k=>k.startsWith('oneon_')).reduce((n,k)=>n+(d[k].wins||[]).filter(w=>w&&w.trim()).length,0)>=10},
+  {id:'full_year',   icon:'🌟', name:'Full year',     desc:'Complete all 12 months',
+   check:()=>getArchived().length>=12},
+];
+
+// ══════════════════════════════════════════════════════════════════
+//  GAMIFICATION
+// ══════════════════════════════════════════════════════════════════
+function getXP(){
+  const d=load(); let xp=0;
+  xp+=getArchived().length*20;
+  xp+=Object.keys(d).filter(k=>k.startsWith('oneon_')).reduce((n,k)=>{
+    const o=d[k];
+    n+=(o.wins||[]).filter(w=>w&&w.trim()).length*5;
+    n+=(o.challenges||[]).filter(c=>c&&c.trim()).length*3;
+    n+=o.coaching_learned&&o.coaching_learned.trim()?5:0;
+    return n;
+  },0);
+  xp+=Object.keys(d).filter(k=>k.startsWith('_qr_')&&d[k].overall&&d[k].overall.trim()).length*30;
+  return xp;
+}
+function getLevel(xp){
+  if(xp>=500)return{n:5,name:'Expert',next:null,base:500};
+  if(xp>=250)return{n:4,name:'Advanced',next:500,base:250};
+  if(xp>=100)return{n:3,name:'Developing',next:250,base:100};
+  if(xp>=40) return{n:2,name:'Building',next:100,base:40};
+  return{n:1,name:'Getting started',next:40,base:0};
+}
+function getStreak(){
+  const arch=getArchived(); if(!arch.length)return 0;
+  const d=load(); let s=0;
+  for(let i=arch.length-1;i>=0;i--){
+    const o=d['oneon_'+arch[i].label];
+    if(o&&(o.wins||[]).some(w=>w&&w.trim()))s++;
+    else break;
+  }
+  return s;
+}
+function buildStreakBar(){
+  const el=document.getElementById('streak-bar');
+  if(!el)return;
+  const xp=getXP();
+  if(xp===0){el.innerHTML='';return;}
+  // Detect newly earned badges
+  const d=load();
+  const prevN=d._earnedN||0;
+  const nowN=BADGES.filter(b=>b.check(d)).length;
+  if(nowN>prevN){ d._earnedN=nowN; store(d); setTimeout(()=>window.confetti&&window.confetti.fire('pop'),300); }
+  const lv=getLevel(xp);
+  const streak=getStreak();
+  const range=lv.next?lv.next-lv.base:1;
+  const pct=lv.next?Math.round((xp-lv.base)/range*100):100;
+  const earned=BADGES.filter(b=>b.check(d)).length;
+  el.innerHTML=`
+    <div class="streak-item">&#9889; XP <span class="streak-val">${xp}</span>
+      <span class="level-chip">Lv${lv.n} ${lv.name}</span>
+    </div>
+    <div class="xp-bar-wrap">
+      <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+    </div>
+    ${streak>1?`<div class="streak-item">&#128293; Streak <span class="streak-val">${streak}</span></div>`:''}
+    ${earned>0?`<div class="streak-item">&#127942; <span class="streak-val">${earned}/${BADGES.length}</span> badges</div>`:''}
+    <button onclick="showBadges()" style="font-size:10px;color:rgba(255,255,255,.45);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;margin-left:auto">Badges</button>
+  `;
+}
+function showBadges(){
+  const d=load();
+  const rows=BADGES.map(b=>{
+    const e=b.check(d);
+    return `<div class="badge ${e?'earned':'locked'}">
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-desc">${b.desc}</div>
+      ${e?'<div style="font-size:9px;color:var(--ok);font-weight:700;margin-top:3px">EARNED</div>':''}
+    </div>`;
+  }).join('');
+  const ov=document.createElement('div');
+  ov.className='badge-panel-overlay';
+  ov.innerHTML=`<div style="background:var(--white);border-radius:14px;padding:20px;max-width:380px;width:92%;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:var(--navy)">&#127942; Badges</div>
+      <button onclick="this.closest('.badge-panel-overlay').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--tx3)">&times;</button>
+    </div>
+    <div class="badge-grid">${rows}</div>
+    <p style="font-size:11px;color:var(--tx3);margin-top:12px;text-align:center">Log 1:1s and complete quarters to earn badges.</p>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  PROFILE MONTH NAVIGATOR
+// ══════════════════════════════════════════════════════════════════
+const ALL_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let pickerOpen=false;
+
+function getNavList(){
+  const arch=getArchived(); const cm=getCM();
+  const year=cm?cm.year:2026;
+  const list=[];
+  C.hist.labels.forEach(m=>{if(!list.includes(m+' '+year))list.push(m+' '+year);});
+  arch.forEach(a=>{if(!list.includes(a.label))list.push(a.label);});
+  if(cm){const lbl=cm.month+' '+cm.year;if(!list.includes(lbl))list.push(lbl);}
+  return list;
+}
+function getQuarterForMonth(m){
+  for(const[k,v]of Object.entries(QUARTERS)){if(v.months.includes(m))return k;}
+  return null;
+}
+function updateNavBtns(){
+  const list=getNavList(); const cm=getCM();
+  const cur=cm?cm.month+' '+cm.year:null;
+  const idx=list.indexOf(cur);
+  const prev=document.getElementById('profile-prev');
+  const next=document.getElementById('profile-next');
+  if(prev)prev.disabled=idx<=0;
+  if(next)next.disabled=idx>=list.length-1;
+}
+function profileNav(dir){
+  const list=getNavList(); const cm=getCM();
+  const cur=cm?cm.month+' '+cm.year:null;
+  const idx=list.indexOf(cur);
+  const ni=idx+dir;
+  if(ni<0||ni>=list.length)return;
+  const lbl=list[ni];
+  if(cm&&lbl===cur)return;
+  goToMonth(lbl);
+}
+function togglePicker(){
+  const p=document.getElementById('month-picker');
+  if(!p)return;
+  if(p.style.display==='none'||!p.style.display){
+    buildPicker(); p.style.display='block'; pickerOpen=true;
+    setTimeout(()=>document.addEventListener('click',closePicker,{once:true}),50);
+  } else {p.style.display='none'; pickerOpen=false;}
+}
+function closePicker(e){
+  const p=document.getElementById('month-picker');
+  if(p&&!p.contains(e.target)){p.style.display='none'; pickerOpen=false;}
+}
+function buildPicker(){
+  const el=document.getElementById('month-picker-list');
+  if(!el)return;
+  const d=load(); const arch=getArchived(); const cm=getCM();
+  const year=cm?cm.year:2026;
+  const Q_R=['Mar','Jun','Sep','Dec'];
+  let html=''; let lastQ=null;
+  ALL_MONTHS.forEach(m=>{
+    const lbl=m+' '+year;
+    const qk=getQuarterForMonth(m);
+    if(qk!==lastQ){
+      lastQ=qk;
+      html+=`<div class="picker-divider">${QUARTERS[qk]?.title||qk}</div>`;
+    }
+    const isLive=cm&&cm.month===m&&cm.year===year;
+    const isDone=arch.some(a=>a.label===lbl);
+    const hasOO=!!d['oneon_'+lbl];
+    const isQR=Q_R.includes(m);
+    const badge=isQR?'★':hasOO?'✓':isDone?'·':'';
+    const bc=isQR?'var(--gold)':hasOO?'var(--ok)':'var(--grey-md)';
+    html+=`<div class="picker-item${isLive?' active-month':''}${isQR?' q-month':''}" onclick="pickerGo('${lbl}')">
+      <span>${m} ${year}${isLive?' <span style="font-size:9px;color:var(--warn);font-weight:600">live</span>':''}</span>
+      <span style="color:${bc}">${badge}</span>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+function pickerGo(lbl){
+  document.getElementById('month-picker').style.display='none';
+  pickerOpen=false;
+  const cm=getCM();
+  if(cm&&lbl===cm.month+' '+cm.year){
+    switchTab('tracker',document.querySelector('.tab-btn[onclick*="tracker"]'));
+  } else {
+    goToMonth(lbl);
+  }
+}
+function goToMonth(lbl){
+  currentOneonMonth=lbl;
+  switchTab('oneon',document.querySelector('.tab-btn[onclick*="oneon"]'));
+  buildOneonTab(lbl);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  YEAR RHYTHM VIEW
+// ══════════════════════════════════════════════════════════════════
+function buildYearView(year){
+  const el=document.getElementById('q-year-view');
+  if(!el)return;
+  const d=load(); const arch=getArchived(); const cm=getCM();
+  const Q_R=['Mar','Jun','Sep','Dec'];
+  const cells=ALL_MONTHS.map(m=>{
+    const lbl=m+' '+year;
+    const isDone=arch.some(a=>a.label===lbl);
+    const isLive=cm&&cm.month===m&&cm.year===year;
+    const isFuture=!isDone&&!isLive;
+    const isQR=Q_R.includes(m);
+    const hasOO=!!d['oneon_'+lbl];
+    const canClick=isDone||isLive;
+    const qk=getQuarterForMonth(m);
+    let cls='yr-month';
+    if(isQR)cls+=' qr-month';
+    if(isDone)cls+=' done';
+    else if(isLive)cls+=' live';
+    else if(isFuture)cls+=' future';
+    if(canClick)cls+=' clickable';
+    const icon=isQR?'📋':'📅';
+    const check=isDone?'<div class="yr-check" style="color:var(--ok)">✓</div>':
+                 isLive?'<div class="yr-check" style="color:var(--warn)">●</div>':'';
+    const onclick=canClick?`onclick="goToMonth('${lbl}')"` :'';
+    return `<div class="${cls}" ${onclick} title="${lbl}${isQR?' — Quarterly reflection':''}">
+      ${check}<div class="yr-icon">${icon}</div>
+      <div class="yr-name">${m}</div>
+      <div class="yr-type">${isQR?'★ Reflection':'1:1'}</div>
+    </div>`;
+  }).join('');
+  const done=arch.filter(a=>a.label.endsWith(String(year))).length+(cm&&cm.year===year?1:0);
+  const pct=Math.round(done/12*100);
+  el.innerHTML=`<div class="sec" style="margin-bottom:12px">
+    <div class="sec-ttl">${year} — monthly 1:1s &amp; quarterly reflections</div>
+    <p class="sec-note" style="margin-bottom:10px">Monthly 1:1s: Jan, Feb, Apr, May, Jul, Aug, Oct, Nov. Quarterly reflections (replace the 1:1): Mar, Jun, Sep, Dec.</p>
+    <div class="yr-grid">${cells}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+      <div style="flex:1;height:4px;background:var(--grey-md);border-radius:2px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:var(--ok);border-radius:2px;transition:width .5s"></div>
+      </div>
+      <div style="font-size:11px;color:var(--tx3);white-space:nowrap">${done} of 12 months complete</div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  1:1 TAB
+// ══════════════════════════════════════════════════════════════════
+const OO_PRE='oneon_';
+let currentOneonMonth=null;
+
+function getOO(lbl){
+  const d=load();
+  return d[OO_PRE+lbl]||{goals:[],wins:[],challenges:[],
+    challenge_cause:'',challenge_support:'',challenge_skills:'',
+    coaching_learned:'',feedback_for_tl:'',
+    tl_strengths:'',tl_development:'',tl_support:'',tl_comments:'',
+    metrics:Array(4).fill(null).map(()=>({metric:'',target:'',actual:'',trend:'steady',notes:''})),
+    form_link:'',date:''};
+}
+function saveOO(lbl,data){const d=load();d[OO_PRE+lbl]=data;store(d);}
+
+function getOneonList(){
+  const arch=getArchived(); const cm=getCM(); const list=[];
+  arch.forEach(a=>list.push({label:a.label,live:false}));
+  if(cm)list.push({label:cm.month+' '+cm.year,live:true});
+  return list;
+}
+
+function buildOneonTab(forceMonth){
+  const list=getOneonList(); const cm=getCM();
+  if(forceMonth!==undefined)currentOneonMonth=forceMonth;
+  else if(!currentOneonMonth)currentOneonMonth=cm?cm.month+' '+cm.year:(list.length?list[list.length-1].label:null);
+  const lbl=currentOneonMonth||(cm?cm.month+' '+cm.year:'May 2026');
+  const isLive=cm&&lbl===cm.month+' '+cm.year;
+  const idx=list.findIndex(m=>m.label===lbl);
+  const oo=getOO(lbl);
+  const el=document.getElementById('panel-oneon');
+  if(!el)return;
+
+  function eRow(val,cls,n,editable){
+    return `<div class="entry-row">
+      <div class="entry-num">${n}</div>
+      <textarea class="entry-ta ${cls}" rows="1" ${editable?'oninput="autoR(this);oooSave()"':'readonly'}>${val||''}</textarea>
+      ${editable?'<button class="entry-del" onclick="removeEntry(this)">&times;</button>':''}
+    </div>`;
+  }
+  function mRow(m,i,editable){
+    const tc=m.trend==='up'?'t-up':m.trend==='down'?'t-dn':'t-st';
+    const tl=m.trend==='up'?'▲ Up':m.trend==='down'?'▼ Down':'— Steady';
+    if(!editable)return `<tr>
+      <td><span class="metric-inp">${m.metric||'—'}</span></td>
+      <td><span class="metric-inp">${m.target||'—'}</span></td>
+      <td><span class="metric-inp">${m.actual||'—'}</span></td>
+      <td><span class="metric-inp ${tc}">${tl}</span></td>
+      <td><span class="metric-inp">${m.notes||''}</span></td>
+    </tr>`;
+    return `<tr class="metric-row">
+      <td><input class="metric-inp m-metric" value="${m.metric||''}" placeholder="e.g. On contract" oninput="oooSave()"></td>
+      <td><input class="metric-inp m-target" value="${m.target||''}" placeholder="—" oninput="oooSave()"></td>
+      <td><input class="metric-inp m-actual" value="${m.actual||''}" placeholder="—" oninput="oooSave()"></td>
+      <td><select class="trend-sel m-trend ${tc}" onchange="this.className='trend-sel m-trend '+(this.value==='up'?'t-up':this.value==='down'?'t-dn':'t-st');oooSave()">
+        <option value="up" ${m.trend==='up'?'selected':''}>▲ Up</option>
+        <option value="steady" ${m.trend==='steady'?'selected':''}>— Steady</option>
+        <option value="down" ${m.trend==='down'?'selected':''}>▼ Down</option>
+      </select></td>
+      <td><input class="metric-inp m-notes" value="${m.notes||''}" placeholder="Notes..." oninput="oooSave()"></td>
+    </tr>`;
+  }
+
+  const metrics=(oo.metrics&&oo.metrics.length?oo.metrics:Array(4).fill(null).map(()=>({metric:'',target:'',actual:'',trend:'steady',notes:''})));
+
+  el.innerHTML=`
+    <div class="oneon-nav">
+      <button class="oneon-nav-btn" onclick="navOneon(-1)" ${idx>0?'':'disabled'}>&#8592;</button>
+      <div class="oneon-nav-center">
+        <div class="oneon-nav-label">${lbl}
+          <span class="oneon-pill ${isLive?'live':'past'}">${isLive?'Current':'Past'}</span>
+        </div>
+        <div class="oneon-nav-sub">${idx+1} of ${list.length} month${list.length!==1?'s':''} — use arrows to browse</div>
+      </div>
+      <button class="oneon-nav-btn" onclick="navOneon(1)" ${idx<list.length-1?'':'disabled'}>&#8594;</button>
+    </div>
+    ${!isLive?`<div class="readonly-banner">🔒 Viewing ${lbl} — this is a past month. Changes will not be saved.</div>`:''}
+
+    <div class="sec">
+      <div class="sec-ttl">Monthly 1:1 — <span style="color:var(--accent);text-transform:none;letter-spacing:0;font-size:12px;font-weight:600">${lbl}</span></div>
+      <p class="sec-note">Fill this in as the month progresses. It archives automatically when you close the month and feeds into your quarterly builder.</p>
+      <label class="field-label">1:1 date</label>
+      <input type="date" id="oo-date" value="${oo.date||''}" class="link-inp" style="max-width:200px" ${isLive?'oninput="oooSave()"':'readonly'}>
+    </div>
+
+    <div class="sec">
+      <div class="sec-ttl">1. Individual goals</div>
+      <p class="field-hint">What are you working toward this month?</p>
+      <div class="entry-list" id="oo-goals">${(oo.goals.length?oo.goals:['']).map((g,i)=>eRow(g,'oo-goal',i+1,isLive)).join('')}</div>
+      ${isLive?'<button class="entry-add" onclick="addEntry(\'oo-goals\',\'oo-goal\')">+ Add goal</button>':''}
+    </div>
+
+    <div class="sec">
+      <div class="sec-ttl">2. Wins this month</div>
+      <p class="field-hint">Log them as they happen — they build your quarterly review automatically.</p>
+      <div class="entry-list" id="oo-wins">${(oo.wins.length?oo.wins:['']).map((w,i)=>eRow(w,'oo-win',i+1,isLive)).join('')}</div>
+      ${isLive?'<button class="entry-add" onclick="addEntry(\'oo-wins\',\'oo-win\')">+ Add win</button>':''}
+    </div>
+
+    <div class="sec">
+      <div class="sec-ttl">3. Challenges &amp; blockers</div>
+      <div class="entry-list" id="oo-challenges">${(oo.challenges.length?oo.challenges:['']).map((c,i)=>eRow(c,'oo-challenge',i+1,isLive)).join('')}</div>
+      ${isLive?'<button class="entry-add" onclick="addEntry(\'oo-challenges\',\'oo-challenge\')">+ Add challenge</button>':''}
+      <div style="height:1px;background:var(--grey-md);margin:14px 0"></div>
+      <label class="field-label">What caused these outcomes, and what did you learn?</label>
+      <textarea class="ta sm" id="oo-cause" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.challenge_cause||''}</textarea>
+      <label class="field-label" style="margin-top:10px">What can the team leader do to support you?</label>
+      <textarea class="ta sm" id="oo-support" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.challenge_support||''}</textarea>
+      <label class="field-label" style="margin-top:10px">Skills and knowledge you want to develop?</label>
+      <textarea class="ta sm" id="oo-skills" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.challenge_skills||''}</textarea>
+    </div>
+
+    <div class="sec">
+      <div class="sec-ttl">4. Coaching, development &amp; wellbeing</div>
+      <label class="field-label">What have you learned or improved since the last 1:1?</label>
+      <textarea class="ta" id="oo-learned" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.coaching_learned||''}</textarea>
+    </div>
+
+    <div class="sec">
+      <div class="sec-ttl">5. Your feedback</div>
+      <label class="field-label">Feedback for team leader</label>
+      <textarea class="ta" id="oo-tl-feedback" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.feedback_for_tl||''}</textarea>
+    </div>
+
+    <div class="sec">
+      <div class="sec-ttl">6. Team leader observations</div>
+      <p class="sec-note">Completed by the team leader during or after the 1:1.</p>
+      <div class="tl-box">
+        <div class="tl-box-label">Team leader feedback</div>
+        <label class="field-label">Key strengths observed</label>
+        <textarea class="ta sm" id="oo-tl-strengths" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.tl_strengths||''}</textarea>
+        <label class="field-label" style="margin-top:10px">Areas for development</label>
+        <textarea class="ta sm" id="oo-tl-dev" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.tl_development||''}</textarea>
+        <label class="field-label" style="margin-top:10px">Support or resources to be provided</label>
+        <textarea class="ta sm" id="oo-tl-support" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.tl_support||''}</textarea>
+        <label class="field-label" style="margin-top:10px">Additional comments</label>
+        <textarea class="ta sm" id="oo-tl-comments" ${isLive?'oninput="oooSave()"':'readonly'}>${oo.tl_comments||''}</textarea>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-ttl">Metrics</div>
+      <div style="overflow-x:auto">
+        <table class="metrics-table">
+          <thead><tr>
+            <th style="min-width:140px">Metric</th><th style="min-width:80px">Target</th>
+            <th style="min-width:80px">Actual</th><th style="min-width:100px">Trend</th>
+            <th style="min-width:160px">Notes</th>
+          </tr></thead>
+          <tbody>${metrics.map((m,i)=>mRow(m,i,isLive)).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-ttl">Employee file link</div>
+      <p class="sec-note">Paste your secure form link — saves with this 1:1 and appears in the quarterly builder.</p>
+      <div class="link-row">
+        <input class="link-inp" type="url" id="oo-link" value="${oo.form_link||''}" placeholder="https://..." ${isLive?'oninput="oooSave()"':'readonly'}>
+        <button class="link-btn" onclick="const v=document.getElementById('oo-link').value;if(v.startsWith('http'))window.open(v,'_blank');else alert('Paste a valid URL first.')">Open →</button>
+      </div>
+    </div>
+
+    ${isLive?`<div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+      <button class="btn btn-p" onclick="oooSaveNow()">Save 1:1</button>
+      <span class="save-ok" id="save-ok-oo">Saved!</span>
+    </div>`:''}
+
+    <div class="export-bar">
+      <span class="exp-lbl">Export ${lbl}:</span>
+      <button class="btn-exp btn-exp-pdf" onclick="exportOOPrint('${lbl}')">🖨 Print / PDF</button>
+      <button class="btn-exp btn-exp-email" onclick="exportOOEmail('${lbl}')">✉ Email to TL</button>
+      <button class="btn-exp btn-exp-copy" onclick="exportOOCopy('${lbl}')">📋 Copy</button>
+    </div>
+  `;
+  el.querySelectorAll('.ta,.entry-ta').forEach(ta=>{autoR(ta);ta.addEventListener('input',()=>autoR(ta));});
+}
+
+function navOneon(dir){
+  const list=getOneonList();
+  const idx=list.findIndex(m=>m.label===currentOneonMonth);
+  const ni=idx+dir;
+  if(ni>=0&&ni<list.length){currentOneonMonth=list[ni].label;buildOneonTab(currentOneonMonth);}
+}
+
+let oooTimer=null;
+function oooSave(){clearTimeout(oooTimer);oooTimer=setTimeout(oooSaveNow,800);}
+function readOO(lbl){
+  const oo={};
+  oo.goals=Array.from(document.querySelectorAll('.oo-goal')).map(t=>t.value.trim());
+  oo.wins=Array.from(document.querySelectorAll('.oo-win')).map(t=>t.value.trim());
+  oo.challenges=Array.from(document.querySelectorAll('.oo-challenge')).map(t=>t.value.trim());
+  const g=id=>((document.getElementById(id)||{}).value||'');
+  oo.challenge_cause=g('oo-cause');oo.challenge_support=g('oo-support');oo.challenge_skills=g('oo-skills');
+  oo.coaching_learned=g('oo-learned');oo.feedback_for_tl=g('oo-tl-feedback');
+  oo.tl_strengths=g('oo-tl-strengths');oo.tl_development=g('oo-tl-dev');
+  oo.tl_support=g('oo-tl-support');oo.tl_comments=g('oo-tl-comments');
+  oo.form_link=g('oo-link');oo.date=g('oo-date');
+  oo.metrics=[];
+  document.querySelectorAll('.metric-row').forEach(row=>{
+    oo.metrics.push({
+      metric:row.querySelector('.m-metric').value,target:row.querySelector('.m-target').value,
+      actual:row.querySelector('.m-actual').value,trend:row.querySelector('.m-trend').value,
+      notes:row.querySelector('.m-notes').value,
+    });
+  });
+  return oo;
+}
+function oooSaveNow(){
+  const cm=getCM(); if(!cm)return;
+  const lbl=cm.month+' '+cm.year;
+  if(currentOneonMonth!==lbl)return;
+  saveOO(lbl,readOO(lbl));
+  buildStreakBar();
+  const ok=document.getElementById('save-ok-oo');
+  if(ok){ok.style.display='inline';setTimeout(()=>ok.style.display='none',1800);}
+}
+function addEntry(listId,cls){
+  const el=document.getElementById(listId); if(!el)return;
+  const n=el.querySelectorAll('.entry-row').length+1;
+  const d=document.createElement('div');
+  d.innerHTML=`<div class="entry-row">
+    <div class="entry-num">${n}</div>
+    <textarea class="entry-ta ${cls}" rows="1" oninput="autoR(this);oooSave()"></textarea>
+    <button class="entry-del" onclick="removeEntry(this)">&times;</button>
+  </div>`;
+  el.appendChild(d.firstElementChild);
+  const ta=el.lastElementChild.querySelector('.entry-ta');
+  autoR(ta);ta.addEventListener('input',()=>autoR(ta));ta.focus();
+}
+function removeEntry(btn){btn.closest('.entry-row').remove();oooSave();}
+
+// ══════════════════════════════════════════════════════════════════
+//  1:1 EXPORT
+// ══════════════════════════════════════════════════════════════════
+function buildOOText(lbl){
+  const oo=getOO(lbl);
+  const arch=getArchived(); const cm=getCM();
+  const md=arch.find(a=>a.label===lbl)||(cm&&cm.month+' '+cm.year===lbl?{actuals:{},targets:cm.targets}:null);
+  const lines=[];
+  lines.push('MONTHLY 1:1 DOCUMENT');
+  lines.push('Name: Andrew Cheli   |   Month: '+lbl+(oo.date?'   |   Date: '+oo.date:''));
+  lines.push('');
+  const section=(t,items)=>{
+    lines.push('─── '+t+' ───');
+    if(Array.isArray(items)){items.filter(v=>v&&v.trim()).forEach((v,i)=>lines.push('  '+(i+1)+'. '+v));}
+    else if(items&&items.trim())lines.push('  '+items);
+    else lines.push('  (not recorded)');
+    lines.push('');
+  };
+  section('1. INDIVIDUAL GOALS',oo.goals);
+  section('2. WINS THIS MONTH',oo.wins);
+  section('3. CHALLENGES & BLOCKERS',oo.challenges);
+  if(oo.challenge_cause&&oo.challenge_cause.trim())lines.push('  What I learned: '+oo.challenge_cause,'');
+  if(oo.challenge_support&&oo.challenge_support.trim())lines.push('  Support needed: '+oo.challenge_support,'');
+  section('4. COACHING & DEVELOPMENT',oo.coaching_learned);
+  section('5. FEEDBACK FOR TEAM LEADER',oo.feedback_for_tl);
+  lines.push('─── 6. TEAM LEADER OBSERVATIONS ───');
+  lines.push('  Strengths: '+(oo.tl_strengths||'—'));
+  lines.push('  Development: '+(oo.tl_development||'—'));
+  lines.push('  Support: '+(oo.tl_support||'—'));
+  lines.push('  Comments: '+(oo.tl_comments||'—'));
+  lines.push('');
+  if(md&&md.actuals&&md.actuals.oc!=null){
+    const a=md.actuals,t=md.targets||{};
+    lines.push('─── PERFORMANCE ───');
+    lines.push('  On contract: '+Number(a.oc).toFixed(1)+(t.oc?' / target '+t.oc:''));
+    lines.push('  Net change wks: '+Number(a.nc).toFixed(1)+(t.nc?' / target '+t.nc:''));
+    lines.push('  Total weeks: '+Number(a.tw).toFixed(0)+(t.tw?' / target '+t.tw:''));
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+function exportOOPrint(lbl){
+  const oo=getOO(lbl);
+  const arch=getArchived(); const cm=getCM();
+  const md=arch.find(a=>a.label===lbl)||(cm&&cm.month+' '+cm.year===lbl?{actuals:{},targets:cm.targets}:null);
+  function sec(num,title,body){
+    return `<div style="background:#f9f9f7;border-radius:8px;border:1px solid #e0e0d8;padding:14px 17px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:#192269;margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid #F8B213">${num}. ${title}</div>
+      ${body}</div>`;
+  }
+  function field(lbl,val){
+    return val&&val.trim()?`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#192269;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">${lbl}</div><div style="font-size:13px;color:#222;white-space:pre-wrap">${val}</div></div>`:'';
+  }
+  function list(arr){
+    const f=arr.filter(v=>v&&v.trim());
+    return f.length?'<ul style="padding-left:16px;margin:0;font-size:13px">'+f.map(v=>`<li style="margin-bottom:4px">${v}</li>`).join('')+'</ul>':'<span style="color:#999;font-style:italic;font-size:12px">Not recorded</span>';
+  }
+  let perfHTML='';
+  if(md&&md.actuals&&md.actuals.oc!=null){
+    const a=md.actuals,t=md.targets||{};
+    const hitOC=t.oc&&a.oc>=t.oc,hitTW=t.tw&&a.tw>=t.tw;
+    perfHTML=`<div style="background:#eceef7;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
+      <div><div style="font-size:10px;color:#888;font-weight:600;text-transform:uppercase">On contract</div><div style="font-size:20px;font-weight:700;color:${hitOC?'#196B24':'#192269'}">${Number(a.oc).toFixed(1)}</div><div style="font-size:10px;color:#888">${t.oc?'target '+t.oc:''}</div></div>
+      <div><div style="font-size:10px;color:#888;font-weight:600;text-transform:uppercase">Net change wks</div><div style="font-size:20px;font-weight:700;color:#192269">${Number(a.nc).toFixed(1)}</div><div style="font-size:10px;color:#888">${t.nc?'target '+t.nc:''}</div></div>
+      <div><div style="font-size:10px;color:#888;font-weight:600;text-transform:uppercase">Total weeks</div><div style="font-size:20px;font-weight:700;color:${hitTW?'#196B24':'#192269'}">${Number(a.tw).toFixed(0)}</div><div style="font-size:10px;color:#888">${t.tw?'target '+t.tw:''}</div></div>
+    </div>`;
+  }
+  const w=window.open('','_blank');
+  if(!w){alert('Please allow popups.');return;}
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>1:1 — Andrew Cheli — ${lbl}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',sans-serif;background:#fff;font-size:13px}
+  @media print{.no-print{display:none!important}@page{margin:18mm}}</style></head><body>
+  <div style="background:#192269;padding:16px 24px;display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:9px;font-weight:700;color:#F8B213;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Affinity Nursing</div>
+    <div style="font-size:17px;font-weight:700;color:#fff">Monthly 1:1 Document</div></div>
+    <div style="text-align:right"><div style="font-size:12px;color:rgba(255,255,255,.6)">Andrew Cheli</div>
+    <div style="font-size:13px;font-weight:600;color:#F8B213">${lbl}</div></div>
+  </div>
+  <div class="no-print" style="background:#fef7e0;border:1px solid rgba(248,178,19,.4);padding:9px 16px;font-size:12px;color:#854f0b;display:flex;justify-content:space-between;align-items:center">
+    <span>Ready to print or save as PDF</span>
+    <button onclick="window.print()" style="background:#192269;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">Print / Save PDF</button>
+  </div>
+  <div style="padding:20px 24px">${perfHTML}
+    ${sec(1,'Individual Goals',list(oo.goals))}
+    ${sec(2,'Wins This Month',list(oo.wins))}
+    ${sec(3,'Challenges & Blockers',list(oo.challenges)+field('What I learned',oo.challenge_cause)+field('Support needed',oo.challenge_support)+field('Skills to develop',oo.challenge_skills))}
+    ${sec(4,'Coaching & Development',field('What I learned or improved',oo.coaching_learned))}
+    ${sec(5,'Feedback for Team Leader',field('Feedback',oo.feedback_for_tl))}
+    ${sec(6,'Team Leader Observations','<div style="background:rgba(25,34,105,.04);border-radius:6px;padding:12px">'+field('Key strengths',oo.tl_strengths)+field('Areas for development',oo.tl_development)+field('Support / resources',oo.tl_support)+field('Additional comments',oo.tl_comments)+'</div>')}
+    <div style="margin-top:16px;padding-top:10px;border-top:1px solid #e8e8e0;font-size:10px;color:#aaa;display:flex;justify-content:space-between">
+      <span>Affinity Nursing · Monthly 1:1 · Andrew Cheli</span>
+      <span>Generated ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}</span>
+    </div>
+  </div></body></html>`);
+  w.document.close();
+}
+function exportOOEmail(lbl){
+  const text=buildOOText(lbl);
+  const short=text.length>1800?text.substring(0,1800)+'\n\n[Use Print/PDF for full document]':text;
+  window.location.href='mailto:?subject='+encodeURIComponent('1:1 Document — Andrew Cheli — '+lbl)+'&body='+encodeURIComponent(short);
+}
+function exportOOCopy(lbl){
+  const text=buildOOText(lbl);
+  if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>{
+    document.querySelectorAll('.btn-exp-copy').forEach(b=>{
+      const orig=b.innerHTML;b.innerHTML='✓ Copied!';b.style.color='var(--ok)';
+      setTimeout(()=>{b.innerHTML=orig;b.style.color='';},2000);
+    });
+  }).catch(()=>fallbackCopy(text));
+  else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();document.execCommand('copy');
+  document.body.removeChild(ta);alert('Copied!');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  QUARTERLY BUILDER
+// ══════════════════════════════════════════════════════════════════
+let currentQDoc='q2';
+
+function getQData(qk,year){
+  const q=QUARTERS[qk]; const arch=getArchived(); const cm=getCM(); const d=load();
+  return q.months.map(m=>{
+    const lbl=m+' '+year;
+    const a=arch.find(a=>a.label===lbl);
+    const isLive=cm&&cm.month===m&&cm.year===year;
+    if(a)return{label:lbl,month:m,year,actuals:a.actuals,targets:a.targets,oo:d[OO_PRE+lbl]||null,type:'archived'};
+    if(isLive){
+      const ocV=[1,2,3,4,5].map(w=>d['oc'+w]).filter(v=>v!=null);
+      const ncV=[1,2,3,4,5].map(w=>d['nc'+w]).filter(v=>v!=null);
+      const twV=[1,2,3,4,5].map(w=>d['tw'+w]).filter(v=>v!=null);
+      return{label:lbl,month:m,year,
+        actuals:{oc:ocV.length?ocV[ocV.length-1]:null,nc:ncV.length?ncV.reduce((a,b)=>a+b)/ncV.length:null,tw:twV.length?twV[twV.length-1]:null},
+        targets:cm.targets,oo:d[OO_PRE+lbl]||null,type:'live'};
+    }
+    return{label:lbl,month:m,year,actuals:null,targets:null,oo:null,type:'future'};
+  });
+}
+
+function buildQuarterlyTab(){
+  const cm=getCM(); const year=cm?cm.year:2026;
+  if(cm){const qk=getQuarterForMonth(cm.month);if(qk)currentQDoc=qk;}
+  buildYearView(year);
+  updateQTabs(year);
+  buildQDocTab(currentQDoc,year);
+}
+
+function updateQTabs(year){
+  Object.keys(QUARTERS).forEach(qk=>{
+    const btn=document.getElementById('qdoc-btn-'+qk);
+    if(!btn)return;
+    const q=QUARTERS[qk];
+    const data=getQData(qk,year);
+    const hasData=data.some(m=>m.type!=='future');
+    btn.className='qdoc-tab'+(qk===currentQDoc?' active':'')+(hasData?' has-data':'');
+    const done=data.filter(m=>m.type==='archived').length;
+    const live=data.some(m=>m.type==='live');
+    btn.textContent='';
+    btn.innerHTML=q.title+(done>0||live?` <span style="font-size:9px;opacity:.7">${done+(live?1:0)}/3</span>`:'');
+    btn.onclick=()=>switchQDoc(qk,btn,year);
+  });
+}
+
+function switchQDoc(qk,btn,year){
+  currentQDoc=qk;
+  const yr=year||(getCM()?getCM().year:2026);
+  document.querySelectorAll('.qdoc-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.qdoc-tab').forEach(b=>b.classList.remove('active'));
+  const panel=document.getElementById('qdoc-'+qk);
+  if(panel)panel.classList.add('active');
+  if(btn)btn.classList.add('active');
+  buildQDocTab(qk,yr);
+}
+
+function buildQDocTab(qk,year){
+  const el=document.getElementById('qdoc-'+qk);
+  if(!el)return;
+  const q=QUARTERS[qk]; const data=getQData(qk,year);
+  const d=load();
+  const reflKey='_qr_'+qk+'_'+year;
+  const ref=d[reflKey]||{};
+  const isCurrentQ=data.some(m=>m.type==='live');
+  const completedMonths=data.filter(m=>m.type!=='future').length;
+
+  // Gather content from 1:1s
+  const wins=[],challenges=[],learnings=[],skills=[],goals=[];
+  data.forEach(m=>{
+    if(!m.oo)return;
+    const badge=`<span class="q-entry-badge">${m.label}${m.type==='live'?' ●':''}</span>`;
+    const live=m.type==='live';
+    (m.oo.wins||[]).filter(w=>w.trim()).forEach(w=>wins.push({text:w,badge,live}));
+    (m.oo.challenges||[]).filter(c=>c.trim()).forEach(c=>challenges.push({text:c,badge,live}));
+    if(m.oo.coaching_learned&&m.oo.coaching_learned.trim())learnings.push({text:m.oo.coaching_learned,badge,live});
+    if(m.oo.challenge_cause&&m.oo.challenge_cause.trim())learnings.push({text:'Root cause: '+m.oo.challenge_cause,badge,live});
+    if(m.oo.challenge_skills&&m.oo.challenge_skills.trim())skills.push({text:m.oo.challenge_skills,badge,live});
+    (m.oo.goals||[]).filter(g=>g.trim()).forEach(g=>goals.push({text:g,badge,live}));
+  });
+
+  function entries(arr){
+    if(!arr.length)return `<div class="q-empty">Nothing logged yet — fill in your monthly 1:1s and they build here automatically.</div>`;
+    return arr.map(i=>`<div class="q-entry${i.live?' live':''}">${i.badge}<div class="q-entry-text">${i.text}</div></div>`).join('');
+  }
+  function qsec(num,title,sub,body){
+    return `<div class="q-sec"><div class="q-sec-hdr">
+      <div class="q-sec-num">${num}</div>
+      <div><div class="q-sec-title">${title}</div><div class="q-sec-sub">${sub}</div></div>
+    </div>${body}</div>`;
+  }
+
+  // Performance tiles
+  const perfTiles=data.filter(m=>m.actuals&&m.actuals.oc!=null).map(m=>{
+    const a=m.actuals,t=m.targets||{};
+    const hitOC=t.oc&&a.oc>=t.oc,hitTW=t.tw&&a.tw!=null&&a.tw>=t.tw;
+    const feel=hitOC&&hitTW?'🌟 Both hit':hitOC||hitTW?'💪 Partial':'🔄 Building';
+    return `<div class="q-perf-tile${m.type==='live'?' live':''}">
+      <div class="q-perf-lbl">${m.label}</div>
+      <div class="q-perf-val">${t.oc?feel:'No targets set'}</div>
+      <div class="q-perf-vs${hitOC?' hit':''}">OC ${f(a.oc)} ${t.oc?'/ tgt '+t.oc:''}</div>
+      <div class="q-perf-vs${hitTW?' hit':''}">TW ${f(a.tw,0)} ${t.tw?'/ tgt '+t.tw:''}</div>
+      <div style="margin-top:6px"><button onclick="goToMonth('${m.label}')" style="font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit">View 1:1 →</button></div>
+    </div>`;
+  }).join('');
+
+  // Pre-populate draft from 1:1 data (only if field not already filled)
+  function draftVal(key,draft){return ref[key]!==undefined?ref[key]:(draft||'');}
+  const winDraft=wins.length?'This quarter I worked on:\n'+'• '+wins.map(i=>i.text).join('\n• '):'';
+  const growDraft=learnings.length?learnings.map(i=>i.text).join('\n'):'';
+  const nextDraft=skills.length?'Skills to continue developing:\n• '+skills.map(i=>i.text).join('\n• '):'';
+
+  // Quarter progress score
+  const ooFilled=data.filter(m=>m.oo&&(m.oo.wins||[]).some(w=>w.trim())).length;
+  const tgtFilled=data.filter(m=>m.targets&&m.targets.oc).length;
+  const qScore=Math.round((ooFilled+tgtFilled+(ref.overall?1:0))/7*100);
+  const hasDraft=!ref.overall&&winDraft;
+
+  el.innerHTML=`<div class="q-doc-wrap">
+    <div class="q-hdr">
+      <div class="q-hdr-eyebrow">Quarterly reflection · ${year}</div>
+      <div class="q-hdr-title">${q.title}</div>
+      <div class="q-hdr-sub">${q.rMonth} replaces the standard 1:1 this month — this session runs longer and covers the full quarter. Most of the content below is pre-filled from your monthly 1:1s.</div>
+      <div class="q-month-pills">
+        ${data.map(m=>{
+          const cls=m.type==='archived'?'done':m.type==='live'?'live':'future';
+          const isR=m.month===q.rMonth;
+          return `<span class="q-mpill ${cls}${isR?' reflection':''}">${m.month}${isR?' ★':''}${m.type==='live'?' ●':''}</span>`;
+        }).join('')}
+      </div>
+    </div>
+
+    ${completedMonths===0?`<div style="background:var(--gold-pale);border:1px solid rgba(248,178,19,.3);border-radius:var(--r);padding:11px 14px;margin-bottom:12px;font-size:12px;color:var(--warn)">
+      ✦ Fill in your monthly 1:1s and performance data — this document builds automatically as you go.
+    </div>`:''}
+
+    ${isCurrentQ?`<div style="background:var(--navy-lt);border:1px solid rgba(25,34,105,.15);border-radius:var(--r);padding:9px 12px;margin-bottom:12px;font-size:11px;color:var(--navy)">
+      ★ Current quarter — your ${q.rMonth} session will be the quarterly reflection, not a standard 1:1.
+    </div>`:''}
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="display:flex;gap:6px">
+        ${data.map(m=>{
+          const cls=m.type==='archived'?'complete':m.type==='live'?'partial':'empty';
+          const icon=m.type==='archived'?'✓':m.type==='live'?'●':'○';
+          return `<span class="q-pill ${cls}">${icon} ${m.month}</span>`;
+        }).join('')}
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx3)">
+        Quarter filled <strong style="color:${qScore>=80?'var(--ok)':qScore>=40?'var(--warn)':'var(--tx3)'}">${qScore}%</strong>
+      </div>
+    </div>
+
+    ${qsec(1,'Performance this quarter','How you tracked against targets each month',
+      perfTiles?`<div class="q-perf-grid">${perfTiles}</div>`:`<div class="q-empty">No performance data yet.</div>`
+    )}
+    ${qsec(2,'Wins this quarter','Pulled from your monthly 1:1 wins',entries(wins))}
+    ${qsec(3,'Challenges and what I learned','From your 1:1 challenges and reflections',entries([...challenges,...learnings]))}
+    ${skills.length?qsec(4,'Skills & development','Development areas from your 1:1s',entries(skills)):''}
+
+    <div class="q-sec">
+      <div class="q-sec-hdr">
+        <div class="q-sec-num">★</div>
+        <div><div class="q-sec-title">My reflection</div>
+        <div class="q-sec-sub">Your own words for the quarterly conversation</div></div>
+      </div>
+      ${hasDraft?`<div style="font-size:11px;color:var(--ok);background:var(--ok-bg);border-radius:var(--r);padding:7px 10px;margin-bottom:12px;border:1px solid rgba(25,107,36,.2)">
+        ✓ Draft pre-filled from your 1:1s — edit freely before sharing.
+        <button onclick="clearQDraft('${qk}','${year}')" style="font-size:10px;color:var(--err);background:none;border:none;cursor:pointer;margin-left:8px;font-family:inherit;text-decoration:underline">Clear</button>
+      </div>`:''}
+      ${qRefField(qk,year,'overall','Overall — how was this quarter?','What went well, what was tough, what stood out.',draftVal('overall',winDraft))}
+      ${qRefField(qk,year,'growth','Where did I grow the most?','Skills, knowledge, mindset — what developed in you.',draftVal('growth',growDraft))}
+      ${qRefField(qk,year,'next','What do I want to focus on next quarter?','Goals, development areas, things to do differently.',draftVal('next',nextDraft))}
+      ${qRefField(qk,year,'personal','Personal growth — what shifted for me?','Confidence, perspective, relationships, wellbeing.',draftVal('personal',''))}
+      ${qRefField(qk,year,'fortl','What do I want to raise with my team leader?','Support needed, ideas, things on your mind.',draftVal('fortl',''))}
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn-exp btn-exp-pdf" onclick="exportQPrint('${qk}','${year}')">🖨 Print / PDF</button>
+      <button class="btn-exp btn-exp-email" onclick="exportQEmail('${qk}','${year}')">✉ Email to TL</button>
+      <button class="btn-exp btn-exp-copy" onclick="exportQCopy('${qk}','${year}')">📋 Copy</button>
+    </div>
+  </div>`;
+
+  el.querySelectorAll('.ta').forEach(ta=>{autoR(ta);ta.addEventListener('input',()=>autoR(ta));});
+}
+
+function qRefField(qk,year,id,label,hint,val){
+  return `<div class="q-ref-field" style="margin-bottom:13px">
+    <label class="field-label">${label}</label>
+    <div class="field-hint">${hint}</div>
+    <textarea class="ta" id="qrf-${qk}-${id}" oninput="saveQRef('${qk}','${year}')">${val}</textarea>
+  </div>`;
+}
+function saveQRef(qk,year){
+  const d=load(); const key='_qr_'+qk+'_'+year;
+  const g=id=>(document.getElementById('qrf-'+qk+'-'+id)||{}).value||'';
+  d[key]={overall:g('overall'),growth:g('growth'),next:g('next'),personal:g('personal'),fortl:g('fortl')};
+  store(d); buildStreakBar();
+  // Celebrate completing all fields for the first time
+  const now=ref.overall.trim()&&ref.growth.trim()&&ref.next.trim()&&ref.personal.trim()&&ref.fortl.trim();
+  const was=prev&&prev.overall&&prev.overall.trim()&&prev.growth&&prev.growth.trim();
+  if(now&&!was) setTimeout(()=>window.confetti&&window.confetti.fire('cheer'),300);
+}
+function clearQDraft(qk,year){
+  if(!confirm('Clear the pre-filled draft?'))return;
+  const d=load(); d['_qr_'+qk+'_'+year]={overall:'',growth:'',next:'',personal:'',fortl:''};
+  store(d); buildQDocTab(qk,parseInt(year));
+}
+function exportQPrint(qk,year){
+  const d=load(); const q=QUARTERS[qk];
+  const ref=d['_qr_'+qk+'_'+year]||{};
+  const data=getQData(qk,parseInt(year));
+  const wins=[],challenges=[];
+  data.forEach(m=>{
+    if(!m.oo)return;
+    (m.oo.wins||[]).filter(w=>w.trim()).forEach(w=>wins.push('['+m.label+'] '+w));
+    (m.oo.challenges||[]).filter(c=>c.trim()).forEach(c=>challenges.push('['+m.label+'] '+c));
+  });
+  function sec(t,v){return v&&v.trim()?`<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:#192269;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">${t}</div><div style="font-size:13px;color:#222;white-space:pre-wrap">${v}</div></div>`:''}
+  const w=window.open('','_blank');
+  if(!w){alert('Please allow popups.');return;}
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quarterly Reflection — Andrew Cheli — ${q.title} ${year}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',sans-serif;background:#fff;font-size:13px}
+  @media print{.no-print{display:none!important}@page{margin:18mm}}</style></head><body>
+  <div style="background:#192269;padding:16px 24px;display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:9px;font-weight:700;color:#F8B213;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">Affinity Nursing</div>
+    <div style="font-size:17px;font-weight:700;color:#fff">Quarterly Reflection — ${q.title}</div></div>
+    <div style="text-align:right"><div style="font-size:12px;color:rgba(255,255,255,.6)">Andrew Cheli</div><div style="font-size:13px;font-weight:600;color:#F8B213">${year}</div></div>
+  </div>
+  <div class="no-print" style="background:#fef7e0;border:1px solid rgba(248,178,19,.4);padding:9px 16px;font-size:12px;color:#854f0b;display:flex;justify-content:space-between;align-items:center">
+    <span>Ready to print or save as PDF</span>
+    <button onclick="window.print()" style="background:#192269;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">Print / Save PDF</button>
+  </div>
+  <div style="padding:20px 24px">
+    ${wins.length?`<div style="background:#eceef7;border-radius:8px;padding:12px 16px;margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:#192269;margin-bottom:8px">Wins this quarter</div><ul style="padding-left:16px;font-size:12px">${wins.map(w=>`<li style="margin-bottom:4px">${w}</li>`).join('')}</ul></div>`:''}
+    <div style="font-size:14px;font-weight:700;color:#192269;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #F8B213">My reflections</div>
+    ${sec('Overall — how was this quarter?',ref.overall)}
+    ${sec('Where I grew the most',ref.growth)}
+    ${sec('Focus for next quarter',ref.next)}
+    ${sec('Personal growth',ref.personal)}
+    ${sec('For my team leader',ref.fortl)}
+    <div style="margin-top:16px;padding-top:10px;border-top:1px solid #e8e8e0;font-size:10px;color:#aaa;display:flex;justify-content:space-between">
+      <span>Affinity Nursing · Quarterly Reflection · ${q.title} ${year}</span>
+      <span>Generated ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}</span>
+    </div>
+  </div></body></html>`);
+  w.document.close();
+}
+function exportQEmail(qk,year){
+  const d=load(); const q=QUARTERS[qk]; const ref=d['_qr_'+qk+'_'+year]||{};
+  const lines=['QUARTERLY REFLECTION — '+q.title.toUpperCase()+' '+year,'Andrew Cheli',''];
+  if(ref.overall){lines.push('OVERALL');lines.push(ref.overall);lines.push('');}
+  if(ref.growth){lines.push('WHERE I GREW');lines.push(ref.growth);lines.push('');}
+  if(ref.fortl){lines.push('FOR MY TEAM LEADER');lines.push(ref.fortl);lines.push('');}
+  window.location.href='mailto:?subject='+encodeURIComponent('Quarterly Reflection — Andrew Cheli — '+q.title+' '+year)+'&body='+encodeURIComponent(lines.join('\n'));
+}
+function exportQCopy(qk,year){
+  const d=load(); const q=QUARTERS[qk]; const ref=d['_qr_'+qk+'_'+year]||{};
+  const data=getQData(qk,parseInt(year));
+  const lines=['QUARTERLY REFLECTION — '+q.title.toUpperCase()+' '+year,''];
+  data.forEach(m=>{
+    if(!m.oo)return;
+    const wins=(m.oo.wins||[]).filter(w=>w.trim());
+    if(wins.length){lines.push(m.label+' WINS');wins.forEach(w=>lines.push('  • '+w));lines.push('');}
+  });
+  if(ref.overall){lines.push('REFLECTION');lines.push(ref.overall);lines.push('');}
+  if(navigator.clipboard)navigator.clipboard.writeText(lines.join('\n')).then(()=>alert('Copied!'));
+  else fallbackCopy(lines.join('\n'));
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SOFT ACHIEVEMENT — rings & totals
+// ══════════════════════════════════════════════════════════════════
+function ring(pct,label,cur,tgt){
+  const da=(2*Math.PI*25)*Math.min(pct,100)/100,dg=(2*Math.PI*25)-da;
+  const c=pct>=100?'#196B24':pct>=85?'#b87000':pct>=70?'#192269':'#9a6060';
+  const glow=pct>=100?'rgba(25,107,36,.07)':pct>=85?'rgba(184,112,0,.07)':pct>=70?'rgba(25,34,105,.05)':'rgba(154,96,96,.05)';
+  const feel=pct>=100?'Achieved ✓':pct>=90?'So close':pct>=75?'Good progress':pct>=50?'Building':tgt?'Keep going':'';
+  return `<div class="ring-card" style="background:${glow};border-color:${pct>=100?'rgba(25,107,36,.2)':pct>=70?'rgba(25,34,105,.1)':'rgba(154,96,96,.1)'}">
+    <svg width="68" height="68" viewBox="0 0 68 68" role="img" aria-label="${Math.round(pct)}% of target">
+      <circle cx="34" cy="34" r="25" fill="none" stroke="rgba(0,0,0,.07)" stroke-width="6"/>
+      <circle cx="34" cy="34" r="25" fill="none" stroke="${c}" stroke-width="6"
+        stroke-dasharray="${da.toFixed(1)} ${dg.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 34 34)"/>
+      <text x="34" y="38" text-anchor="middle" font-size="11" font-weight="700" fill="${c}">${Math.round(pct)}%</text>
+    </svg>
+    <div class="ring-lbl" style="color:${c};font-weight:600">${label}</div>
+    ${feel?`<div style="font-size:9px;font-weight:600;color:${c};margin-top:2px;opacity:.8">${feel}</div>`:''}
+    <div class="ring-sub"><strong>${f(cur)}</strong> of ${tgt||'—'}</div>
+  </div>`;
+}
+
+// Replace updateTotals with soft achievement cards
+function updateTotals(targets){
+  const el=document.getElementById('totals');if(!el)return;
+  const t=targets||getCM()?.targets||{oc:1,nc:1,tw:1,h:1,w:1};
+  function card(pct,label,cur,tgt,tip){
+    const hit=pct>=100,near=pct>=80,ok=pct>=60;
+    const cls=hit?'hit':near?'near':ok?'go':'soft';
+    const icon=hit?'🌟':near?'💪':ok?'📈':'🔄';
+    const headline=hit?'Achieved':near?'Nearly there':ok?'Building':'Keep going';
+    const msg=tip||(hit?'You hit the target — great month.':near?`${Math.round(100-pct)}% short of target — close.`:ok?'Solid progress — keep building.':'Room to grow — worth focusing on.');
+    return `<div class="achieve-card ${cls}">
+      <div class="achieve-icon">${icon}</div>
+      <div class="achieve-body">
+        <div class="achieve-label">${headline}</div>
+        <div class="achieve-title">${f(cur)} of ${tgt||'—'}</div>
+        <div class="achieve-note">${label} · ${msg}</div>
+        <div class="achieve-bar-track"><div class="achieve-bar-fill" style="width:${Math.min(pct,100).toFixed(0)}%"></div></div>
+        <div class="achieve-nums"><span>${Math.round(pct)}% of target</span>${tgt?`<span>Target: ${tgt}</span>`:''}</div>
+      </div>
+    </div>`;
+  }
+  if(IS_P){
+    el.style.gridTemplateColumns='1fr';
+    const ocV=[1,2,3,4,5].map(w=>gv('oc'+w)).filter(v=>v!=null);
+    const ncV=[1,2,3,4,5].map(w=>gv('nc'+w)).filter(v=>v!=null);
+    const twV=[1,2,3,4,5].map(w=>gv('tw'+w)).filter(v=>v!=null);
+    const oc=ocV.length?ocV[ocV.length-1]:0;
+    const nc=ncV.length?ncV.reduce((a,b)=>a+b)/ncV.length:0;
+    const tw=twV.length?twV[twV.length-1]:0;
+    const op=t.oc?oc/t.oc*100:0,np=t.nc?Math.max(0,nc)/t.nc*100:0,tp=t.tw?tw/t.tw*100:0;
+    // Only use archived data for trend tips
+    const arch=getArchived(); const last=arch.length?arch[arch.length-1]:null;
+    const ocTip=last&&last.actuals&&last.actuals.oc!=null?(oc>last.actuals.oc?'Up from '+last.label+' — keep this going.':oc<last.actuals.oc?'Dipped from '+last.label+' — worth a look.':''):'';
+    const twTip=last&&last.actuals&&last.actuals.tw!=null?(tw>last.actuals.tw?'Total weeks up on '+last.label+' — strong.':tw<last.actuals.tw?'Total weeks softer than '+last.label+'.':''):'';
+    el.innerHTML=card(op,'Avg on contract',oc,t.oc,ocTip)+card(np,'Avg net change wks',nc,t.nc)+card(tp,'Total weeks',tw,t.tw,twTip);
+  } else {
+    el.style.gridTemplateColumns='1fr';
+    const hV=[1,2,3,4,5].map(w=>gv('h'+w)).filter(v=>v!=null);
+    const wV=[1,2,3,4,5].map(w=>gv('w'+w)).filter(v=>v!=null);
+    const h=hV.reduce((a,b)=>a+b,0),wk=wV.reduce((a,b)=>a+b,0);
+    const hp=t.h?h/t.h*100:0,wp=t.w?wk/t.w*100:0;
+    el.innerHTML=card(hp,'Total handovers',h,t.h)+card(wp,'Total weeks',wk,t.w)+
+      `<div class="achieve-card go"><div class="achieve-icon">📊</div><div class="achieve-body"><div class="achieve-label">Avg wks/handover</div><div class="achieve-title">${h>0?(wk/h).toFixed(1):'—'} wks each</div><div class="achieve-note">${h>0&&wk/h>=5.5?'Above 5.5 — quality placements.':'Target 5.5+ weeks per handover.'}</div></div></div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  FOCUS AREA SUGGESTIONS (rules engine)
+// ══════════════════════════════════════════════════════════════════
+function generateSuggestions(){
+  const d=load(); const cm=getCM(); const arch=getArchived();
+  if(!cm)return[];
+  // Gate: need real data — at least 1 archived month OR 2+ weeks entered
+  const ocCheck=[1,2,3,4,5].map(w=>d['oc'+w]).filter(v=>v!=null);
+  if(arch.length===0&&ocCheck.length<2)return[];
+  const sug=[];
+  const recent=arch.slice(-3).filter(a=>a.actuals);
+  const ocV_arch=recent.map(r=>r.actuals.oc).filter(v=>v!=null);
+  const twV_arch=recent.map(r=>r.actuals.tw).filter(v=>v!=null);
+  const ncV_arch=recent.map(r=>r.actuals.nc).filter(v=>v!=null);
+  const curOC=ocCheck.length?ocCheck[ocCheck.length-1]:null;
+  const curNC=[1,2,3,4,5].map(w=>d['nc'+w]).filter(v=>v!=null);
+  const curOCval=curOC; const curNCval=curNC.length?curNC.reduce((a,b)=>a+b)/curNC.length:null;
+  const allOC=[...ocV_arch,curOCval].filter(v=>v!=null);
+  const allNC=[...ncV_arch,curNCval].filter(v=>v!=null);
+  const allTW=[...twV_arch].filter(v=>v!=null);
+  function trend(arr){if(arr.length<2)return'flat';const d=arr.slice(-3);const diffs=d.slice(1).map((v,i)=>v-d[i]);const avg=diffs.reduce((a,b)=>a+b,0)/diffs.length;return avg>0.5?'up':avg<-0.5?'down':'flat';}
+  const ocTrend=trend(allOC),twTrend=trend(allTW),ncTrend=trend(allNC);
+  const last=recent[recent.length-1];
+  const missedTW=last&&last.targets&&last.targets.tw&&last.actuals.tw<last.targets.tw;
+  if(ocTrend==='up'&&cm.targets&&cm.targets.oc)sug.push({type:'opportunity',text:'On-contract numbers are climbing — consider a stretch target of '+Math.ceil(cm.targets.oc*1.1)+' this month to build on that momentum.'});
+  if(ocTrend==='down')sug.push({type:'recover',text:'On-contract numbers have dipped recently — prioritise nurse retention and early check-ins before focusing on new bookings.'});
+  if(missedTW&&last){const gap=(last.targets.tw-last.actuals.tw).toFixed(0);sug.push({type:'opportunity',text:'Last month was '+gap+' total weeks short of target — a strong final week of bookings this month could close that gap.'});}
+  if(ncTrend!=='up')sug.push({type:'develop',text:'Net change weeks have been steady or softening — prioritise forward bookings and contract extensions in weeks 3–4 of this month.'});
+  const chalSkills=arch.slice(-2).map(a=>d[OO_PRE+a.label]).filter(Boolean).map(o=>o.challenge_skills).filter(v=>v&&v.trim());
+  if(chalSkills.length)sug.push({type:'develop',text:'Development focus: '+chalSkills[chalSkills.length-1].split('\n')[0].substring(0,80)+' — revisit this month.'});
+  const hits=recent.filter(r=>r.targets&&r.targets.oc&&r.actuals.oc>=r.targets.oc).length;
+  if(hits>=2)sug.push({type:'maintain',text:'On-contract targets hit in '+hits+' of the last '+recent.length+' months — maintain this by locking in bookings in the first two weeks.'});
+  const twHits=recent.filter(r=>r.targets&&r.targets.tw&&r.actuals.tw>=r.targets.tw).length;
+  if(twHits>=2)sug.push({type:'maintain',text:'Total weeks on target for '+twHits+' months — push for a personal best by securing at least one longer contract this month.'});
+  if(ocCheck.length<=2&&arch.length<=1)sug.push({type:'develop',text:'Start with a pipeline review — identify which nurses are up for extension in the next 30 days before focusing on new placements.'});
+  return sug.slice(0,5);
+}
+
+function buildSuggestionsPanel(){
+  const sug=generateSuggestions();
+  if(!sug.length)return'';
+  const d=load(); const adopted=d._adopted||[];
+  const items=sug.map(s=>{
+    const isAdopted=adopted.some(a=>a===s.text.substring(0,40));
+    return `<div class="sug-item${isAdopted?' adopted':''}" onclick="adoptSug(this,'${s.text.substring(0,40).replace(/'/g,'&#39;')}')" title="${isAdopted?'Added to focus areas':'Click to add as a focus area'}">
+      <div class="sug-dot ${s.type}"></div>
+      <div class="sug-text">${s.text}</div>
+      <div class="sug-add">${isAdopted?'✓ Added':'+ Add'}</div>
+    </div>`;
+  }).join('');
+  return `<div class="focus-box">
+    <div class="focus-box-ttl">💡 Suggested focus areas for this month</div>
+    <div class="focus-box-sub">Generated from your performance trend and 1:1 history. Click any to add to your focus areas.</div>
+    ${items}
+  </div>`;
+}
+function adoptSug(el,key){
+  if(el.classList.contains('adopted'))return;
+  el.classList.add('adopted');
+  el.querySelector('.sug-add').textContent='✓ Added';
+  setTimeout(()=>window.confetti&&window.confetti.fire('pop'),100);
+  const text=el.querySelector('.sug-text').textContent;
+  const goalsEl=document.getElementById('goals');
+  if(goalsEl){
+    const div=document.createElement('div');div.className='g-item';
+    div.innerHTML=`<div class="g-dot"></div><textarea class="g-ta" rows="1">${text}</textarea><button class="g-del" onclick="delGoal(this)">&times;</button>`;
+    goalsEl.appendChild(div);
+    const ta=div.querySelector('.g-ta');autoR(ta);ta.addEventListener('input',()=>autoR(ta));
+  }
+  const d=load();const adopted=d._adopted||[];adopted.push(key);d._adopted=adopted;store(d);
+}
+
+function buildMomentum(){
+  const arch=getArchived();if(arch.length<2)return'';
+  const rows=[];
+  for(let i=arch.length-1;i>=1&&rows.length<3;i--){
+    const cur=arch[i],prev=arch[i-1];
+    if(!cur.actuals||!prev.actuals)continue;
+    const diff=(cur.actuals.oc||0)-(prev.actuals.oc||0);
+    const dir=diff>0.5?'up':diff<-0.5?'dn':'fl';
+    const arr=dir==='up'?'▲':dir==='dn'?'▼':'→';
+    const msg=dir==='up'
+      ?`On contract <strong>up ${Math.abs(diff).toFixed(1)}</strong> — ${prev.label} to ${cur.label}. Good momentum.`
+      :dir==='dn'
+      ?`On contract <strong>down ${Math.abs(diff).toFixed(1)}</strong> — ${prev.label} to ${cur.label}. Worth reviewing.`
+      :`On contract <strong>holding steady</strong> between ${prev.label} and ${cur.label}.`;
+    rows.push(`<div class="mom-row ${dir}"><div class="mom-arrow">${arr}</div><div class="mom-text">${msg}</div></div>`);
+  }
+  if(!rows.length)return'';
+  return`<div class="sec" style="margin-bottom:12px"><div class="sec-ttl">Recent momentum</div>${rows.join('')}</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  PATCHED: switchTab — wire up new tabs
+// ══════════════════════════════════════════════════════════════════
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const panel=document.getElementById('panel-'+id);
+  if(panel)panel.classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(id==='history')buildHistory();
+  if(id==='performance'&&!window._perfBuilt){buildPerformance();window._perfBuilt=true;}
+  if(id==='oneon')buildOneonTab();
+  if(id==='quarterly')buildQuarterlyTab();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  PATCHED: init — wire everything up cleanly
+// ══════════════════════════════════════════════════════════════════
+function init(){
+  updateSavedLbl();
+  buildStreakBar();
+  updateNavBtns();
+  const cm=getCM();
+  if(!cm){
+    openNewMonthModal(false);
+  } else {
+    refreshTracker();
+    setTimeout(()=>openNewMonthModal(true),200);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  PATCHED: refreshTracker — add momentum + suggestions
+// ══════════════════════════════════════════════════════════════════
+function refreshTracker(){
+  const cm=getCM();if(!cm)return;
+  const label=cm.month+' '+cm.year;
+  document.getElementById('tracker-month-lbl').textContent=label;
+  document.getElementById('month-display').textContent=label;
+  if(IS_P){
+    document.getElementById('targets-row').innerHTML=`Targets: <strong style="color:var(--navy)">OC ${cm.targets.oc||'—'} · NC ${cm.targets.nc||'—'} · TW ${cm.targets.tw||'—'}</strong>`;
+  } else {
+    document.getElementById('targets-row').innerHTML=`Targets: <strong style="color:var(--navy)">Handovers ${cm.targets.h||'—'} · Weeks ${cm.targets.w||'—'}</strong>`;
+  }
+  buildInputs();
+  const d=load();
+  updateTotals(cm.targets);
+  updateRings(d,cm.targets);
+  updateMonthChart();
+  renderGoals(d._goals||[]);
+  if(d._month_notes)document.getElementById('month-notes').value=d._month_notes;
+  else document.getElementById('month-notes').value='';
+  updateNavBtns();
+  buildStreakBar();
+  const momEl=document.getElementById('tracker-momentum');
+  if(momEl)momEl.innerHTML=buildMomentum()+buildSuggestionsPanel();
+}
+
+init();
+// ══════════════════════════════════════════════════════════════════
+//  CONFETTI ENGINE — lightweight, no external library
+// ══════════════════════════════════════════════════════════════════
+(function(){
+  const COLS=['#F8B213','#192269','#1D9E75','#ffffff','#FBD98F','#c8d4ff','#a0f0b8'];
+  let cv,cx,parts=[],raf=null,killTimer=null;
+
+  function setup(){
+    if(cv)return;
+    cv=document.createElement('canvas');
+    cv.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none';
+    document.body.appendChild(cv);
+    onResize(); window.addEventListener('resize',onResize);
+  }
+  function onResize(){ if(cv){cv.width=window.innerWidth;cv.height=window.innerHeight;} }
+
+  function P(x,speed){
+    this.x=x??Math.random()*cv.width; this.y=-8;
+    this.r=Math.random()*5+3;
+    this.col=COLS[Math.floor(Math.random()*COLS.length)];
+    this.vx=(Math.random()-.5)*speed*3.5;
+    this.vy=Math.random()*speed*2+1.5;
+    this.spin=(Math.random()-.5)*.25;
+    this.ang=Math.random()*Math.PI*2;
+    this.w=this.r*(Math.random()*1.5+.5); this.h=this.r*(Math.random()*1.5+.5);
+    this.isRect=Math.random()>.35; this.alpha=1;
+    this.fade=.006+Math.random()*.008;
+  }
+  P.prototype.tick=function(){
+    this.x+=this.vx; this.y+=this.vy;
+    this.vy+=.09; this.vx*=.985;
+    this.ang+=this.spin; this.alpha-=this.fade;
+  };
+  P.prototype.paint=function(){
+    cx.save(); cx.globalAlpha=Math.max(0,this.alpha);
+    cx.fillStyle=this.col; cx.translate(this.x,this.y); cx.rotate(this.ang);
+    if(this.isRect) cx.fillRect(-this.w/2,-this.h/2,this.w,this.h);
+    else{ cx.beginPath(); cx.arc(0,0,this.r,0,Math.PI*2); cx.fill(); }
+    cx.restore();
+  };
+
+  function loop(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    parts=parts.filter(p=>p.alpha>0&&p.y<cv.height+30);
+    parts.forEach(p=>{p.tick();p.paint();});
+    if(parts.length) raf=requestAnimationFrame(loop);
+    else kill();
+  }
+  function kill(){
+    if(raf){cancelAnimationFrame(raf);raf=null;}
+    if(cv)cv.style.display='none';
+  }
+
+  window.confetti={
+    fire:function(style){
+      setup(); cx=cv.getContext('2d');
+      cv.style.display='block';
+      if(killTimer)clearTimeout(killTimer);
+      if(raf)cancelAnimationFrame(raf);
+
+      // style: 'pop' (small, instant), 'cheer' (medium burst), 'celebrate' (full shower)
+      const W=cv.width;
+      if(style==='celebrate'){
+        // Shower: stream of particles across the top over ~1.5s
+        for(let i=0;i<160;i++){
+          setTimeout(()=>parts.push(new P(W*.1+Math.random()*W*.8, 2.5)), i*9);
+        }
+        killTimer=setTimeout(kill,6000);
+      } else if(style==='cheer'){
+        // Two side cannons
+        for(let i=0;i<80;i++){
+          setTimeout(()=>{
+            parts.push(new P(Math.random()>0.5?W*.25:W*.75, 2));
+          }, i*7);
+        }
+        killTimer=setTimeout(kill,4000);
+      } else {
+        // Pop: quick centre burst
+        for(let i=0;i<45;i++) parts.push(new P(W*.25+Math.random()*W*.5, 1.5));
+        killTimer=setTimeout(kill,2500);
+      }
+      raf=requestAnimationFrame(loop);
+    }
+  };
+})();
+
+</script>
+</body>
+</html>

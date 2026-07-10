@@ -1,0 +1,985 @@
+====================================================================
+HCA TRAVEL NURSING CRM — MASTER BUILD BRIEF
+Single source of truth. Read this entire document before touching
+any code. Supersedes all previous briefs.
+Last updated: July 2026
+====================================================================
+
+PROJECT CONTEXT
+--------------
+Healthcare Australia (HCA) Travel Nursing CRM. Single-file HTML app
+(index.html) served via node server.js at localhost:8080. Connected
+to Supabase backend. GitHub Pages deployment at jlaw8787.github.io/New-CRM/
+
+Supabase Project: https://skxiumrqinvpauwkljwn.supabase.co
+Key is already in index.html.
+Storage bucket: candidate-docs (public)
+Server restart: ! node server.js
+
+====================================================================
+PART 1 — CURRENT DATABASE STATE (as of July 2026)
+====================================================================
+
+The following tables exist and are confirmed working in Supabase.
+DO NOT recreate them. Only run SQL that uses IF NOT EXISTS.
+
+CONFIRMED TABLES:
+- users (6 sandbox rows)
+- facilities (25 rows)
+- wards (62 rows)
+- candidates (7 sandbox rows — 67 columns confirmed)
+- activity
+- compliance_items
+- submissions
+- contracts
+- flights
+- accommodation
+- car_hire
+- expenses
+- documents
+- roles (created, empty)
+- facility_checklists (created, empty)
+
+CONFIRMED CANDIDATE COLUMNS (67 total — do not re-add these):
+id, name, classification, clinical_skills, phase, priority,
+consultant_id, admin_id, hot, phone, email, state, available_from,
+last_checkin, regions, preferences, travel_locations, travel_notes,
+tags, notes, created_by, created_at, last_edited_by, last_edited_at,
+nurse_type, years_experience, ahpra_number, ahpra_expiry,
+date_of_birth, address, emergency_contact_name, emergency_contact_phone,
+source, preferred_block_length, min_rate, has_car,
+accommodation_required, partner_accommodation, do_not_contact,
+do_not_contact_reason, spiel, preferred_name, gender, address_suburb,
+address_postcode, nearest_airport, emergency_contact_relationship,
+current_employer, home_employment_type, max_block_length,
+start_notice_days, excluded_states, excluded_facilities,
+preferred_accommodation_type, willing_to_drive, partner_family_details,
+certifications, emr_systems, years_travel_nursing, previous_agencies,
+highest_qualification, specialisation_notes, payment_type, abn_number,
+state_increments, blacklisted_facilities, admin_notes
+
+STILL NEEDED — run these SQL migrations first:
+
+-- Users extensions
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS title text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS region_focus text[] DEFAULT '{}';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS supabase_auth_id uuid;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_hash text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_mode text;
+
+-- Facilities extensions
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS health_authority text;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS preferred_status boolean DEFAULT false;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS remote_loading_applies boolean DEFAULT false;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS remote_loading_pct numeric DEFAULT 0;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS accommodation_provided boolean DEFAULT false;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS accommodation_type text;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS car_required boolean DEFAULT false;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS submission_email text;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS secondary_contact_name text;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS secondary_contact_email text;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS secondary_contact_phone text;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS notes_candidate text;
+
+-- Wards extensions
+ALTER TABLE wards ADD COLUMN IF NOT EXISTS ward_code text;
+ALTER TABLE wards ADD COLUMN IF NOT EXISTS emr_system text;
+ALTER TABLE wards ADD COLUMN IF NOT EXISTS min_experience_years int;
+ALTER TABLE wards ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+
+-- Submissions extensions
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS role_id bigint;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS submitted_by bigint REFERENCES users(id);
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS follow_up_date date;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS checklist_snapshot jsonb;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS facility_response_date date;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS facility_response_notes text;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS outcome_notes text;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS submission_package_text text;
+
+-- Contracts extensions
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS submission_id bigint;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS role_id bigint;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_number text;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS extension_count int DEFAULT 0;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS total_contract_value numeric;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS weekly_hours numeric;
+
+-- Compliance items extensions
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS category text DEFAULT 'Other';
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS item_label text;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS status text DEFAULT 'Not Started';
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS verified_by text;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS verified_at timestamptz;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS is_required boolean DEFAULT true;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS document_url text;
+ALTER TABLE compliance_items ADD COLUMN IF NOT EXISTS document_id bigint;
+
+-- Activity extensions
+ALTER TABLE activity ADD COLUMN IF NOT EXISTS entity_type text DEFAULT 'candidate';
+ALTER TABLE activity ADD COLUMN IF NOT EXISTS entity_id bigint;
+ALTER TABLE activity ADD COLUMN IF NOT EXISTS author_id bigint;
+ALTER TABLE activity ADD COLUMN IF NOT EXISTS metadata jsonb;
+
+-- New tables (already created but need policies confirmed)
+-- roles and facility_checklists already exist with anon_all policies
+-- documents and facility_contacts need creating:
+
+CREATE TABLE IF NOT EXISTS documents (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  candidate_id bigint REFERENCES candidates(id) ON DELETE CASCADE,
+  facility_id bigint REFERENCES facilities(id) ON DELETE CASCADE,
+  contract_id bigint REFERENCES contracts(id) ON DELETE SET NULL,
+  compliance_item_id bigint REFERENCES compliance_items(id) ON DELETE SET NULL,
+  submission_id bigint REFERENCES submissions(id) ON DELETE SET NULL,
+  uploaded_by text,
+  file_name text NOT NULL,
+  file_url text NOT NULL,
+  file_size bigint,
+  file_type text,
+  category text DEFAULT 'Other',
+  description text,
+  is_current boolean DEFAULT true,
+  expires_at date,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "anon_all" ON documents FOR ALL TO anon USING (true) WITH CHECK (true);
+
+CREATE TABLE IF NOT EXISTS facility_contacts (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  facility_id bigint NOT NULL REFERENCES facilities(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  title text,
+  email text,
+  phone text,
+  is_primary boolean DEFAULT false,
+  is_submission_contact boolean DEFAULT false,
+  notes text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE facility_contacts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "anon_all" ON facility_contacts FOR ALL TO anon USING (true) WITH CHECK (true);
+
+
+====================================================================
+PART 2 — DESIGN SYSTEM
+====================================================================
+
+HCA brand colour: #4c2177 (confirmed from healthcareaustralia.com.au)
+Font: Inter (Google Fonts CDN)
+Theme: LIGHT backgrounds, white cards, purple sidebar and accents.
+NOT dark mode.
+
+Import in <head>:
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+CSS TOKENS (replace all existing CSS variables with these):
+
+:root {
+  --hca-purple:        #4c2177;
+  --hca-purple-dark:   #3a1a5c;
+  --hca-purple-mid:    #6b3fa0;
+  --hca-purple-light:  #f0eaf8;
+  --hca-purple-pale:   #f8f5fc;
+  --hca-white:         #ffffff;
+  --hca-surface:       #f4f5f7;
+  --hca-card:          #ffffff;
+  --hca-border:        #e2e4e9;
+  --hca-border-strong: #c8cad1;
+  --hca-text-primary:  #1a1d2e;
+  --hca-text-secondary:#5a5f7a;
+  --hca-text-muted:    #9397ae;
+  --hca-green:         #1a7f4b;
+  --hca-green-bg:      #e8f5ed;
+  --hca-amber:         #b45309;
+  --hca-amber-bg:      #fef3e2;
+  --hca-red:           #c0392b;
+  --hca-red-bg:        #fdecea;
+  --hca-blue:          #1558d1;
+  --hca-blue-bg:       #e8effe;
+}
+
+LAYOUT:
+- Sidebar: 240px fixed, background var(--hca-purple)
+- Main content: fills remaining width
+- Page padding: 32px
+- Cards: white, 1px solid var(--hca-border), border-radius 8px,
+  box-shadow 0 1px 3px rgba(0,0,0,0.06)
+
+SIDEBAR DESIGN:
+- Background: #4c2177
+- Logo area 56px: white "HCA" text + "Travel Nursing" subtitle
+- Nav items: rgba(255,255,255,0.8) text, 40px height
+- Active: white text, rgba(255,255,255,0.15) background,
+  3px white left border
+- Section labels: rgba(255,255,255,0.5), 10px, uppercase,
+  letter-spacing 0.08em
+- Bottom: current user avatar + name + role + Switch button
+
+PHASE BADGE COLOURS:
+New Lead: #e8f0fe/#1558d1
+Screening: #fff3e0/#e65c00
+Compliance: #fef3e2/#b45309
+Submission: #e8f5ed/#1a7f4b
+Offer: #f3e8ff/#6b3fa0
+Contract: #4c2177/white
+Travel & Onboarding: #e3f2fd/#0277bd
+On Assignment: #e8f5e9/#2e7d32
+Redeployment: #fff8e1/#f57f17
+Extension/Exit: #fce4ec/#c62828
+
+COMPONENTS:
+Buttons:
+  Primary: background #4c2177, white text, border-radius 6px,
+           padding 8px 16px, font-weight 600, font-size 13px
+  Secondary: white bg, 1px solid var(--hca-border)
+  Danger: white bg, 1px solid var(--hca-red), red text
+
+Input fields:
+  Border: 1px solid var(--hca-border), border-radius 6px,
+  padding 8px 12px, font-size 14px
+  Focus: border-color #4c2177,
+         box-shadow 0 0 0 3px rgba(76,33,119,0.1)
+
+Table headers:
+  Background: #f8f5fc, text var(--hca-text-secondary),
+  font-weight 600, text-transform uppercase,
+  letter-spacing 0.04em, font-size 11px
+
+Table rows:
+  White bg, border-bottom 1px solid var(--hca-border)
+  Hover: background var(--hca-purple-light)
+
+
+====================================================================
+PART 3 — PAGE ARCHITECTURE (CRITICAL)
+====================================================================
+
+NO MORE MODALS FOR PRIMARY CONTENT.
+Every major entity gets its own full page.
+Modals ONLY for: confirmations, small quick-entry forms, destructive
+action dialogs.
+
+URL ROUTING: Update URL hash when navigating between pages/records.
+/#candidates, /#candidate/[id], /#facility/[id], /#jobboard etc.
+
+STANDARD PAGE LAYOUT:
+[240px sidebar] + [remaining full-width main area]
+
+ENTITY DETAIL PAGES (candidate, facility):
+[280px sticky left column] + [remaining scrollable right column]
+
+
+====================================================================
+PART 4 — PAGES TO BUILD (in priority order)
+====================================================================
+
+Build completely, test, confirm working before moving to next.
+
+-------------------------------------------------------------------
+PAGE 1: SIDEBAR (rebuild first — affects everything)
+-------------------------------------------------------------------
+
+Purple (#4c2177) background. Clean, professional.
+
+Logo area (56px): "HCA" in white bold + "Travel Nursing" pale purple
+
+Navigation:
+  WORKSPACE
+    Dashboard
+    Candidates  [badge]
+    Hot List    [badge]
+    Alerts      [badge]
+
+  PIPELINE
+    Submissions [badge]
+    Job Board
+    Travel & Expenses
+    Contracts
+
+  FACILITIES
+    Facilities
+
+  MANAGEMENT (ops/admin only)
+    Mgmt Dashboard
+    Team
+    Rate Reference
+    Settings
+
+Bottom: user avatar circle (initials, coloured) + full name + role
+        + Switch button
+
+Remove export links from sidebar entirely — move to page-level actions.
+
+-------------------------------------------------------------------
+PAGE 2: DASHBOARD
+-------------------------------------------------------------------
+
+Full page. Light background (#f4f5f7).
+
+HEADER: "Welcome, [First Name]" xl bold
+        "[Day Date] — [Role]" sm secondary
+        Right: "All Consultants" toggle (ops/admin)
+
+CALLS TODAY (full width amber card):
+  Title: "Action required today"
+  List: overdue follow-ups, expiring contracts, check-ins due
+  Each row: icon + description + candidate name + days overdue + action button
+  Empty state: green tick "Nothing urgent today"
+
+STATS ROW (4 cards):
+  Placements (green left border) | Submissions (blue) |
+  Active Contracts (purple) | Compliance Alerts (red)
+  Each: large number, label, coloured left border
+
+TWO COLUMNS (60/40):
+  Left: "My Candidates" mini table
+    Columns: name/classification, phase badge, compliance %, check-in, available
+    Click → candidate full page
+    "View all" link
+
+  Right: "Recent Wins" feed
+    Placements and contract activations
+    Empty: "No recent placements — time to make it happen."
+
+JOB BOARD SNAPSHOT (full width bottom):
+  "Open Roles — Matched to Your Candidates"
+  Top 5 matched roles with match count badges
+  "Open Job Board →" link
+
+-------------------------------------------------------------------
+PAGE 3: CANDIDATES LIST
+-------------------------------------------------------------------
+
+Full page.
+
+HEADER: "Candidates" + count + filters + "Add Candidate" button
+
+PIPELINE STRIP: Clickable stage bubbles that filter the list
+
+TABLE (full width, sticky header):
+  Columns: Candidate (name+email) | Classification | Phase | Compliance % | Check-in | Available | Consultant | [actions]
+  Hot indicator flame icon on row
+  Alert indicator if overdue check-in
+  Row click → navigates to CANDIDATE FULL PAGE (not a panel)
+
+-------------------------------------------------------------------
+PAGE 4: CANDIDATE FULL PAGE (highest priority)
+-------------------------------------------------------------------
+
+LAYOUT: 280px left sticky + remaining right scrollable
+URL: /#candidate/[id]
+Back button/breadcrumb → candidates list
+
+LEFT COLUMN (sticky):
+
+  PROFILE CARD:
+    Large initials circle (purple background)
+    Full name xl bold
+    Classification + nurse type sm secondary
+    Phase badge (large, prominent, coloured)
+    Compliance % progress bar with percentage
+    Available from (green if future, red if past due)
+    Phone button (click to call)
+    Email button (click to email)
+    Hot toggle (star icon)
+
+  KEY FACTS (2-col compact grid):
+    Nurse Type | Years Exp
+    AHPRA # | Expiry (red if expired/expiring)
+    Home State | Has Car
+    Block Pref | Min Rate $/hr
+    Accom Req | Partner Accom
+    Nearest Airport | Notice Days
+
+  TEAM:
+    Consultant: avatar + name
+    Admin: avatar + name
+    Transfer button (ops only)
+
+  SUBMISSION READINESS PANEL:
+    Title: "Submission Readiness"
+    For each state in candidate's preferred regions:
+      State name + traffic light (green/amber/red) + "X of Y docs"
+    Green = all required docs verified
+    Amber = some missing
+    Red = major gaps
+    Based on facility checklists where they exist, standard set otherwise
+
+  SECTION NAVIGATION (vertical list):
+    Overview
+    Compliance
+    Submissions
+    Contracts
+    Travel & Expenses
+    Documents
+    Activity
+    (clicking scrolls right column to that section)
+
+RIGHT COLUMN (scrollable sections):
+
+  SECTION: OVERVIEW
+    --- Candidate Spiel ---
+    Heading "About This Candidate"
+    Styled paragraph display (not raw textarea)
+    Edit button → inline editing
+    "Auto-generate draft" if empty using template:
+    "[Name] is a [classification] ([nurse_type]) with [years_experience]
+    years of experience specialising in [clinical_skills]. [He/She/They]
+    hold[s] [verified certs] and [is/are] available from [available_from].
+    [Preferred locations: regions]. [preferences]"
+    Save/Cancel in edit mode
+    Checkbox: "Save as candidate's permanent spiel"
+
+    --- Matched Roles ---
+    Title "Matched Roles" + count badge
+    Query roles table. Match logic:
+      STRONG (green): nurse_type match AND ward overlaps clinical_skills
+                      AND preferred states include role state
+                      AND available_from before role start_date
+      POSSIBLE (amber): specialty overlap only, state or date miss
+    Each match: card with facility, state, ward, type, dates,
+                positions, match badge, "Submit" button
+    "Submit" → opens 5-step submission flow (see Part 5)
+    Empty: "No open roles yet. Add roles via Job Board."
+
+    --- Preferences & Travel ---
+    Two column: preferred regions | excluded states
+    Travel notes | partner/family details
+    Preferred accommodation | willing to drive
+    Editable inline
+
+  SECTION: PERSONAL DETAILS
+    Collapsible. Edit button → all fields editable.
+    Fields: full name, preferred name, date of birth, gender,
+            phone, email, address, suburb, postcode, nearest airport,
+            emergency contact name/relationship/phone
+
+  SECTION: PROFESSIONAL DETAILS
+    Collapsible. Edit button.
+    Fields: nurse type, classification, years experience,
+            AHPRA number, AHPRA expiry, current employer,
+            home employment type, highest qualification,
+            specialisation notes, years travel nursing,
+            previous agencies, source
+
+  SECTION: CLINICAL PROFILE
+    Collapsible. Edit button.
+    Clinical skills (tag input — add/remove)
+    Certifications (tag input — ALS/PALS/BLS/ieMR/Sunrise/eMeds/FSEP/REC/MEC etc)
+    EMR systems (tag input — ieMR/Sunrise/eMeds/FirstNet/other)
+
+  SECTION: RATES & INCREMENTS
+    Collapsible. Edit button.
+    Min rate ($/hr) | Payment type | ABN (if ABN contractor)
+
+    INCREMENT TABLE:
+    Editable grid — one row per state/classification the nurse is active in
+    Columns: State | Classification | Increment Level | Status | Hours | Notes
+    Classifications: AIN / EN / RN / CN / CNC / NUM / Other
+    States: NSW / VIC / QLD / SA / WA / NT / TAS / ACT
+    Activation status: Activated / Not Activated / Pending
+    Add row button, remove row button
+    Stored as state_increments JSONB column
+    NT increment shown prominently (most common destination)
+    Total HCA hours worked (calculated from contracts, display only)
+
+    Admin/ops only: payment type, ABN, increment editing
+
+  SECTION: COMPLIANCE
+    Collapsible. Overall % badge at top.
+    Load from compliance_items table for this candidate.
+
+    If no items exist yet, auto-create standard set on first open:
+    Registration: AHPRA Certificate, Photo ID/Passport, Work Rights/Visa
+    Background: National Police Check, WWC Check, NDIS Worker Screening
+    Vaccinations: COVID-19, Influenza, Hepatitis B
+    Clinical: ALS, Resume/CV
+    References: Reference 1, Reference 2
+
+    Group by category. Each category collapsible.
+    Each item row:
+      Item name | Status badge | Expiry date | Document link | Attach button
+      Status: Verified (green) / In Progress (amber) /
+              Expired (red) / Missing (grey) / Not Required (grey strikethrough)
+      Expiry: red if expired, amber if within 60 days
+      Attach: uploads to Supabase Storage candidate-docs bucket,
+              creates document record, links to compliance_item_id
+      Verified by / verified at (admin/ops can mark as verified)
+
+    Add custom compliance item button (+ Add Item)
+    "All required items complete" green banner when 100%
+
+  SECTION: SUBMISSIONS
+    Collapsible. Count badge. "New Submission" button.
+    Load from submissions table.
+
+    Each submission as a full card (not cramped rows):
+      Header: facility name (large) + ward + nurse type badge + date submitted
+      Status pipeline indicator: Submitted → Shortlisted → Offered → Accepted/Declined
+      Rate offered | Follow-up date (red if overdue) | Submitted by
+      Notes section
+      Checklist readiness at time of submission (from checklist_snapshot)
+      Action buttons: Update Status | Add Note | View Package
+      Mini activity thread for this submission
+
+    Status update dropdown: Shortlisted / Offered / Accepted /
+    Declined by Facility / Declined by Candidate / No Response / Withdrawn
+    On status change: update submissions table, add activity entry
+
+    Empty: "No submissions yet. Submit this candidate from the
+    Matched Roles section above or from the Job Board."
+
+  SECTION: CONTRACTS
+    Collapsible. Count badge. "New Contract" button.
+    Load from contracts table.
+
+    Summary row: Total contracts | Total weeks | Total placements
+
+    Each contract as a full card:
+      Facility + ward (large, bold)
+      Visual date timeline bar
+      Status badge: Active (green solid) / Expiring (amber) /
+                   Completed (grey) / Terminated (red)
+      Rate breakdown: base + loading% + per diem = total package
+      Confirmation icons: Flights ✓/✗ | Accommodation ✓/✗ | Orientation ✓/✗
+      Days remaining countdown (red if <14)
+      Linked to submission that created it (if exists)
+      Extend / Edit / View buttons
+
+    Expandable: shows flights, accommodation, car hire, expenses
+    linked to this contract
+
+    Empty: "No contract history yet."
+
+  SECTION: TRAVEL & EXPENSES
+    Collapsible. Sub-tabs: Flights | Accommodation | Car Hire | Expenses
+    Each sub-section: records as cards linked to contracts
+    Total cost summary per category
+    Add buttons per type
+
+  SECTION: DOCUMENTS
+    Collapsible. "Upload Document" button.
+    Filter: All / Compliance / Contract / Travel / Other
+    Each doc: file type icon + name + category badge +
+              uploaded by + date + size + download link
+    Delete button (ops/admin only)
+
+  SECTION: ACTIVITY
+    Full chronological feed. "Add Note" / "Log Call" / "Log Email" / "Log Meeting"
+    Filter tabs: All / Notes / Calls / Emails / System
+    Each entry: type icon + author avatar + content + timestamp
+    System entries: lighter styling
+    Paginated (20 per load)
+    All saves to activity table with entity_type='candidate',
+    entity_id=candidate.id, author_id=current user id
+
+-------------------------------------------------------------------
+PAGE 5: FACILITIES LIST
+-------------------------------------------------------------------
+
+Same architecture as candidates list.
+
+HEADER: "Facilities" + count + "Add Facility" button
+FILTERS: State, Type, preferred status toggle
+
+TABLE: Facility name+region | Type | Wards | Active contracts |
+       Submissions | Conv. Rate | Contact | [Edit]
+Row click → FACILITY FULL PAGE
+
+-------------------------------------------------------------------
+PAGE 6: FACILITY FULL PAGE
+-------------------------------------------------------------------
+
+Two column layout.
+URL: /#facility/[id]
+
+LEFT COLUMN (sticky):
+  Facility name (large bold)
+  State + Region + Type badges
+  Beds count
+  Preferred star indicator
+  Relationship health score (submissions to placement conversion)
+  Primary contact card (name, title, email click-to-email, phone click-to-call)
+  Secondary contact if exists
+  Submission email (highlighted in purple, click to copy)
+  Remote loading % if applies
+  Accommodation provided indicator
+  Car required indicator
+
+  SECTION NAV:
+    Overview | Roles | Submissions | Contracts |
+    Checklist | Contacts | Documents | Activity
+
+RIGHT COLUMN:
+
+  SECTION: OVERVIEW
+    Internal notes (editable, ops/admin only)
+    Candidate-facing notes (editable, shared with candidates)
+    Ward list with nurse types (editable — add/remove wards)
+    Stats: Active contracts | All-time placements | Submissions | Conv. rate
+
+  SECTION: ROLES
+    "Open Roles at This Facility"
+    Each role as a card: ward, type, dates, positions,
+    status, urgency, matched candidates count
+    Add Role button (ops/admin)
+    Edit/Close actions on each role
+
+  SECTION: SUBMISSIONS
+    All submissions ever to this facility
+    Filter by status, consultant, date range
+    Each row: candidate name, ward, date, submitted by, status, outcome
+
+  SECTION: CONTRACTS
+    All contracts at this facility
+    Each row: candidate name, ward, dates, rate, status
+
+  SECTION: CHECKLIST
+    "Submission Requirements for This Facility"
+    Editable list of required documents
+    Each item: key (e.g. ahpra) | label | required toggle | category mapping
+    Add item button
+    "Copy from state template" dropdown (NT template, QLD template etc)
+    This checklist is used in the submission flow Step 3
+
+  SECTION: CONTACTS
+    All contacts for this facility (from facility_contacts table)
+    Each: name, title, email, phone, primary badge, submission contact badge
+    Add / Edit / Remove
+
+  SECTION: DOCUMENTS
+    Rate cards, facility agreements, signed contracts
+    Same file browser as candidate page
+
+  SECTION: ACTIVITY
+    Contact history with this facility
+    Every call, email, visit, note logged here
+    Identical to candidate activity feed
+    entity_type='facility', entity_id=facility.id
+
+-------------------------------------------------------------------
+PAGE 7: JOB BOARD
+-------------------------------------------------------------------
+
+Full page. Two-column split (55% left, 45% right, both full height).
+
+HEADER: "Job Board" + count + "Add Role" button (ops/admin)
+
+FILTERS: Status | State | Ward | Nurse Type | Clear
+
+LEFT PANEL — ROLE LIST (scrollable):
+  Roles as stacked cards.
+  Each card:
+    Facility name bold + State badge
+    Ward + Nurse Type badges
+    Date range + Positions available
+    Status (green border-left = Open, amber = Likely)
+    Match pills: "X Strong" (green) "Y Possible" (amber)
+    Urgency tag if ASAP/Urgent
+  Selected: purple-light background + purple left border
+
+RIGHT PANEL — ROLE DETAIL (sticky, doesn't scroll):
+  When role selected:
+    Facility name large + state + Edit button (ops/admin)
+    Ward, type, dates, positions, status, urgency
+    Description (full)
+    Special requirements as tags
+
+    MATCHED CANDIDATES:
+    Tabs: Strong | Possible | All
+    Each candidate row:
+      Initials avatar | name + classification | compliance % |
+      available from | home state | match reason
+      "Submit" button → opens submission flow
+    Empty: "No candidates match this role yet."
+
+    CHECKLIST (if set up for this facility):
+    "This facility requires:" with item list for reference
+
+  No role selected:
+    "Select a role from the left to see matched candidates"
+
+-------------------------------------------------------------------
+PAGE 8: SUBMISSIONS (pipeline view)
+-------------------------------------------------------------------
+
+Full page list of all submissions.
+
+HEADER: "Submissions" + count
+FILTERS: Status | Consultant | Facility | Date range
+
+TABLE:
+  Candidate | Facility | Ward | Submitted | Status | Days Open |
+  Follow-up | Consultant | Actions
+
+  Status colours:
+    Submitted: blue | Shortlisted: purple | Offered: amber |
+    Accepted: green | Declined: red | No Response: grey
+
+  Overdue follow-up: red dot indicator
+
+  Row click → opens candidate page at Submissions section
+
+-------------------------------------------------------------------
+PAGE 9: MANAGEMENT DASHBOARD (ops/admin only)
+-------------------------------------------------------------------
+
+HEADER: "Team Overview" + date range selector
+
+STAT CARDS (4):
+  Total Placements | Total Submissions | Active Contracts | Pipeline value
+
+CONSULTANT PERFORMANCE TABLE:
+  Consultant | Placements | Submissions | Conv. Rate |
+  Active Contracts | Candidates | Last Activity
+  Click row → filter views below
+
+PIPELINE HEALTH (two columns):
+  Left: Overdue follow-ups (candidate, facility, days, Done button)
+  Right: Contracts expiring 30 days (candidate, facility, expiry, days left)
+
+RECENT ACTIVITY FEED:
+  Team-wide, all consultants, reverse chronological
+  Filter by type and consultant
+
+
+====================================================================
+PART 5 — SUBMISSION FLOW (5-step full-screen overlay)
+====================================================================
+
+Triggered by "Submit" button anywhere in the app.
+Full-screen overlay (not a small modal) with close button.
+Step indicator bar at top.
+
+STEP 1 — REVIEW
+Two columns side by side:
+  Left: Candidate card (name, classification, nurse type, AHPRA,
+        available from, key verified certs, spiel preview first 100 chars)
+  Right: Role card (facility, ward, nurse type, dates, positions,
+         description, special requirements)
+"Looks good — Next" button
+
+STEP 2 — SPIEL
+Full-width textarea, candidate's saved spiel pre-loaded.
+Character count shown.
+"Restore saved version" link if edited.
+"Auto-generate" button if empty.
+Checkbox: "Save this version to candidate profile"
+Note: "Tip — personalise this for [Facility Name]"
+
+STEP 3 — COMPLIANCE CHECKLIST
+Load facility_checklists for this facility_id.
+If no checklist: "No checklist configured for this facility.
+  Set one up in the Facility page. You can still proceed."
+
+For each checklist item:
+  Green tick = compliance_item exists AND status='Verified' AND document attached
+  Amber warning = item exists but not verified OR no document
+  Red cross = item missing entirely
+  "Upload now" link for missing/unverified
+  Item label + candidate's document filename if exists
+
+Overall: "X of Y required documents ready (Z%)"
+Warning banner if <100% listing missing items.
+"Proceed anyway" option with required notes field (logged).
+
+STEP 4 — EMAIL PREVIEW
+Looks like an actual email:
+
+To: [facility submission_email or contact_email — editable]
+Subject: HCA Submission — [Name] — [Classification] — [Facility] [editable]
+
+Body (styled):
+---
+Dear [contact_name or 'Hiring Manager'],
+
+Please find attached a candidate submission from Healthcare Australia
+Travel Nursing.
+
+CANDIDATE DETAILS
+Name: [name]
+Classification: [classification] ([nurse_type])
+Specialties: [clinical_skills joined]
+Available From: [available_from]
+Home State: [state]
+Preferred Locations: [regions joined]
+
+ABOUT [NAME]
+[spiel — as edited in Step 2]
+
+KEY CERTIFICATIONS
+[list each verified cert from certifications array]
+
+COMPLIANCE DOCUMENTS
+[list each verified compliance item with document URL]
+
+[If increment data exists:]
+INCREMENT LEVEL
+NT: [NT increment if exists] | QLD: [QLD increment] etc.
+
+ADDITIONAL NOTES
+[consultant's extra notes field — editable in this step]
+
+Please do not hesitate to contact me with any questions.
+
+Kind regards,
+[current user full name]
+Healthcare Australia Travel Nursing
+[user phone if set]
+---
+
+Extra notes field below preview (appended to email body).
+
+STEP 5 — SEND
+Large "Open in Email Client" button (mailto: link, fully URL-encoded)
+After clicking: green "Confirm Sent" button appears
+"Save as draft" option if not ready to send
+
+ON CONFIRM SENT (write all of these to Supabase):
+1. INSERT submissions:
+   candidate_id, facility_id, ward, nurse_type, role_id,
+   submitted_by (current user id), status='Submitted',
+   submitted_date=today,
+   follow_up_date=5 business days from today,
+   checklist_snapshot=JSON snapshot of Step 3 state,
+   submission_package_text=full email body text
+
+2. INSERT activity (candidate):
+   entity_type='candidate', entity_id=candidate_id,
+   type='Submission',
+   content='Submitted to [Facility] for [Ward] ([nurse_type]) —
+            [start_date] to [end_date]',
+   author=current user name, author_id=current user id
+
+3. INSERT activity (facility):
+   entity_type='facility', entity_id=facility_id,
+   type='Submission',
+   content='[Candidate name] ([classification]) submitted by
+            [consultant name] for [Ward]',
+   author=current user name
+
+4. UPDATE roles SET positions_filled = positions_filled + 1
+   WHERE id = role_id (only if role_id exists)
+
+5. UPDATE candidates SET phase = 'Submission'
+   WHERE phase IN ('New Lead','Screening','Compliance')
+
+6. Success screen: green tick + summary:
+   "Submission recorded for [Candidate] → [Facility]"
+   "Follow-up due [date]"
+   Buttons: "View Submission" | "Submit Another" | "Done"
+
+
+====================================================================
+PART 6 — CHASE LIST & FOLLOW-UP SYSTEM
+====================================================================
+
+On Dashboard "Action required today" section, include:
+
+SUBMISSION FOLLOW-UPS:
+  WHERE submissions.status = 'Submitted'
+  AND submissions.follow_up_date <= today
+  AND submissions.submitted_by = current user id
+  Show: "Follow up: [Candidate] → [Facility] ([X days ago])"
+  Click → opens candidate page at Submissions section
+  "Done" quick action → opens status update dropdown
+
+STATUS UPDATE (on submission records):
+  Options: Shortlisted / Offered / Accepted / Declined by Facility /
+           Declined by Candidate / No Response / Withdrawn
+  On change:
+    UPDATE submissions.status in DB
+    INSERT activity entry: "Submission status updated to [status]
+    for [Facility]" by [user]
+  If Accepted: prompt to create contract
+  If Declined: ask for decline reason, log it
+
+
+====================================================================
+PART 7 — ACCESS CONTROL
+====================================================================
+
+Role-based display (no hard DB lock yet — use frontend role check):
+
+consultant:
+  Default view: own candidates (consultant_id = current user)
+  "All Consultants" toggle: shows all candidates
+  Cannot see: admin_notes, payment fields, increment editing
+  Cannot access: Management Dashboard, Settings, Team page
+
+admin:
+  Default view: candidates for consultants in their admin_for array
+  Can edit compliance, verify documents, view increment table
+  Can see admin_notes
+  Can access: Management Dashboard (view only)
+
+ops:
+  Full access to everything
+  Can edit: user accounts, increment tables, admin notes
+  Can transfer candidates
+  Can access: all pages including Settings
+
+
+====================================================================
+PART 8 — REMAINING GAPS (build after core pages are complete)
+====================================================================
+
+These are confirmed needed but lower priority than the pages above:
+
+1. COMPLIANCE AUTO-CREATE
+   When a new candidate is saved for the first time,
+   automatically INSERT the 12 standard compliance items
+   into compliance_items table for that candidate_id.
+
+2. REAL AUTH (SUPABASE AUTH)
+   Email + password login as primary.
+   Profile dropdown + PIN as fallback.
+   Both options always visible on login screen.
+   Supabase Auth provisioned separately per user.
+   supabase_auth_id column links auth.users to public.users.
+
+3. EXPIRY ALERTS
+   Daily check: compliance items where expiry_date within 60 days
+   and candidate has active contract or is in active pipeline.
+   Alert shown in Alerts page and on candidate's profile.
+
+4. REDEPLOYMENT FLOW
+   Contracts within alert_days of end:
+   Trigger redeployment prompt in dashboard chase list.
+   Consultant prompted with matched open roles for that candidate.
+   One-click to start submission flow for redeployment.
+
+5. CONTRACT RENEWAL
+   On contract end approach: prompt "Extend or Redeploy?"
+   Extend: create new contract linked to existing (extension_count++)
+   Redeploy: start submission flow
+
+
+====================================================================
+PART 9 — IMPLEMENTATION RULES
+====================================================================
+
+- Read this entire document before writing a single line
+- Write the SQL first, confirm it ran, then build frontend
+- Build one page/section at a time, confirm working before next
+- ALL data reads and writes go to Supabase — nothing in-memory only
+- Restart server: ! node server.js
+- No Bootstrap, no Tailwind — clean vanilla CSS using the token system
+- Inter font via Google Fonts CDN
+- URL hash routing for all pages
+- The server at localhost:8080 serves index.html
+- GitHub Pages (jlaw8787.github.io/New-CRM/) can be updated by
+  copying the finished index.html to the repo
+- Keep all existing functionality while rebuilding — test everything
+  still works after each change
+- Tell me what you are doing at each step before doing it
+
+====================================================================
+END OF MASTER BRIEF
+====================================================================

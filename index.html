@@ -4524,7 +4524,7 @@ function renderJobBoard(){
     listHtml+='<div style="display:flex;align-items:flex-start;gap:9px">';
     listHtml+='<div style="flex:1;min-width:0">';
     listHtml+='<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px">';
-    listHtml+='<span style="font-size:12px;font-weight:700;color:var(--t1)">'+esc(facName)+'</span>';
+    listHtml+=fac?('<span style="font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="event.stopPropagation();openFacPage('+fac.id+')">'+esc(facName)+'</span>'):('<span style="font-size:12px;font-weight:700;color:var(--t1)">'+esc(facName)+'</span>');
     listHtml+='<span class="badge '+(role.status==='Open'?'b-ok':'b-am')+'" style="font-size:9px">'+role.status+'</span>';
     if(role.createdAt&&(Date.now()-new Date(role.createdAt).getTime())<86400000)listHtml+='<span class="jb-new-chip">New</span>';
     listHtml+='</div>';
@@ -4557,7 +4557,7 @@ function renderRoleDetail(role){
   var h='<div class="role-detail-card">';
   h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">';
   h+='<div>';
-  h+='<div style="font-size:13px;font-weight:700;color:var(--t1)">'+esc(facName)+'</div>';
+  h+=fac?('<div style="font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline;display:inline-block" onclick="openFacPage('+fac.id+')">'+esc(facName)+'</div>'):('<div style="font-size:13px;font-weight:700;color:var(--t1)">'+esc(facName)+'</div>');
   h+='<div style="font-size:11px;color:var(--t2);margin-top:4px">'+esc(role.ward)+' &middot; '+esc(role.nurseType)+'</div>';
   h+='<div style="font-size:10px;color:var(--t3);margin-top:4px">'+(facState?esc(facState):'')+(role.startDate?' &middot; Starts '+fmt(role.startDate):'')+(role.endDate?' &ndash; '+fmt(role.endDate):'')+(role.positionsAvailable?' &middot; '+role.positionsAvailable+' position'+(role.positionsAvailable!==1?'s':''):'')+'</div>';
   h+='</div>';

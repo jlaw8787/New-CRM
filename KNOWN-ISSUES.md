@@ -570,11 +570,11 @@ facilities.contact_* instead of facility_contacts, or the two need an
 explicit reconciliation step. Not fixed.
 
 ====================================================================
-## 9. Job Board role cards have no link back to their facility
+## 9. Job Board role cards have no link back to their facility — FIXED
 ====================================================================
 
-STATUS: Open. Found 2026-07-09 during W5 item 4 (Facilities and Job
-Board) of the regression pass. Navigation gap, not a data bug.
+STATUS: Fixed 2026-07-11. Found 2026-07-09 during W5 item 4 (Facilities
+and Job Board) of the regression pass. Navigation gap, not a data bug.
 
 WHAT WAS TESTED
 On the Job Board, clicked a role card, then tried clicking the
@@ -599,11 +599,15 @@ other open roles, submission history) currently has no route there
 except leaving the Job Board and searching/browsing for the facility by
 name separately.
 
-LIKELY FIX (not yet agreed, not yet built)
-Make the facility name on the role card and/or in the slide-out panel a
-clickable link that calls the existing facility-page navigation (the
-same function role rows elsewhere in the app already use to open a
-facility profile).
+FIX BUILT
+The facility name on the role card and in the slide-out panel is now a
+clickable link (styled with accent color + underline) that calls
+openFacPage(role.facilityId) — the same navigation function the
+facilities table already uses. On the card, the link's click handler
+stops propagation so it navigates to the facility instead of also
+toggling the slide-out panel. When a role has no matching facility
+(the "Unknown facility" fallback case), the name is left as plain,
+non-clickable text in both places. Tested live.
 
 ====================================================================
 ## 10. No UI path to edit an existing contract — missing core action — FIXED

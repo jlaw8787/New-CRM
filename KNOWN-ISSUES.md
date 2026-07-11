@@ -1082,6 +1082,88 @@ the display bug is contained; worth doing before this pattern gets
 copy-pasted into new code that assumes clean data.
 
 ====================================================================
+## 19. Dashboard hero stat tiles are not clickable — future enhancement,
+## not a bug
+====================================================================
+
+STATUS: Open. Logged 2026-07-11 after the Home high-polish restyle
+(hero band with Placements/Submissions/Active Contracts/Compliance
+Alerts tiles). Feature request, not a defect — restyle stages were
+scoped to appearance only, so no navigation was added.
+
+WHAT'S MISSING
+The four hero stat tiles on the Dashboard (Placements, Submissions,
+Active contracts, Compliance alerts) are display-only. Clicking a
+tile does nothing. A consultant glancing at "3 Compliance alerts"
+has no way to jump straight to those alerts from the tile itself —
+they'd need to navigate there separately (e.g. via the sidebar or
+the Morning Brief, if that category happens to appear there).
+
+LIKELY FIX (not yet agreed, not yet built)
+Make each tile clickable, navigating to the relevant section per
+tile: Placements → candidates filtered/viewed by placement phase,
+Submissions → Submissions page, Active contracts → Contracts page,
+Compliance alerts → Alerts page (or wherever red-level compliance
+alerts are surfaced). Post-UI-rollout feature work — do after the
+visual refresh is signed off, not part of the restyle itself.
+
+====================================================================
+## 20. Morning Brief rows only surface the top item, no drill-through
+## to the full list — future enhancement, not a bug
+====================================================================
+
+STATUS: Open. Logged 2026-07-11 alongside item 19, same context
+(post high-polish-restyle feature backlog, not a defect found during
+the restyle).
+
+WHAT'S MISSING
+Each Morning Brief priority row shows a count and a single most-urgent
+example (e.g. "3 compliance items expiring within 14 days — Most
+urgent: AHPRA — expires in 2d (Jane Smith)"), and its action button
+jumps straight to that one item (mbGoCompliance, mbGoCheckin,
+mbGoFollowup, etc. each only ever open the first record in the
+list). There's no way to see the full underlying list for a category
+— if there are 3 compliance items, only the most urgent one is
+reachable from the brief; the other 2 have no path from this widget.
+
+LIKELY FIX (not yet agreed, not yet built)
+Give each row a second, explicit "View all N" action distinct from
+the current single-item jump, landing on a filtered list view for
+that category (e.g. candidates filtered to compliance-expiring, or
+submissions filtered to awaiting-follow-up) rather than opening only
+the single most-urgent record. Post-UI-rollout feature work.
+
+====================================================================
+## 21. No candidate status overview on the Dashboard — future
+## enhancement, not a bug
+====================================================================
+
+STATUS: Open. Logged 2026-07-11 alongside items 19 and 20, same
+context (post high-polish-restyle feature backlog, not a defect).
+
+WHAT'S MISSING
+The Dashboard has no at-a-glance visual breakdown of the whole nurse
+pool by status (on contract / available / not working / etc.).
+Candidates already carry a status field (c.phase, one of the ten
+PHASES values: New Lead, Screening, Compliance, Submission, Offer,
+Contract, Travel & Onboarding, On Assignment, Redeployment,
+Extension/Exit) — the underlying data to power this already exists,
+this is purely a missing dashboard view over it.
+
+WHY THIS MATTERS
+Flagged as a candidate dashboard centrepiece: not just a passive
+chart, but paired with an action per status to drive follow-up (e.g.
+"18 available — chase them"), turning the breakdown into a worklist
+rather than a report.
+
+LIKELY FIX (not yet agreed, not yet built)
+Build after the visual rollout, once the restyle is signed off — not
+part of the current restyle work. At build time, present visual
+options (donut, bar breakdown, status cards) for a decision rather
+than assuming one, since the choice affects how the per-status action
+buttons attach to it.
+
+====================================================================
 ## CLEANUP LIST — test-data artifacts to remove before real data goes in
 ====================================================================
 

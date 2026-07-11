@@ -8,6 +8,27 @@ Written 2026-07-11.
 
 ---
 
+## THE HERO-MOMENT RULE (learned mid-rollout)
+
+Cascading shadows/colours/radius through shared helpers makes a screen TIDY
+but not IMPRESSIVE - it lands "so-so." Every major screen needs its own HERO
+MOMENT: one designed, composed centrepiece, not just restyled existing boxes.
+
+- Dashboard hero = the gradient header band with headline numbers.
+- Candidate profile hero = a gradient header band with avatar chip, name +
+  status, inline contact details, a compliance RING (real compliance data),
+  and a key-facts strip beneath.
+- Every other screen (contracts, job board, facility, etc.) must get an
+  equivalent designed hero/header treatment appropriate to its content, not
+  just cascaded card styling.
+
+When restyling a screen, ask: "what's this screen's hero moment?" and design
+that, then let the shared card language handle the rest. A screen with no hero
+will read as unfinished even if every card has a shadow.
+
+Rings/charts are allowed ONLY on real existing data (e.g. the candidate's real
+compliance score as a ring). Never fabricate data for a visual.
+
 ## THE ONE RULE ABOVE ALL
 
 RESTYLE ONLY. NO LOGIC CHANGES. This refresh changes appearance, never

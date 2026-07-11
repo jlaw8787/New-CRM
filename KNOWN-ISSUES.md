@@ -1041,6 +1041,47 @@ contract creation already has a better home elsewhere. Do not remove
 the shared qMod/goQ helper itself — no other change needed there.
 
 ====================================================================
+## 18. contracts.rate column stores values inconsistently — data cleanup,
+## not urgent
+====================================================================
+
+STATUS: Open. Found 2026-07-11 while fixing the doubled "/hr" display
+bug (facility Contracts table and 5 other rate-display locations).
+Data-cleanup task, not a UI bug — the display side is now fixed
+separately (see below).
+
+WHAT WAS FOUND
+Queried the live Supabase contracts table directly: of 110 rows, 105
+store rate with the unit baked in as text (e.g. "75/hr", "73/hr") and
+5 store a clean number with no unit (ids 108, 109, 115, 116, 117 —
+e.g. "59", "0", "72"). Same free-text column, two different formats
+mixed together. The submissions.rate column was also checked: all
+151 rows are consistent (every non-null value carries "/hr", none
+clean), so this is specifically a contracts-table problem.
+
+WHY THIS MATTERS
+Every place in the app that displays a rate had been assuming one
+format (plain number) and appending "/hr" unconditionally, so any row
+already storing "75/hr" rendered as "$75/hr/hr". This has now been
+patched at the display layer everywhere it was found (facility
+Contracts table, Contracts page cards, Submissions board and
+candidate Submissions tab, and both CSV exports) by running every
+rate value through the existing cleanRate() helper (parseFloat-based
+stripping) before formatting, so it's correct regardless of which
+format is stored. That masks the inconsistency rather than removing
+it — the underlying column still has two formats mixed together, and
+any future code path that reads rate directly without going through
+cleanRate() will reproduce the same doubling bug.
+
+LIKELY FIX (not yet agreed, not yet built, low priority)
+A one-off data-normalisation pass on the contracts table: strip any
+"/hr" (or other unit text) from every row so rate is stored as a
+clean number consistently, and append the unit only at display time
+(which cleanRate()-based rendering already does). Not urgent since
+the display bug is contained; worth doing before this pattern gets
+copy-pasted into new code that assumes clean data.
+
+====================================================================
 ## CLEANUP LIST — test-data artifacts to remove before real data goes in
 ====================================================================
 

@@ -3707,43 +3707,36 @@ function renderCandPage(){
   document.getElementById('tb-r').innerHTML='<button class="btn btn-g btn-sm" onclick="nav(\'candidates\')">'+I.back+' Candidates</button>'
     +'<button class="btn btn-p btn-sm" onclick="openSubFlow('+c.id+',null)" style="margin-left:8px">+ Submit</button>';
 
-  // ── HERO BAND ────────────────────────────────────────────────────────────────
+  // ── IDENTITY HEADER (CANDIDATE-PAGE-OVERHAUL-BRIEF stage 1) ──────────────────
   var heroSubtext=[esc(c.classification)+' · '+esc(c.nurseType||'RN'),
       c.yearsExperience?c.yearsExperience+'yr exp':'',
       c.state?esc(c.state):''].filter(Boolean).join(' · ')
       +(c.availableFrom?' · Available '+fmt(c.availableFrom):'');
-  var ringR=34,ringCirc=Math.round(2*Math.PI*ringR*10)/10,ringOff=Math.round(ringCirc*(1-sc/100)*10)/10;
-  var ringHtml='<div style="position:relative;width:84px;height:84px;flex-shrink:0">'
-    +'<svg width="84" height="84" viewBox="0 0 84 84" style="transform:rotate(-90deg)">'
-    +'<circle cx="42" cy="42" r="'+ringR+'" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="8"/>'
-    +'<circle cx="42" cy="42" r="'+ringR+'" fill="none" stroke="'+scColor(sc)+'" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+ringCirc+'" stroke-dashoffset="'+ringOff+'"/>'
-    +'</svg>'
-    +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
-    +'<div style="font-size:19px;font-weight:500;color:#fff;line-height:1">'+sc+'%</div>'
-    +'<div style="font-size:9px;color:#CECBF6;margin-top:3px">Compliance</div>'
-    +'</div></div>';
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">'
-    +'<div style="display:flex;align-items:center;gap:16px;min-width:0">'
-    +'<div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:500;color:#fff;flex-shrink:0;letter-spacing:1px">'+initials+'</div>'
-    +'<div style="min-width:0">'
+  var heroHtml='<div style="border-radius:20px;margin-bottom:20px;box-shadow:var(--shadow-card);overflow:visible">'
+    +'<div style="height:88px;border-radius:20px 20px 0 0;background:var(--brand-grad);position:relative;overflow:hidden">'
+    +'<div style="position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06);top:-80px;right:-30px;pointer-events:none"></div>'
+    +'</div>'
+    +'<div style="background:var(--surface);border-radius:0 0 20px 20px;padding:0 24px 20px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-top:-40px">'
+    +'<div style="display:flex;align-items:flex-end;gap:16px;min-width:0">'
+    +'<div style="width:88px;height:88px;border-radius:22px;background:var(--brand-grad);border:4px solid var(--surface);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:500;color:#fff;flex-shrink:0;letter-spacing:1px;box-shadow:0 4px 12px rgba(38,33,92,.3)">'+initials+'</div>'
+    +'<div style="min-width:0;padding-bottom:4px">'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
-    +'<span style="font-size:19px;font-weight:500;color:#fff">'+esc(c.name)+'</span>'
-    +(c.preferredName?'<span style="font-size:12px;color:#CECBF6">"'+esc(c.preferredName)+'"</span>':'')
-    +'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,.18);color:#fff;text-transform:uppercase;letter-spacing:.04em">'+esc(c.phase)+'</span>'
-    +(c.hot?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:#fff;color:var(--danger);display:inline-flex;align-items:center;gap:3px">'+I.flame+' Hot</span>':'')
-    +(c.priority==='high'?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:#fff;color:var(--danger)">High priority</span>':'')
-    +(c.doNotContact?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:#fff;color:var(--danger)">DNC</span>':'')
+    +'<span style="font-size:19px;font-weight:500;color:var(--t1)">'+esc(c.name)+'</span>'
+    +(c.preferredName?'<span style="font-size:12px;color:var(--t3)">"'+esc(c.preferredName)+'"</span>':'')
+    +'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--brand-l);color:var(--brand);text-transform:uppercase;letter-spacing:.04em">'+esc(c.phase)+'</span>'
+    +(c.hot?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--danger-l);color:var(--danger);display:inline-flex;align-items:center;gap:3px">'+I.flame+' Hot</span>':'')
+    +(c.priority==='high'?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--danger-l);color:var(--danger)">High priority</span>':'')
+    +(c.doNotContact?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--danger-l);color:var(--danger)">DNC</span>':'')
     +'</div>'
-    +'<div style="font-size:12px;color:#CECBF6;margin-bottom:8px">'+heroSubtext+'</div>'
-    +'<div style="display:flex;gap:16px;flex-wrap:wrap">'
-    +(c.phone?'<a href="tel:'+esc(c.phone)+'" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#fff;text-decoration:none">'+ico(I.phone,13,'#fff')+esc(c.phone)+'</a>':'')
-    +(c.email?'<a href="mailto:'+esc(c.email)+'" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#fff;text-decoration:none">'+ico(I.mail,13,'#fff')+esc(c.email)+'</a>':'')
-    +'</div>'
+    +'<div style="font-size:12px;color:var(--t2)">'+heroSubtext+'</div>'
     +'</div></div>'
-    +ringHtml
-    +'</div></div>';
+    +'<div style="display:flex;gap:8px;padding-bottom:4px;flex-shrink:0">'
+    +(c.phone?'<a href="tel:'+esc(c.phone)+'" class="btn btn-g btn-sm">'+ico(I.phone,12)+' Call</a>':'')
+    +(c.email?'<a href="mailto:'+esc(c.email)+'" class="btn btn-g btn-sm">'+ico(I.mail,12)+' Email</a>':'')
+    +'<button class="btn btn-p btn-sm" onclick="openSubFlow('+c.id+',null)">+ Submit</button>'
+    +'</div>'
+    +'</div></div></div>';
 
   // ── NEXT ACTION BAND (existing next-action data/logic, relocated) ────────────
   var naContent=(cpNAEditing

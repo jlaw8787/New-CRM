@@ -4132,10 +4132,10 @@ function renderFacSubmissions(f){
     +all.map(function(s){
       return '<tr onclick="openCandPage('+s.cid+')" style="cursor:pointer">'
         +'<td><div class="cp">'+esc(s.cn)+'</div><div class="cs">'+esc(s.cc)+'</div></td>'
-        +'<td style="font-size:11px">'+esc(s.ward||'&mdash;')+'</td>'
+        +'<td style="font-size:11px">'+(s.ward?esc(s.ward):'&mdash;')+'</td>'
         +'<td style="font-size:10px;color:var(--t3)">'+fmt(s.submittedDate)+'</td>'
         +'<td><span class="badge '+bClass(s.status)+'">'+esc(s.status)+'</span></td>'
-        +'<td style="font-size:10px;color:var(--t3)">'+esc(s.outcome||'&mdash;')+'</td>'
+        +'<td style="font-size:10px;color:var(--t3)">'+(s.outcome?esc(s.outcome):'&mdash;')+'</td>'
         +'</tr>';
     }).join('')+'</tbody></table>';
 }
@@ -4151,7 +4151,7 @@ function renderFacContracts(f){
       var d=ddiff(k.endDate);var col=k.status==='Active'?(d!==null&&d<=14?'var(--danger)':d!==null&&d<=21?'#d4900a':'var(--ok)'):'var(--t3)';
       return '<tr onclick="openCandPage('+k.cid+')" style="cursor:pointer">'
         +'<td><div class="cp">'+esc(k.cn)+'</div><div class="cs">'+esc(k.cc)+'</div></td>'
-        +'<td style="font-size:11px">'+esc(k.ward||'&mdash;')+'</td>'
+        +'<td style="font-size:11px">'+(k.ward?esc(k.ward):'&mdash;')+'</td>'
         +'<td style="font-size:10px;color:var(--t3)">'+fmt(k.startDate)+'</td>'
         +'<td style="font-size:10px;font-weight:600;color:'+col+'">'+fmt(k.endDate)+(d!==null&&d>=0&&d<=14?' <span style="color:var(--danger)">('+d+'d)</span>':'')+'</td>'
         +'<td style="font-size:11px;font-weight:600">'+(k.rate?'$'+k.rate+'/hr':'&mdash;')+'</td>'

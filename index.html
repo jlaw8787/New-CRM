@@ -2376,7 +2376,68 @@ function renderSubmissions(){
 }
 function renderTravel(){var cands=vc();document.getElementById("tb-h").textContent="Travel & Expenses";var allT=cands.reduce(function(a,c){return a.concat(c.travel.flights,c.travel.accommodation,c.travel.carHire,c.travel.expenses);}, []);var pend=allT.filter(function(x){return x.approvalStatus==="Pending";}).length;document.getElementById("tb-s").textContent=allT.length+" records — "+pend+" pending";document.getElementById("tb-r").innerHTML='<button class="btn btn-g btn-sm" onclick="expAll(&apos;travel&apos;)">'+I.dl+' Export</button>';var apB=function(st){return'<span class="ap-pill '+(st==="Approved"?"ap-ok":st==="Rejected"?"ap-r":"ap-p")+'">'+st+'</span>';};var tSec=function(title,hdrs,rows){return'<div class="card" style="margin-bottom:12px"><div class="card-hd"><div class="card-title">'+title+'</div></div><table class="tbl"><thead><tr>'+hdrs.map(function(h){return'<th>'+h+'</th>';}).join("")+'</tr></thead><tbody>'+(rows||'<tr><td colspan="'+hdrs.length+'"><div class="empty-st" style="padding:12px">None</div></td></tr>')+'</tbody></table></div>';};var fR=cands.reduce(function(a,c){return a.concat(c.travel.flights.map(function(f){return'<tr onclick="'+(f.contractId?("openManagePlacement("+f.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(f.airline)+" "+esc(f.flightNo)+'</td><td style="font-size:10px">'+esc(f.from)+" &rarr; "+esc(f.to)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(f.departDate)+'</td><td style="font-weight:600">'+( f.cost?"$"+f.cost:"—")+'</td><td>'+apB(f.approvalStatus)+'</td></tr>';}));}, []).join("");var aR=cands.reduce(function(a,c){return a.concat(c.travel.accommodation.map(function(ac){return'<tr onclick="'+(ac.contractId?("openManagePlacement("+ac.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(ac.name)+'</td><td style="font-size:10px;color:var(--t3)">'+esc(ac.address)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(ac.checkIn)+'</td><td style="font-weight:600">'+( ac.cost?"$"+ac.cost+"/"+ac.costUnit:"—")+'</td><td>'+apB(ac.approvalStatus)+'</td></tr>';}));}, []).join("");var eR=cands.reduce(function(a,c){return a.concat(c.travel.expenses.map(function(e){return'<tr onclick="'+(e.contractId?("openManagePlacement("+e.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(e.type)+'</td><td style="font-size:10px;color:var(--t3)">'+esc(e.description)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(e.date)+'</td><td style="font-weight:600">'+( e.amount?"$"+e.amount:"—")+'</td><td>'+apB(e.approvalStatus)+'</td></tr>';}));}, []).join("");document.getElementById("page").innerHTML=tSec("Flights",["Candidate","Flight","Route","Depart","Cost","Approval"],fR)+tSec("Accommodation",["Candidate","Property","Address","Check-in","Cost","Approval"],aR)+tSec("Expenses & Allowances",["Candidate","Type","Description","Date","Amount","Approval"],eR);}
 
-function renderContracts(){var all=vc().reduce(function(a,c){return a.concat(c.contracts.map(function(k){return Object.assign({},k,{cid:c.id,cn:c.name,cc:c.classification,cConsId:c.consultantId});}));}, []);document.getElementById("tb-h").textContent="Contracts";document.getElementById("tb-s").textContent=all.length+" contracts — "+all.filter(function(k){return k.status==="Active";}).length+" active";document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="qMod(&apos;Contracts&apos;)">Add Contract</button> <button class="btn btn-g btn-sm" onclick="expAll(&apos;contracts&apos;)">'+I.dl+' Export</button>';var cards=all.map(function(k){var d=ddiff(k.endDate);var isDanger=d!==null&&d<=14&&d>=0;var isWarn=d!==null&&d<=21&&d>14;var col=k.status==="Active"?(isDanger?"var(--danger)":isWarn?"#d4900a":"var(--ok)"):"var(--t3)";var rateClean=cleanRate(k.rate);return'<div class="card clickable" style="margin-bottom:8px;padding:16px;border-left:3px solid '+col+'" onclick="openCandPage('+k.cid+')">'+'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div style="font-size:13px;font-weight:700">'+esc(k.cn)+'</div><div style="font-size:10px;color:var(--t3)">'+esc(k.cc)+(k.cConsId?" — "+((uById(k.cConsId)||{name:""}).name):"")+'</div>'+(isDanger?'<div style="font-size:10px;font-weight:700;color:var(--danger);margin-top:4px">Expires in '+d+' day'+(d===1?"":"s")+'</div>':isWarn?'<div style="font-size:10px;font-weight:600;color:#d4900a;margin-top:4px">Expires in '+d+' days</div>':"")+'</div><span class="badge '+bClass(k.status)+'">'+k.status+'</span><button class="btn btn-g btn-xs" style="margin-left:6px" onclick="event.stopPropagation();openContractEditModal('+k.id+')">Edit</button><button class="btn btn-g btn-xs" style="margin-left:6px" onclick="event.stopPropagation();openManagePlacement('+k.id+')">Manage Placement</button></div>'+'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px"><span class="badge b-pu">'+esc(k.facility)+'</span><span class="badge b-tl">'+esc(k.ward)+'</span>'+(rateClean!==""?'<span class="badge b-gr">$'+rateClean+'/hr &middot; '+(k.hours||"?")+'h/wk</span>':"")+(k.healthRegion?'<span class="badge b-gr">'+esc(k.healthRegion)+'</span>':"")+'</div>'+'<div style="display:flex;gap:14px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap"><div><div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">Start</div><div style="font-size:11px;font-weight:600">'+fmt(k.startDate)+'</div></div><div><div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">End</div><div style="font-size:11px;font-weight:700;color:'+col+'">'+fmt(k.endDate)+'</div></div>'+(d!==null&&k.status==="Active"?'<div><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--t3)">Remaining</div><div style="font-size:11px;font-weight:700;color:'+col+'">'+(d===0?"Today":d<0?"Expired "+Math.abs(d)+"d ago":d+"d")+'</div></div>':"")+(k.notes?'<div style="flex:1"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--t3)">Notes</div><div style="font-size:10px;color:var(--t2)">'+esc(k.notes.slice(0,80))+(k.notes.length>80?"...":"")+'</div></div>':"")+'</div></div>';}).join("");document.getElementById("page").innerHTML=cards||'<div class="card"><div class="empty-st">No contracts</div></div>';}
+function renderContracts(){
+  var all=vc().reduce(function(a,c){return a.concat(c.contracts.map(function(k){return Object.assign({},k,{cid:c.id,cn:c.name,cc:c.classification,cConsId:c.consultantId});}));}, []);
+  document.getElementById("tb-h").textContent="Contracts";
+  document.getElementById("tb-s").textContent=all.length+" contracts — "+all.filter(function(k){return k.status==="Active";}).length+" active";
+  document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="qMod(&apos;Contracts&apos;)">Add contract</button> <button class="btn btn-g btn-sm" onclick="expAll(&apos;contracts&apos;)">'+I.dl+' Export</button>';
+
+  // ── HERO (summary strip) — real aggregates from `all`; pipeline-value uses
+  // the same rate*hours*(days-remaining/7) formula already used on the
+  // Management Dashboard. No fabricated data.
+  var activeContracts=all.filter(function(k){return k.status==="Active";});
+  var expiringSoonCount=activeContracts.filter(function(k){var d=ddiff(k.endDate);return d!==null&&d>=0&&d<=21;}).length;
+  var pipelineVal=activeContracts.reduce(function(sum,k){var r=parseFloat(k.rate)||0,h=parseFloat(k.hours)||0,d=ddiff(k.endDate);return d&&d>0?sum+r*h*(d/7):sum;},0);
+  var fmtMon=function(n){return n>=1e6?"$"+(n/1e6).toFixed(1)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"K":"$"+Math.round(n);};
+  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
+    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
+    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
+    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
+    +'</div>';}
+  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
+    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
+    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
+    +heroStat(I.case,'Total contracts',all.length)
+    +heroStat(I.chk,'Active',activeContracts.length)
+    +heroStat(I.warn,'Expiring soon',expiringSoonCount)
+    +heroStat(I.sheet,'Pipeline value',fmtMon(pipelineVal))
+    +'</div></div>';
+
+  var cards=all.map(function(k){
+    var d=ddiff(k.endDate);
+    var isDanger=d!==null&&d<=14&&d>=0;
+    var isWarn=d!==null&&d<=21&&d>14;
+    var col=k.status==="Active"?(isDanger?"var(--danger)":isWarn?"var(--warn)":"var(--ok)"):"var(--t3)";
+    var rateClean=cleanRate(k.rate);
+    var totalW=k.startDate&&k.endDate?Math.max(1,Math.round((new Date(k.endDate)-new Date(k.startDate))/(7*86400000))):0;
+    var elapsed=k.status==="Active"&&k.startDate&&totalW?Math.min(100,Math.max(0,Math.round((Date.now()-new Date(k.startDate).getTime())/(7*86400000*totalW)*100))):0;
+    return'<div class="card clickable" style="margin-bottom:12px;padding:16px;border-left:3px solid '+col+'" onclick="openCandPage('+k.cid+')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+      +'<div><div style="font-size:13px;font-weight:500">'+esc(k.cn)+'</div>'
+      +'<div style="font-size:10px;color:var(--t3)">'+esc(k.cc)+(k.cConsId?" — "+((uById(k.cConsId)||{name:""}).name):"")+'</div>'
+      +(isDanger?'<div style="font-size:10px;font-weight:500;color:var(--danger);margin-top:4px">Expires in '+d+' day'+(d===1?"":"s")+'</div>':isWarn?'<div style="font-size:10px;font-weight:500;color:var(--warn);margin-top:4px">Expires in '+d+' days</div>':"")
+      +'</div>'
+      +'<span class="badge '+bClass(k.status)+'">'+k.status+'</span>'
+      +'<button class="btn btn-g btn-xs" style="margin-left:6px" onclick="event.stopPropagation();openContractEditModal('+k.id+')">Edit</button>'
+      +'<button class="btn btn-g btn-xs" style="margin-left:6px" onclick="event.stopPropagation();openManagePlacement('+k.id+')">Manage placement</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">'
+      +'<span class="badge b-pu">'+esc(k.facility)+'</span>'
+      +'<span class="badge b-tl">'+esc(k.ward)+'</span>'
+      +(rateClean!==""?'<span class="badge b-gr">$'+rateClean+'/hr &middot; '+(k.hours||"?")+'h/wk</span>':"")
+      +(k.healthRegion?'<span class="badge b-gr">'+esc(k.healthRegion)+'</span>':"")
+      +'</div>'
+      +(k.status==="Active"&&totalW?'<div style="margin-bottom:8px"><div class="prog-t" style="width:100%;height:4px"><div class="prog-f" style="width:'+elapsed+'%;background:linear-gradient(90deg,rgba(255,255,255,.5),rgba(255,255,255,0) 70%),'+col+'"></div></div></div>':"")
+      +'<div style="display:flex;gap:14px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap">'
+      +'<div><div style="font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">Start</div><div style="font-size:11px;font-weight:500">'+fmt(k.startDate)+'</div></div>'
+      +'<div><div style="font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)">End</div><div style="font-size:11px;font-weight:500;color:'+col+'">'+fmt(k.endDate)+'</div></div>'
+      +(d!==null&&k.status==="Active"?'<div><div style="font-size:8px;font-weight:500;text-transform:uppercase;color:var(--t3)">Remaining</div><div style="font-size:11px;font-weight:500;color:'+col+'">'+(d===0?"Today":d<0?"Expired "+Math.abs(d)+"d ago":d+"d")+'</div></div>':"")
+      +(k.notes?'<div style="flex:1"><div style="font-size:8px;font-weight:500;text-transform:uppercase;color:var(--t3)">Notes</div><div style="font-size:10px;color:var(--t2)">'+esc(k.notes.slice(0,80))+(k.notes.length>80?"...":"")+'</div></div>':"")
+      +'</div></div>';
+  }).join("");
+
+  document.getElementById("page").innerHTML=heroHtml+(cards||'<div class="card"><div class="empty-st">No contracts</div></div>');
+}
 
 function renderFacilities(){
   facilities.forEach(function(f){
@@ -4980,37 +5041,37 @@ function mpSummaryRowHtml(item){
     line+=' · '+esc(item.subsidyType)+' subsidy'+(item.subsidyAmount?' $'+esc(item.subsidyAmount):'');
   }
   return '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">'
-    +'<div style="font-weight:600">'+line+'</div>'
+    +'<div style="font-weight:500">'+line+'</div>'
     +(item.notes?'<div style="color:var(--t3);margin-top:2px">'+esc(item.notes)+'</div>':'')
     +'</div>';
 }
 function mpRowHtml(type,item){
   if(item.status&&item.status!=='Booked')return mpSummaryRowHtml(item);
   if(type==='flights')return '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">'
-    +'<div style="font-weight:600">'+esc(item.airline||'')+(item.flightNo?' <span style="font-family:monospace;color:var(--t3)">'+esc(item.flightNo)+'</span>':'')+'</div>'
+    +'<div style="font-weight:500">'+esc(item.airline||'')+(item.flightNo?' <span style="color:var(--t3)">'+esc(item.flightNo)+'</span>':'')+'</div>'
     +(item.from||item.to?'<div style="color:var(--t2)">'+esc(item.from||'')+' → '+esc(item.to||'')+'</div>':'')
     +(item.departDate?'<div style="color:var(--t3)">'+fmt(item.departDate)+(item.returnDate?' → return '+fmt(item.returnDate):'')+'</div>':'')
     +(item.bookingRef?'<div style="color:var(--t3)">Ref: <strong>'+esc(item.bookingRef)+'</strong></div>':'')
-    +(item.cost?'<div style="color:var(--ok);font-weight:700;margin-top:2px">$'+esc(item.cost)+'</div>':'')
+    +(item.cost?'<div style="color:var(--ok);font-weight:500;margin-top:2px">$'+esc(item.cost)+'</div>':'')
     +(item.notes?'<div style="color:var(--t3);margin-top:2px">'+esc(item.notes)+'</div>':'')
     +'</div>';
   if(type==='accom')return '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">'
-    +'<div style="font-weight:600">'+esc(item.name||'')+'</div>'
+    +'<div style="font-weight:500">'+esc(item.name||'')+'</div>'
     +(item.address?'<div style="color:var(--t3)">'+esc(item.address)+'</div>':'')
     +(item.checkIn?'<div style="color:var(--t2)">'+fmt(item.checkIn)+' → '+fmt(item.checkOut||'')+'</div>':'')
-    +(item.cost?'<div style="color:var(--ok);font-weight:700;margin-top:2px">$'+esc(item.cost)+' '+esc(item.costUnit||'per night')+'</div>':'')
+    +(item.cost?'<div style="color:var(--ok);font-weight:500;margin-top:2px">$'+esc(item.cost)+' '+esc(item.costUnit||'per night')+'</div>':'')
     +(item.notes?'<div style="color:var(--t3);margin-top:2px">'+esc(item.notes)+'</div>':'')
     +'</div>';
   if(type==='cars')return '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">'
-    +'<div style="font-weight:600">'+esc(item.provider||'')+(item.vehicle?' — '+esc(item.vehicle):'')+'</div>'
+    +'<div style="font-weight:500">'+esc(item.provider||'')+(item.vehicle?' — '+esc(item.vehicle):'')+'</div>'
     +(item.pickupLocation?'<div style="color:var(--t3)">Pickup: '+esc(item.pickupLocation)+'</div>':'')
     +(item.pickupDate?'<div style="color:var(--t2)">'+fmt(item.pickupDate)+' → '+fmt(item.returnDate||'')+'</div>':'')
-    +(item.cost?'<div style="color:var(--ok);font-weight:700;margin-top:2px">$'+esc(item.cost)+' '+esc(item.costUnit||'per day')+'</div>':'')
+    +(item.cost?'<div style="color:var(--ok);font-weight:500;margin-top:2px">$'+esc(item.cost)+' '+esc(item.costUnit||'per day')+'</div>':'')
     +(item.notes?'<div style="color:var(--t3);margin-top:2px">'+esc(item.notes)+'</div>':'')
     +'</div>';
   if(type==='expenses')return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">'
-    +'<div><div style="font-weight:600">'+esc(item.type||'')+'</div>'+(item.description?'<div style="color:var(--t3)">'+esc(item.description)+'</div>':'')+(item.date?'<div style="color:var(--t3)">'+fmt(item.date)+'</div>':'')+'</div>'
-    +(item.amount?'<div style="color:var(--ok);font-weight:700">$'+esc(item.amount)+'</div>':'')
+    +'<div><div style="font-weight:500">'+esc(item.type||'')+'</div>'+(item.description?'<div style="color:var(--t3)">'+esc(item.description)+'</div>':'')+(item.date?'<div style="color:var(--t3)">'+fmt(item.date)+'</div>':'')+'</div>'
+    +(item.amount?'<div style="color:var(--ok);font-weight:500">$'+esc(item.amount)+'</div>':'')
     +'</div>';
   return '';
 }
@@ -5095,7 +5156,7 @@ function mpFlightFormFieldsHtml(){
 function mpFlightFormHtml(){
   var saveFn=MPFlightEditId!==null?'mpUpdateFlight()':'mpSaveFlight()';
   var saveLabel=MPFlightEditId!==null?'Save Changes':(MPFlight.status==='Booked'?'Save Flight':'Save');
-  return '<div style="display:flex;gap:3px;background:#f0eaf8;border-radius:6px;padding:4px;width:fit-content;margin-bottom:10px">'
+  return '<div style="display:flex;gap:3px;background:var(--brand-l);border-radius:6px;padding:4px;width:fit-content;margin-bottom:10px">'
     +MP_STATUSES.map(function(s){return'<button class="toggle-pill'+(MPFlight.status===s?' on':'')+'" onclick="mpSetFlightStatus(&apos;'+s+'&apos;)">'+s+'</button>';}).join('')
     +'</div>'
     +mpFlightFormFieldsHtml()
@@ -5106,10 +5167,11 @@ function mpFlightFormHtml(){
 }
 function mpFlightsSectionHtml(fls){
   var h='<div style="margin-bottom:16px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">Flights</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">Flights</div>'
     +(fls.length?'<span class="badge b-tl" style="font-size:9px">'+esc((mpFirstWithStatus(fls)&&mpFirstWithStatus(fls).status)||'Not set')+'</span>':'')
-    +'</div>';
+    +'</div>'
+    +'<div style="background:var(--bg);border-radius:12px;padding:12px 14px">';
   if(fls.length){
     fls.forEach(function(item){
       h+=MPFlightEditId===item.id?mpFlightFormHtml():(mpRowHtml('flights',item)+mpRowActionsHtml('mpStartEditFlight','mpDeleteFlight',item.id)+mpDocBlockHtml('flights',item));
@@ -5117,7 +5179,7 @@ function mpFlightsSectionHtml(fls){
   } else {
     h+=mpFlightFormHtml();
   }
-  h+='</div>';
+  h+='</div></div>';
   return h;
 }
 function mpSaveFlight(){
@@ -5242,7 +5304,7 @@ function mpAccomFormFieldsHtml(){
 function mpAccomFormHtml(){
   var saveFn=MPAccomEditId!==null?'mpUpdateAccom()':'mpSaveAccom()';
   var saveLabel=MPAccomEditId!==null?'Save Changes':(MPAccom.status==='Booked'?'Save Accommodation':'Save');
-  return '<div style="display:flex;gap:3px;background:#f0eaf8;border-radius:6px;padding:4px;width:fit-content;margin-bottom:10px">'
+  return '<div style="display:flex;gap:3px;background:var(--brand-l);border-radius:6px;padding:4px;width:fit-content;margin-bottom:10px">'
     +MP_STATUSES.map(function(s){return'<button class="toggle-pill'+(MPAccom.status===s?' on':'')+'" onclick="mpSetAccomStatus(&apos;'+s+'&apos;)">'+s+'</button>';}).join('')
     +'</div>'
     +mpAccomFormFieldsHtml()
@@ -5253,10 +5315,11 @@ function mpAccomFormHtml(){
 }
 function mpAccomSectionHtml(acs){
   var h='<div style="margin-bottom:16px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">Accommodation</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">Accommodation</div>'
     +(acs.length?'<span class="badge b-tl" style="font-size:9px">'+esc((mpFirstWithStatus(acs)&&mpFirstWithStatus(acs).status)||'Not set')+'</span>':'')
-    +'</div>';
+    +'</div>'
+    +'<div style="background:var(--bg);border-radius:12px;padding:12px 14px">';
   if(acs.length){
     acs.forEach(function(item){
       h+=MPAccomEditId===item.id?mpAccomFormHtml():(mpRowHtml('accom',item)+mpRowActionsHtml('mpStartEditAccom','mpDeleteAccom',item.id)+mpDocBlockHtml('accom',item));
@@ -5264,7 +5327,7 @@ function mpAccomSectionHtml(acs){
   } else {
     h+=mpAccomFormHtml();
   }
-  h+='</div>';
+  h+='</div></div>';
   return h;
 }
 function mpSaveAccom(){
@@ -5389,7 +5452,7 @@ function mpCarFormFieldsHtml(){
 function mpCarFormHtml(){
   var saveFn=MPCarEditId!==null?'mpUpdateCar()':'mpSaveCar()';
   var saveLabel=MPCarEditId!==null?'Save Changes':(MPCar.status==='Booked'?'Save Car Hire':'Save');
-  return '<div style="display:flex;gap:3px;background:#f0eaf8;border-radius:6px;padding:4px;width:fit-content;margin-bottom:10px">'
+  return '<div style="display:flex;gap:3px;background:var(--brand-l);border-radius:6px;padding:4px;width:fit-content;margin-bottom:10px">'
     +MP_STATUSES.map(function(s){return'<button class="toggle-pill'+(MPCar.status===s?' on':'')+'" onclick="mpSetCarStatus(&apos;'+s+'&apos;)">'+s+'</button>';}).join('')
     +'</div>'
     +mpCarFormFieldsHtml()
@@ -5400,10 +5463,11 @@ function mpCarFormHtml(){
 }
 function mpCarSectionHtml(cars){
   var h='<div style="margin-bottom:16px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">Car Hire</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">Car hire</div>'
     +(cars.length?'<span class="badge b-tl" style="font-size:9px">'+esc((mpFirstWithStatus(cars)&&mpFirstWithStatus(cars).status)||'Not set')+'</span>':'')
-    +'</div>';
+    +'</div>'
+    +'<div style="background:var(--bg);border-radius:12px;padding:12px 14px">';
   if(cars.length){
     cars.forEach(function(item){
       h+=MPCarEditId===item.id?mpCarFormHtml():(mpRowHtml('cars',item)+mpRowActionsHtml('mpStartEditCar','mpDeleteCar',item.id)+mpDocBlockHtml('cars',item));
@@ -5411,7 +5475,7 @@ function mpCarSectionHtml(cars){
   } else {
     h+=mpCarFormHtml();
   }
-  h+='</div>';
+  h+='</div></div>';
   return h;
 }
 function mpSaveCar(){
@@ -5540,10 +5604,11 @@ function mpExpenseFormHtml(){
 }
 function mpExpensesSectionHtml(exps){
   var h='<div style="margin-bottom:16px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">Expenses</div>'
-    +(MPExpenseEditId===null?'<button class="btn btn-g btn-xs" onclick="mpToggleExpenseForm()">'+(MPExpense.open?'Cancel':'+ Add Expense')+'</button>':'')
-    +'</div>';
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)">Expenses</div>'
+    +(MPExpenseEditId===null?'<button class="btn btn-g btn-xs" onclick="mpToggleExpenseForm()">'+(MPExpense.open?'Cancel':'+ Add expense')+'</button>':'')
+    +'</div>'
+    +'<div style="background:var(--bg);border-radius:12px;padding:12px 14px">';
   if(MPExpense.open&&MPExpenseEditId===null)h+=mpExpenseFormHtml();
   if(!exps.length){h+='<div style="color:var(--t3);font-size:12px;padding:8px 0">No expenses recorded for this contract.</div>';}
   else{
@@ -5551,7 +5616,7 @@ function mpExpensesSectionHtml(exps){
       h+=MPExpenseEditId===item.id?mpExpenseFormHtml():(mpRowHtml('expenses',item)+mpRowActionsHtml('mpStartEditExpense','mpDeleteExpense',item.id)+mpDocBlockHtml('expenses',item));
     });
   }
-  h+='</div>';
+  h+='</div></div>';
   return h;
 }
 function mpSaveExpense(){
@@ -5662,12 +5727,12 @@ function mpRenderBody(){
   document.getElementById('m-ttl').textContent='Manage Placement — '+esc(cand.name);
   document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
   document.getElementById('m-body').innerHTML='<div style="padding:16px">'
-    +'<div style="background:var(--bg);border-radius:7px;padding:12px;margin-bottom:12px">'
-    +'<div style="font-size:13px;font-weight:700">'+esc(cand.name)+'</div>'
+    +'<div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:12px">'
+    +'<div style="font-size:13px;font-weight:500">'+esc(cand.name)+'</div>'
     +'<div style="font-size:11px;color:var(--t2);margin-top:2px">'+esc(k.facility||'')+(k.ward?' — '+esc(k.ward):'')+'</div>'
     +'<div style="font-size:11px;color:var(--t3);margin-top:2px">'+fmt(k.startDate)+' → '+fmt(k.endDate)+'</div>'
     +'</div>'
-    +'<div style="font-size:11px;font-weight:600;color:#3b1a6e;margin-bottom:16px;padding:8px 12px;background:var(--hca-purple-pale,#f8f5fc);border-radius:6px">'+glanceLine+'</div>'
+    +'<div style="font-size:11px;font-weight:500;color:var(--brand);margin-bottom:16px;padding:10px 14px;background:var(--brand-l);border-radius:10px">'+glanceLine+'</div>'
     +mpFlightsSectionHtml(fls)
     +mpAccomSectionHtml(acs)
     +mpCarSectionHtml(cars)

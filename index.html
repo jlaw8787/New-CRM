@@ -145,18 +145,18 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .match-strong{background:var(--ok-l);color:var(--ok)}.match-poss{background:var(--warn-l);color:var(--warn)}
 .sla-chip{display:inline-flex;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;white-space:nowrap}
 .sla-a{background:var(--warn-l);color:var(--warn)}.sla-r{background:var(--danger-l);color:var(--danger)}
-.kb-wrap{display:flex;gap:10px;overflow-x:auto;padding:14px 14px 20px;align-items:flex-start}
+.kb-wrap{display:flex;gap:12px;overflow-x:auto;padding:14px 14px 20px;align-items:flex-start}
 .kb-col{min-width:230px;flex:0 0 230px;display:flex;flex-direction:column}
-.kb-hd{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:7px 10px;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:space-between;gap:6px}
-.kb-cards{background:var(--bg);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;padding:6px;min-height:56px;display:flex;flex-direction:column;gap:6px}
-.kb-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:9px 10px;cursor:pointer;transition:box-shadow .12s;position:relative}
-.kb-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.kb-hd{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:9px 12px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.kb-cards{background:var(--bg);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:8px;min-height:56px;display:flex;flex-direction:column;gap:8px}
+.kb-card{background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow-card);transition:box-shadow .12s;position:relative}
+.kb-card:hover{box-shadow:0 4px 10px rgba(38,33,92,.08),0 20px 36px -22px rgba(38,33,92,.45)}
 .kb-menu-btn{position:absolute;top:5px;right:5px;width:22px;height:22px;border:none;background:transparent;border-radius:4px;cursor:pointer;color:var(--t3);display:flex;align-items:center;justify-content:center;font-size:15px;padding:0;line-height:1}
 .kb-menu-btn:hover{background:var(--border);color:var(--t1)}
-.kb-menu{position:absolute;top:26px;right:4px;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.13);z-index:100;min-width:164px;padding:4px 0}
+.kb-menu{position:absolute;top:26px;right:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.13);z-index:100;min-width:164px;padding:4px 0}
 .kb-mi{display:block;width:100%;text-align:left;padding:6px 12px;font-size:11px;border:none;background:none;cursor:pointer;color:var(--t1);white-space:nowrap}
 .kb-mi:hover{background:var(--brand-pale)}
-.kb-ml{padding:5px 12px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)}
+.kb-ml{padding:5px 12px 2px;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--t3)}
 .kb-ms{height:1px;background:var(--border);margin:3px 0}
 .sub-st-sel{font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--t1);cursor:pointer}
 .b-gr{background:#f0f1f5;color:#454e68}.b-ny{background:#e5eaf5;color:#1a3060}
@@ -1235,9 +1235,9 @@ var subFiltConsId=localStorage.getItem('hca_sf_co')||'All';
 var subFiltFacility=localStorage.getItem('hca_sf_fa')||'All';
 var SUB_PL=['Promoting','Submitted','Accepted','Withdrawn','Declined'];
 var SUB_ALL=SUB_PL;
-var SUB_BG={Promoting:'#f3eefa',Submitted:'#e8f0fe',Accepted:'#e6f4ea',Withdrawn:'#f1f3f4',Declined:'#fdecea'};
-var SUB_TC={Promoting:'#4c2177',Submitted:'#1a56db',Accepted:'#1e7e34',Withdrawn:'#5f6368',Declined:'#c0392b'};
-function styleSubSel(el){var v=el.value;el.style.background=SUB_BG[v]||'#fff';el.style.color=SUB_TC[v]||'var(--t1)';el.style.fontWeight='600';}
+var SUB_BG={Promoting:'#EEEDFE',Submitted:'#E6F1FB',Accepted:'#E1F5EE',Withdrawn:'#F0F1F5',Declined:'#FAECE7'};
+var SUB_TC={Promoting:'#26215C',Submitted:'#185FA5',Accepted:'#0F6E56',Withdrawn:'#5a5f7a',Declined:'#993C1D'};
+function styleSubSel(el){var v=el.value;el.style.background=SUB_BG[v]||'#fff';el.style.color=SUB_TC[v]||'var(--t1)';el.style.fontWeight='500';}
 var subView=localStorage.getItem('hca_subview')||'list';
 var _kbMenu=null;
 var _declinedExpanded=false;
@@ -2244,12 +2244,35 @@ function renderSubmissions(){
   document.getElementById("tb-s").textContent=filtered.length+" of "+all.length+" submissions";
   document.getElementById("tb-r").innerHTML=
     '<div style="display:flex;align-items:center;gap:6px">'
-    +'<div style="display:flex;background:#f0eaf8;border-radius:6px;padding:4px;gap:2px">'
+    +'<div style="display:flex;background:var(--brand-l);border-radius:6px;padding:4px;gap:2px">'
     +'<button class="toggle-pill'+(subView==='list'?' on':'')+'" onclick="setSubView(\'list\')">List</button>'
     +'<button class="toggle-pill'+(subView==='pipeline'?' on':'')+'" onclick="setSubView(\'pipeline\')">Pipeline</button>'
     +'</div>'
     +'<button class="btn btn-g btn-sm" onclick="expAll(&apos;submissions&apos;)">'+I.dl+' Export</button>'
     +'</div>';
+
+  // ── HERO (summary strip) — real aggregates from the full `all` list
+  // (independent of active filters), same accepted-rate formula already
+  // used on the Management Dashboard. No fabricated data.
+  var OUTCOME_ST=['Accepted','Withdrawn','Declined'];
+  var withOutcome=all.filter(function(s){return OUTCOME_ST.indexOf(s.status)>=0;});
+  var awaitingCount=all.length-withOutcome.length;
+  var acceptedCount=all.filter(function(s){return s.status==='Accepted';}).length;
+  var acceptedRate=withOutcome.length>0?Math.round(acceptedCount/withOutcome.length*100):null;
+  var overdueCount=all.map(prepSub).filter(function(p){return p.fuOverdue;}).length;
+  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
+    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
+    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
+    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
+    +'</div>';}
+  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
+    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
+    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
+    +heroStat(I.doc,'Total submissions',all.length)
+    +heroStat(I.clock,'Awaiting outcome',awaitingCount)
+    +heroStat(I.chk,'Accepted rate',acceptedRate!==null?acceptedRate+'%':'&mdash;')
+    +heroStat(I.warn,'Overdue follow-ups',overdueCount)
+    +'</div></div>';
 
   var filterSel='font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px';
   var filterBar='<div style="display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">'
@@ -2270,29 +2293,29 @@ function renderSubmissions(){
   if(subView==='pipeline'){
     // ── PIPELINE VIEW ──────────────────────────────────────────────────────────
     var KB_COLS=['Promoting','Submitted','Accepted'];
-    var KB_COL_BG={Promoting:'#f3eefa',Submitted:'#e8f0fe',Accepted:'#e6f4ea'};
-    var KB_COL_C={Promoting:'#4c2177',Submitted:'#1a56db',Accepted:'#1e7e34'};
+    var KB_COL_BG={Promoting:'var(--brand-l)',Submitted:'var(--accent-l)',Accepted:'var(--ok-l)'};
+    var KB_COL_C={Promoting:'var(--brand)',Submitted:'var(--accent)',Accepted:'var(--ok)'};
     var declined=filtered.filter(function(s){return s.status==='Declined';});
     var withdrawn=filtered.filter(function(s){return s.status==='Withdrawn';});
     function termChip(list,label,bg,tc,expandKey,expandSet){
       if(!list.length)return'<span style="font-size:10px;color:var(--t3)">0 '+label+'</span>';
-      return'<span onclick="'+expandSet+';renderSubmissions()" style="font-size:10px;font-weight:600;background:'+bg+';color:'+tc+';cursor:pointer;padding:4px 8px;border:1px solid '+tc+'44;border-radius:10px">'+list.length+' '+label+' '+(window[expandKey]?'&#9650;':'&#9660;')+'</span>';
+      return'<span onclick="'+expandSet+';renderSubmissions()" style="font-size:10px;font-weight:500;background:'+bg+';color:'+tc+';cursor:pointer;padding:4px 8px;border:1px solid '+tc+'44;border-radius:10px">'+list.length+' '+label+' '+(window[expandKey]?'&#9650;':'&#9660;')+'</span>';
     }
-    var board='<div class="card" style="overflow:hidden">'
+    var board=heroHtml+'<div class="card" style="overflow:hidden">'
       +filterBar
       +'<div style="padding:8px 16px;display:flex;justify-content:flex-end;align-items:center;gap:8px;border-bottom:1px solid var(--border)">'
-      +termChip(withdrawn,'Withdrawn','#f1f3f4','#5f6368','_withdrawnExpanded','_withdrawnExpanded=!_withdrawnExpanded')
-      +termChip(declined,'Declined','#fdecea','#c0392b','_declinedExpanded','_declinedExpanded=!_declinedExpanded')
+      +termChip(withdrawn,'Withdrawn','var(--bg)','var(--t3)','_withdrawnExpanded','_withdrawnExpanded=!_withdrawnExpanded')
+      +termChip(declined,'Declined','var(--danger-l)','var(--danger)','_declinedExpanded','_declinedExpanded=!_declinedExpanded')
       +'</div>'
       +(_withdrawnExpanded&&withdrawn.length
-        ?'<div style="padding:12px 16px;background:#f8f9fa;border-bottom:1px solid var(--border)">'
-          +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#5f6368;margin-bottom:8px">Withdrawn ('+withdrawn.length+')</div>'
+        ?'<div style="padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border)">'
+          +'<div style="font-size:9px;font-weight:500;text-transform:uppercase;color:var(--t3);margin-bottom:8px">Withdrawn ('+withdrawn.length+')</div>'
           +withdrawn.map(function(p){return'<div onclick="openCandAtSubAlert('+p.cid+','+(p.id||'null')+')" style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);cursor:pointer;color:var(--t2)">'+esc(p.cn)+' → '+esc(p.facility||'—')+'</div>';}).join('')
           +'</div>'
         :'')
       +(_declinedExpanded&&declined.length
-        ?'<div style="padding:12px 16px;background:#fff8f8;border-bottom:1px solid var(--border)">'
-          +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#c0392b;margin-bottom:8px">Declined ('+declined.length+')</div>'
+        ?'<div style="padding:12px 16px;background:var(--danger-l);border-bottom:1px solid var(--border)">'
+          +'<div style="font-size:9px;font-weight:500;text-transform:uppercase;color:var(--danger);margin-bottom:8px">Declined ('+declined.length+')</div>'
           +declined.map(function(p){return'<div onclick="openCandAtSubAlert('+p.cid+','+(p.id||'null')+')" style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);cursor:pointer;color:var(--t2)">'+esc(p.cn)+' → '+esc(p.facility||'—')+'</div>';}).join('')
           +'</div>'
         :'')
@@ -2303,7 +2326,7 @@ function renderSubmissions(){
         return'<div class="kb-col">'
           +'<div class="kb-hd" style="background:'+KB_COL_BG[col]+';color:'+colC+'">'
           +'<span>'+col+'</span>'
-          +'<span style="background:'+colC+'22;color:'+colC+';font-size:10px;padding:4px 8px;border-radius:10px">'+cards.length+'</span>'
+          +'<span style="background:rgba(255,255,255,.6);color:'+colC+';font-size:10px;padding:4px 8px;border-radius:10px">'+cards.length+'</span>'
           +'</div>'
           +'<div class="kb-cards">'
           +(cards.length
@@ -2315,16 +2338,16 @@ function renderSubmissions(){
                 +'<button class="kb-menu-btn" onclick="toggleKbMenu('+(p.id||'null')+',event)" title="More options">&#8943;</button>'
                 +(menuOpen
                   ?'<div class="kb-menu" onclick="event.stopPropagation()">'
-                    +'<div class="kb-ml">Set Status</div>'
-                    +SUB_ALL.map(function(st){return'<button class="kb-mi'+(p.status===st?' kb-mi-cur':'')+'" onclick="setSubStatus('+p.cid+','+(p.id||'null')+',\''+st+'\',event)" style="'+(p.status===st?'font-weight:700;color:var(--brand)':'')+'">'+esc(st)+'</button>';}).join('')
+                    +'<div class="kb-ml">Set status</div>'
+                    +SUB_ALL.map(function(st){return'<button class="kb-mi'+(p.status===st?' kb-mi-cur':'')+'" onclick="setSubStatus('+p.cid+','+(p.id||'null')+',\''+st+'\',event)" style="'+(p.status===st?'font-weight:500;color:var(--brand)':'')+'">'+esc(st)+'</button>';}).join('')
                     +'<div class="kb-ms"></div>'
-                    +(!p.followUpDone?'<button class="kb-mi" onclick="subMarkFuDone('+p.cid+','+(p.id||'null')+',event)">Mark Follow-up Done</button>':'')
-                    +'<button class="kb-mi" onclick="event.stopPropagation();_kbMenu=null;openCandPage('+p.cid+')">Open Candidate</button>'
+                    +(!p.followUpDone?'<button class="kb-mi" onclick="subMarkFuDone('+p.cid+','+(p.id||'null')+',event)">Mark follow-up done</button>':'')
+                    +'<button class="kb-mi" onclick="event.stopPropagation();_kbMenu=null;openCandPage('+p.cid+')">Open candidate</button>'
                     +'</div>'
                   :'')
-                +'<div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px;padding-right:24px">'+esc(p.cn)+'</div>'
+                +'<div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:4px;padding-right:24px">'+esc(p.cn)+'</div>'
                 +'<div style="font-size:10px;color:var(--t3);margin-bottom:4px">'+esc(p.facility||'—')+(p.ward?' · '+esc(p.ward):'')+'</div>'
-                +(rateClean!==''?'<div style="font-size:10px;color:var(--ok);font-weight:600;margin-bottom:4px">$'+rateClean+'/hr</div>':'')
+                +(rateClean!==''?'<div style="font-size:10px;color:var(--ok);font-weight:500;margin-bottom:4px">$'+rateClean+'/hr</div>':'')
                 +'<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
                 +(p.daysInStage!==null?'<span style="font-size:9px;color:var(--t3)">'+p.daysInStage+'d in stage</span>':'')
                 +slaChipHtml(p)
@@ -2348,9 +2371,9 @@ function renderSubmissions(){
   // ── LIST VIEW ──────────────────────────────────────────────────────────────
   var rows=filtered.map(function(p){
     var fuHtml=p.followUpDate
-      ?'<div style="font-size:10px;'+(p.fuOverdue?'color:var(--danger);font-weight:700':p.fuDiff===0?'color:#d97706;font-weight:600':'color:var(--t3)')+'">'+fmt(p.followUpDate)+(p.fuOverdue?' &#8226;':'')+'</div>'
+      ?'<div style="font-size:10px;'+(p.fuOverdue?'color:var(--danger);font-weight:500':p.fuDiff===0?'color:var(--warn);font-weight:500':'color:var(--t3)')+'">'+fmt(p.followUpDate)+(p.fuOverdue?' &#8226;':'')+'</div>'
       :'<span style="color:var(--t3);font-size:10px">&mdash;</span>';
-    var stSel='<select class="sub-st-sel" onclick="event.stopPropagation()" onchange="setSubStatus('+p.cid+','+(p.id||'null')+',this.value,event);styleSubSel(this)" style="background:'+(SUB_BG[p.status]||'#fff')+';color:'+(SUB_TC[p.status]||'var(--t1)')+';font-weight:600;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:5px">'
+    var stSel='<select class="sub-st-sel" onclick="event.stopPropagation()" onchange="setSubStatus('+p.cid+','+(p.id||'null')+',this.value,event);styleSubSel(this)" style="background:'+(SUB_BG[p.status]||'#fff')+';color:'+(SUB_TC[p.status]||'var(--t1)')+';font-weight:500;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px">'
       +SUB_ALL.map(function(st){return'<option'+(p.status===st?' selected':'')+'>'+esc(st)+'</option>';}).join('')
       +'</select>'
       +(p.status==='Accepted'&&!hasContractForSub(p.cid,p.id)
@@ -2362,14 +2385,14 @@ function renderSubmissions(){
       +'<td style="font-size:10px;color:var(--t3)">'+esc(p.ward||"—")+'</td>'
       +'<td style="font-size:10px;color:var(--t3)">'+fmt(p.submittedDate)+'</td>'
       +'<td>'+stSel+'</td>'
-      +'<td style="font-size:11px;text-align:center;font-weight:600">'+(p.daysOpen!==null?p.daysOpen+'d':'—')+'</td>'
+      +'<td style="font-size:11px;text-align:center;font-weight:500">'+(p.daysOpen!==null?p.daysOpen+'d':'—')+'</td>'
       +'<td>'+slaChipHtml(p)+followupChipHtml(p.id)+'</td>'
       +'<td>'+fuHtml+'</td>'
       +'<td style="font-size:10px;color:var(--t3)">'+esc(p.consName)+'</td>'
       +'</tr>';
   }).join("");
 
-  document.getElementById("page").innerHTML='<div class="card">'
+  document.getElementById("page").innerHTML=heroHtml+'<div class="card">'
     +filterBar
     +'<table class="tbl"><thead><tr><th>Candidate</th><th>Facility</th><th>Ward</th><th>Submitted</th><th>Status</th><th style="text-align:center">Days Open</th><th>SLA</th><th>Follow-up</th><th>Consultant</th></tr></thead>'
     +'<tbody>'+(rows||'<tr><td colspan="9"><div class="empty-st">'+I.plane+'<b>'+(all.length?'No submissions match':'No submissions yet')+'</b><p>'+(all.length?'Try adjusting your filters.':'Submit a candidate to a facility to start tracking.')+'</p>'+(all.length?'':'<button class="btn btn-p btn-sm" onclick="nav(\'candidates\')">Go to Candidates</button>')+'</div></td></tr>')+'</tbody></table></div>';

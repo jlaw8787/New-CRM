@@ -4521,12 +4521,12 @@ function renderFacPage(){
   var right='<div class="entity-right" style="min-width:0;display:flex;flex-direction:column;gap:14px">'
     +facSec('overview','Overview',renderFacOverview(f,d,isAdminOps))
     +facSec('roles','Roles',renderFacRoles(f,isAdminOps),
-      isAdminOps?'<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openRoleModal(null)" style="font-size:10px;padding:4px 8px">+ Add role</button>':undefined,
+      isAdminOps?'<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openRoleModal(null)" style="font-size:10px;padding:4px 8px">+ Add role</button>':'',
       facRoles.length+' total')
     +facSec('submissions','Submissions',renderFacSubmissions(f),'',allSubs.length+' total')
     +facSec('contracts','Contracts',renderFacContracts(f),'',allCons.length+' total')
     +facSec('checklist','Submission checklist',renderFacChecklist(f,isAdminOps),
-      isAdminOps?'<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openChecklistModal('+f.id+')" style="font-size:10px;padding:4px 8px">Edit</button>':undefined)
+      isAdminOps?'<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openChecklistModal('+f.id+')" style="font-size:10px;padding:4px 8px">Edit</button>':'')
     +facSec('contacts','Contacts',renderFacContacts(f,fContacts,isAdminOps),'',fContacts.length?fContacts.length+' on record':'')
     +facSec('documents','Documents',renderFacDocuments(f,isAdminOps),'',(f.documents||[]).length?(f.documents||[]).length+' files':'')
     +facSec('activity','Activity',renderFacActivitySection(f),'',facActivityCache[f.id]?facActivityCache[f.id].length+' entries':'loading...')

@@ -1164,6 +1164,103 @@ than assuming one, since the choice affects how the per-status action
 buttons attach to it.
 
 ====================================================================
+## 22. Submission flow improvements — future enhancements, not bugs
+====================================================================
+
+STATUS: Open. Logged 2026-07-12, alongside items 19-21 (post-visual-
+rollout feature backlog, not defects). Two related but separate asks
+about the Submit flow (openSubFlow / sfRender and related sf* state).
+
+--- (a) Let the consultant set placement start/end dates at submit time
+WHAT'S MISSING
+Checked the current submit flow directly: "Expected start"/"Expected
+end" date inputs (#sf-start-date/#sf-end-date) already exist in
+openSubFlow's role-card step — but only render for an ad-hoc
+submission with no role selected (the "— Ad-hoc (no role) —" option).
+The much more common path — submitting a candidate to an actual open
+role — has no date inputs at all; sfStartDate/sfEndDate are silently
+set from the role's own startDate/endDate with no way for the
+consultant to override them for that specific candidate's placement.
+
+WHY THIS MATTERS
+A role's listed start/end dates are a general posting, not necessarily
+this specific candidate's actual availability window — a consultant
+submitting someone who can only start two weeks later currently has
+no way to reflect that at submission time for a role-based submit.
+
+LIKELY FIX (not yet agreed, not yet built)
+Surface the same start/end date inputs already built for the ad-hoc
+path in the role-selected path too, pre-filled from the role's dates
+but editable, consistent with how ad-hoc submissions already work.
+
+--- (b) Manual document/CV attachment at submit time
+WHAT'S MISSING
+Checked the submit flow for any free-form file-attach action —
+none exists. The only document-awareness in the flow is
+sfCheckSnap, which reads each facility's compliance checklist
+verification status (matched/verified/has-doc) — there is no
+"just attach a file" action independent of that structured checklist.
+
+WHY THIS MATTERS
+Explicitly distinct from the compliance-packs feature (see
+COMPLIANCE-PACKS-BRIEF.md): compliance packs are the structured,
+pre-loaded, facility-specific requirement set. This ask is a
+lightweight, always-available action — attach a CV or a single
+document to a submission without needing a checklist to exist first,
+useful for informal/speculative "fishing" outreach to a client where
+the full compliance pack isn't warranted yet. Both should be able to
+feed into a submission independently.
+
+LIKELY FIX (not yet agreed, not yet built)
+Add a simple manual attach control to the submit flow (e.g. a file
+picker step alongside the spiel/role-card steps), independent of
+facilityChecklists/sfCheckSnap, reusing the existing document-upload
+mechanism already used elsewhere (uploadToStorage) rather than
+building a new one.
+
+====================================================================
+## 23. Consultant role creation — product decision to make later, not
+## a bug
+====================================================================
+
+STATUS: Open. Logged 2026-07-12, found while auditing and fixing the
+dead-button bug on the facility Roles/Checklist section headers (see
+the fix commits around that date). Confirmed by checking every "Add
+role" entry point in the app.
+
+WHAT WAS FOUND
+Role creation is deliberately admin/ops only, consistently, everywhere
+it appears: the Job Board's "+ Add role" button (gated on
+CU.role==='admin'||CU.role==='ops'), the facility profile Roles
+section's header button, and the "Add first role" empty-state button
+— all three check isAdminOps/canManage before rendering. No path,
+buggy or working, lets a consultant create a role anywhere in the app.
+This looks like an intentional permission boundary, not an oversight.
+
+WHY THIS MATTERS
+Some roles come directly to a consultant (not routed through
+admin/ops first). Right now there is no way for that consultant to
+get the role into the system themselves — it has to go through
+admin/ops first.
+
+LIKELY FIX (not yet agreed, not yet built — deliberately deferred)
+This is a permission-boundary change, not a simple bug fix, so it
+needs deliberate product decisions before building anything:
+- Should a consultant-created role need admin/ops approval before
+  going live, or is it live immediately?
+- Visibility: does a consultant-created role show to everyone (like
+  admin/ops-created roles do now), or only to that consultant until
+  approved?
+- How does it interact with the submission checklist / compliance
+  setup for that facility, which is itself admin/ops-only right now
+  (see item 22 and the checklist-button fix) — does a consultant-
+  created role inherit an existing checklist, get created without
+  one, or block submission until admin/ops sets one up?
+
+Decide deliberately post-demo — do not build this without those
+three questions answered first.
+
+====================================================================
 ## CLEANUP LIST — test-data artifacts to remove before real data goes in
 ====================================================================
 

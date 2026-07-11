@@ -2453,7 +2453,25 @@ function renderFacilities(){
 
   document.getElementById("tb-h").textContent="Facilities";
   document.getElementById("tb-s").textContent=facilities.length+" facilities total";
-  document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="openFacModal()">+ Add Facility</button>';
+  document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="openFacModal()">+ Add facility</button>';
+
+  // ── HERO (summary strip) — real aggregates from `facilities`, no fabrication.
+  var preferredCount=facilities.filter(function(f){return f.preferredStatus;}).length;
+  var publicCount=facilities.filter(function(f){return (f.type||'Public')==='Public';}).length;
+  var privateCount=facilities.filter(function(f){return f.type==='Private';}).length;
+  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
+    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
+    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
+    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
+    +'</div>';}
+  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
+    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
+    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
+    +heroStat(I.hosp,'Total facilities',facilities.length)
+    +heroStat(I.star,'Preferred',preferredCount)
+    +heroStat(I.doc,'Public',publicCount)
+    +heroStat(I.case,'Private',privateCount)
+    +'</div></div>';
 
   var filtered=facilities.filter(function(f){
     if(facState!=="All"&&f.state!==facState)return false;
@@ -2481,15 +2499,15 @@ function renderFacilities(){
   var rows=filtered.map(function(f){
     var wardBadges=(f.wards||[]).slice(0,3).map(function(w){return '<span class="badge b-tl" title="'+w.nurseTypes.join(", ")+'">'+esc(w.name)+'</span>';}).join("");
     var moreWards=(f.wards||[]).length>3?' <span style="font-size:9px;color:var(--t3)">+'+((f.wards||[]).length-3)+' more</span>':"";
-    var convColor=f.convRate===null?"var(--t3)":f.convRate>=50?"var(--ok)":f.convRate>=25?"#d4900a":"var(--danger)";
+    var convColor=f.convRate===null?"var(--t3)":f.convRate>=50?"var(--ok)":f.convRate>=25?"var(--warn)":"var(--danger)";
     return '<tr onclick="openFacPage('+f.id+')" style="cursor:pointer">'
-      +'<td><div class="cp">'+esc(f.name)+'</div><div class="cs">'+esc(f.state)+'</div></td>'
+      +'<td><div style="display:flex;align-items:center;gap:6px">'+(f.preferredStatus?'<span style="color:#d4900a" title="Preferred facility">'+ico(I.star,13)+'</span>':'')+'<div class="cp">'+esc(f.name)+'</div></div><div class="cs">'+esc(f.state)+'</div></td>'
       +'<td style="font-size:10px">'+esc(f.region||"")+'</td>'
       +'<td><span class="badge b-bl">'+esc(f.type)+'</span></td>'
       +'<td><div style="display:flex;gap:3px;flex-wrap:wrap;max-width:240px;align-items:center">'+(wardBadges||'<span style="font-size:10px;color:var(--t3)">No wards set</span>')+moreWards+'</div></td>'
-      +'<td style="text-align:center;font-weight:700">'+f.activeContracts+'</td>'
+      +'<td style="text-align:center;font-weight:500">'+f.activeContracts+'</td>'
       +'<td style="text-align:center">'+f.totalSubs+'</td>'
-      +'<td style="text-align:center;font-weight:700;color:'+convColor+'">'+(f.convRate===null?"—":f.convRate+"%")+'</td>'
+      +'<td style="text-align:center;font-weight:500;color:'+convColor+'">'+(f.convRate===null?"—":f.convRate+"%")+'</td>'
       +'<td style="font-size:10px;color:var(--t3)">'+esc(f.contactName||"")+'</td>'
       +'<td><button class="btn btn-g btn-xs" onclick="event.stopPropagation();openFacModal('+f.id+')">Edit</button></td>'
       +'</tr>';
@@ -2510,7 +2528,7 @@ function renderFacilities(){
     +'<span style="font-size:11px;color:var(--t3);white-space:nowrap">'+filtered.length+' of '+facilities.length+'</span>'
     +'</div>';
 
-  document.getElementById("page").innerHTML='<div class="card">'+filterBar+'<table class="tbl"><thead><tr><th>Facility</th><th>Region</th><th>Type</th><th>Wards</th><th>Active</th><th>Subs</th><th>Conv. Rate</th><th>Contact</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="9"><div class="empty-st">'+I.hosp+'<b>No facilities match</b><p>Try adjusting your filters or search.</p><button class="btn btn-g btn-sm" onclick="facState=\'All\';facType=\'All\';facQ=\'\';renderFacilities()">Clear filters</button></div></td></tr>')+'</tbody></table></div>';
+  document.getElementById("page").innerHTML=heroHtml+'<div class="card">'+filterBar+'<table class="tbl"><thead><tr><th>Facility</th><th>Region</th><th>Type</th><th>Wards</th><th>Active</th><th>Subs</th><th>Conv. Rate</th><th>Contact</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="9"><div class="empty-st">'+I.hosp+'<b>No facilities match</b><p>Try adjusting your filters or search.</p><button class="btn btn-g btn-sm" onclick="facState=\'All\';facType=\'All\';facQ=\'\';renderFacilities()">Clear filters</button></div></td></tr>')+'</tbody></table></div>';
 }
 function renderTeam(){
   document.getElementById("tb-h").textContent="Team Overview";
@@ -4237,16 +4255,16 @@ function renderFacOverview(f,d,isAdminOps){
   var placed=allCons.length;var active=allCons.filter(function(k){return k.status==='Active';}).length;
   var convRate=allSubs.length>0?Math.round(allCons.length/allSubs.length*100):null;
   var statsRow='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">'
-    +'<div style="background:#edf8ee;border-radius:6px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--ok)">'+active+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Active</div></div>'
-    +'<div style="background:var(--brand-l);border-radius:6px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--brand)">'+placed+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Placed</div></div>'
-    +'<div style="background:#f0edf8;border-radius:6px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#7c3aed">'+allSubs.length+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Submitted</div></div>'
-    +'<div style="background:var(--bg);border-radius:6px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--t1)">'+(convRate!==null?convRate+'%':'&mdash;')+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Conv. Rate</div></div>'
+    +'<div style="background:var(--ok-l);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--ok)">'+active+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Active</div></div>'
+    +'<div style="background:var(--brand-l);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--brand)">'+placed+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Placed</div></div>'
+    +'<div style="background:var(--accent-l);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--accent)">'+allSubs.length+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Submitted</div></div>'
+    +'<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--t1)">'+(convRate!==null?convRate+'%':'&mdash;')+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">Conv. rate</div></div>'
     +'</div>';
   var wardList='<div style="margin-bottom:16px">'
-    +'<div class="cp-lbl">WARDS &amp; SPECIALTIES</div>'
+    +'<div class="cp-lbl">Wards &amp; specialties</div>'
     +(f.wards&&f.wards.length
       ?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
-        +f.wards.map(function(w){return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px"><div style="font-size:11px;font-weight:600;color:var(--t1)">'+esc(w.name)+'</div>'+(w.nurseTypes&&w.nurseTypes.length?'<div style="font-size:9px;color:var(--t3);margin-top:4px">'+w.nurseTypes.join(' / ')+'</div>':'')+'</div>';}).join('')
+        +f.wards.map(function(w){return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px"><div style="font-size:11px;font-weight:500;color:var(--t1)">'+esc(w.name)+'</div>'+(w.nurseTypes&&w.nurseTypes.length?'<div style="font-size:9px;color:var(--t3);margin-top:4px">'+w.nurseTypes.join(' / ')+'</div>':'')+'</div>';}).join('')
         +(isAdminOps?'<button class="btn btn-g btn-xs" onclick="openFacModal('+f.id+')" style="align-self:flex-start">+ Edit</button>':'')
         +'</div>'
       :'<div style="font-size:11px;color:var(--t3);margin-top:4px">No wards configured.'+(isAdminOps?' <button class="btn btn-g btn-xs" onclick="openFacModal('+f.id+')">Add wards</button>':'')+'</div>')
@@ -4257,7 +4275,7 @@ function renderFacOverview(f,d,isAdminOps){
       +'<div class="fg"><label>Candidate-Facing Notes</label><textarea oninput="facEditData.notesCandidate=this.value" rows="3" placeholder="Notes shared with candidates...">'+esc(d.notesCandidate||'')+'</textarea></div>';
   }
   return statsRow+wardList
-    +(isAdminOps&&f.notes?'<div style="margin-bottom:12px"><div class="cp-lbl">INTERNAL NOTES</div><div style="font-size:12px;line-height:1.6;color:var(--t1);white-space:pre-wrap;padding:12px;background:#fffbe6;border-radius:5px;margin-top:4px">'+esc(f.notes)+'</div></div>':'')
+    +(isAdminOps&&f.notes?'<div style="margin-bottom:12px"><div class="cp-lbl">Internal notes</div><div style="font-size:12px;line-height:1.6;color:var(--t1);white-space:pre-wrap;padding:12px;background:var(--warn-l);border-radius:8px;margin-top:4px">'+esc(f.notes)+'</div></div>':'')
     +(f.notesCandidate?'<div><div class="cp-lbl">CANDIDATE-FACING NOTES</div><div style="font-size:12px;line-height:1.6;color:var(--t1);white-space:pre-wrap;padding:12px;background:var(--bg);border-radius:5px;margin-top:4px">'+esc(f.notesCandidate)+'</div></div>':'')
     +(!isAdminOps&&!f.notes&&!f.notesCandidate?'<div style="color:var(--t3);font-size:12px;text-align:center;padding:8px 0">No notes on file.</div>':'');
 }
@@ -4267,10 +4285,10 @@ function renderFacRoles(f,isAdminOps){
   if(!facRoles.length){return '<div class="empty-st">'+I.doc+'<b>No roles configured</b><p>Add an open role to start matching candidates.</p>'+(isAdminOps?'<button class="btn btn-p btn-sm" onclick="openRoleModal(null)">Add first role</button>':'')+'</div>';}
   return facRoles.map(function(r){
     var pill=roleMatchPillHtml(candidates,r);
-    var sc=r.status==='Open'?'var(--ok)':r.status==='Likely'?'#d4900a':'var(--t3)';
-    return '<div style="background:var(--bg);border-radius:6px;padding:12px 16px;margin-bottom:8px;border-left:3px solid '+sc+'">'
+    var sc=r.status==='Open'?'var(--ok)':r.status==='Likely'?'var(--warn)':'var(--t3)';
+    return '<div style="background:var(--bg);border-radius:10px;padding:12px 16px;margin-bottom:8px;border-left:3px solid '+sc+'">'
       +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
-      +'<div><div style="font-size:13px;font-weight:700;color:var(--t1)">'+esc(r.ward)+'</div>'
+      +'<div><div style="font-size:13px;font-weight:500;color:var(--t1)">'+esc(r.ward)+'</div>'
       +'<div style="font-size:11px;color:var(--t2);margin-top:4px">'+esc(r.nurseType)+(r.positionsAvailable?' &middot; '+r.positionsAvailable+' pos':'')+'</div>'
       +'<div style="font-size:10px;color:var(--t3);margin-top:4px">'+(r.startDate?'From '+fmt(r.startDate):'Dates TBC')+(r.endDate?' &ndash; '+fmt(r.endDate):'')+'</div>'
       +'</div>'
@@ -4310,14 +4328,14 @@ function renderFacContracts(f){
   if(!all.length)return '<div class="empty-st">'+I.doc+'<b>No contracts yet</b><p>Contracts appear here once a submission to this facility is accepted.</p></div>';
   return '<table class="btbl" style="width:100%"><thead><tr><th>Candidate</th><th>Ward</th><th>Start</th><th>End</th><th>Rate</th><th>Status</th></tr></thead><tbody>'
     +all.map(function(k){
-      var d=ddiff(k.endDate);var col=k.status==='Active'?(d!==null&&d<=14?'var(--danger)':d!==null&&d<=21?'#d4900a':'var(--ok)'):'var(--t3)';
+      var d=ddiff(k.endDate);var col=k.status==='Active'?(d!==null&&d<=14?'var(--danger)':d!==null&&d<=21?'var(--warn)':'var(--ok)'):'var(--t3)';
       var rateClean=cleanRate(k.rate);
       return '<tr onclick="openCandPage('+k.cid+')" style="cursor:pointer">'
         +'<td><div class="cp">'+esc(k.cn)+'</div><div class="cs">'+esc(k.cc)+'</div></td>'
         +'<td style="font-size:11px">'+(k.ward?esc(k.ward):'&mdash;')+'</td>'
         +'<td style="font-size:10px;color:var(--t3)">'+fmt(k.startDate)+'</td>'
-        +'<td style="font-size:10px;font-weight:600;color:'+col+'">'+fmt(k.endDate)+(d!==null&&d>=0&&d<=14?' <span style="color:var(--danger)">('+d+'d)</span>':'')+'</td>'
-        +'<td style="font-size:11px;font-weight:600">'+(rateClean!==''?'$'+rateClean+'/hr':'&mdash;')+'</td>'
+        +'<td style="font-size:10px;font-weight:500;color:'+col+'">'+fmt(k.endDate)+(d!==null&&d>=0&&d<=14?' <span style="color:var(--danger)">('+d+'d)</span>':'')+'</td>'
+        +'<td style="font-size:11px;font-weight:500">'+(rateClean!==''?'$'+rateClean+'/hr':'&mdash;')+'</td>'
         +'<td><span class="badge '+bClass(k.status)+'">'+esc(k.status)+'</span></td>'
         +'</tr>';
     }).join('')+'</tbody></table>';
@@ -4335,7 +4353,7 @@ function renderFacChecklist(f,isAdminOps){
         return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">'
           +'<span style="color:'+(ci.required?'var(--brand)':'var(--t3)')+';font-size:13px">'+(ci.required?'&#9679;':'&#9675;')+'</span>'
           +'<span style="flex:1;font-size:12px;color:var(--t1)">'+esc(ci.item_label||ci.item_key||'')+'</span>'
-          +(ci.required?'<span style="font-size:9px;font-weight:700;color:var(--danger);text-transform:uppercase">Required</span>':'<span style="font-size:9px;color:var(--t3)">Optional</span>')
+          +(ci.required?'<span style="font-size:9px;font-weight:500;color:var(--danger);text-transform:uppercase">Required</span>':'<span style="font-size:9px;color:var(--t3)">Optional</span>')
           +'</div>';
       }).join('')
       +'</div>';
@@ -4349,9 +4367,9 @@ function renderFacContacts(f,fContacts,isAdminOps){
     rows=fContacts.map(function(c){
       var initials=c.name.split(' ').filter(Boolean).map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)||'?';
       return '<div style="display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">'
-        +'<div style="width:36px;height:36px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">'+initials+'</div>'
+        +'<div style="width:36px;height:36px;border-radius:10px;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0">'+initials+'</div>'
         +'<div style="flex:1">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--t1)">'+esc(c.name)+'</div>'
+        +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(c.name)+'</div>'
         +(c.title?'<div style="font-size:10px;color:var(--t3)">'+esc(c.title)+'</div>':'')
         +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">'
         +(c.isPrimary?'<span class="badge b-pu" style="font-size:8px">Primary</span>':'')
@@ -4363,10 +4381,10 @@ function renderFacContacts(f,fContacts,isAdminOps){
     }).join('');
   } else {
     rows='<div style="padding:12px 0;border-bottom:1px solid var(--border)">'
-      +'<div style="font-size:12px;font-weight:700;color:var(--t1)">'+esc(f.contactName)+'</div>'
+      +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(f.contactName)+'</div>'
       +(f.contactEmail?'<a href="mailto:'+esc(f.contactEmail)+'" class="contact-btn" style="margin-top:8px">'+I.mail+''+esc(f.contactEmail)+'</a>':'')
       +(f.contactPhone?'<a href="tel:'+esc(f.contactPhone)+'" class="contact-btn">'+I.phone+''+esc(f.contactPhone)+'</a>':'')
-      +(f.secondaryContactName?'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:600">Secondary Contact</div><div style="font-size:12px;font-weight:700;color:var(--t1)">'+esc(f.secondaryContactName)+'</div>'+(f.secondaryContactEmail?'<a href="mailto:'+esc(f.secondaryContactEmail)+'" class="contact-btn" style="margin-top:8px">'+I.mail+''+esc(f.secondaryContactEmail)+'</a>':'')+(f.secondaryContactPhone?'<a href="tel:'+esc(f.secondaryContactPhone)+'" class="contact-btn">'+I.phone+''+esc(f.secondaryContactPhone)+'</a>':'')+'</div>':'')
+      +(f.secondaryContactName?'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:500">Secondary contact</div><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(f.secondaryContactName)+'</div>'+(f.secondaryContactEmail?'<a href="mailto:'+esc(f.secondaryContactEmail)+'" class="contact-btn" style="margin-top:8px">'+I.mail+''+esc(f.secondaryContactEmail)+'</a>':'')+(f.secondaryContactPhone?'<a href="tel:'+esc(f.secondaryContactPhone)+'" class="contact-btn">'+I.phone+''+esc(f.secondaryContactPhone)+'</a>':'')+'</div>':'')
       +'</div>';
   }
   return rows;
@@ -4381,11 +4399,11 @@ function renderFacActivitySection(f){
   var types=['Note','Call','Email','Meeting'];
   var ICO={Note:I.pencil,Call:I.phone,Email:I.mail,Meeting:I.meet};
   var COL={Note:'var(--accent)',Call:'var(--ok)',Email:'#8B5CF6',Meeting:'var(--warn)'};
-  var inputHtml='<div style="background:var(--bg);border-radius:6px;padding:12px;margin-bottom:12px">'
+  var inputHtml='<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:12px">'
     +'<div style="display:flex;gap:4px;margin-bottom:8px">'
     +types.map(function(t){return '<button class="btn btn-sm '+(facActType===t?'btn-p':'btn-g')+'" onclick="event.stopPropagation();setFacActType(\''+t+'\')" style="font-size:10px;padding:4px 8px">'+t+'</button>';}).join('')
     +'</div>'
-    +'<textarea id="fac-act-txt" rows="3" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:8px;font-size:12px;resize:vertical;font-family:inherit;box-sizing:border-box" placeholder="Log a '+facActType.toLowerCase()+'..."></textarea>'
+    +'<textarea id="fac-act-txt" rows="3" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;resize:vertical;font-family:inherit;box-sizing:border-box" placeholder="Log a '+facActType.toLowerCase()+'..."></textarea>'
     +'<div style="display:flex;justify-content:flex-end;margin-top:8px">'
     +'<button class="btn btn-p btn-sm" onclick="addFacActivity('+f.id+')">Add '+facActType+'</button>'
     +'</div></div>';
@@ -4397,7 +4415,7 @@ function renderFacActivitySection(f){
     return '<div style="display:flex;gap:10px;margin-bottom:12px">'
       +'<div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:'+col+'1a;color:'+col+';display:flex;align-items:center;justify-content:center">'+icoHtml+'</div>'
       +'<div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
-      +'<span style="font-size:10px;font-weight:700;color:'+col+'">'+esc(a.type||'Note')+'</span>'
+      +'<span style="font-size:10px;font-weight:500;color:'+col+'">'+esc(a.type||'Note')+'</span>'
       +'<span style="font-size:10px;color:var(--t3)">'+esc(a.author||'')+'</span>'
       +(tsStr?'<span style="font-size:9px;color:var(--t3);margin-left:auto">'+tsStr+'</span>':'')
       +'</div><div style="font-size:11px;color:var(--t2);line-height:1.5;white-space:pre-wrap">'+esc(a.content||'')+'</div></div>'
@@ -4426,46 +4444,41 @@ function renderFacPage(){
   document.getElementById('tb-s').textContent=(f.type||'Facility')+(f.state?' — '+f.state:'')+(f.region?' / '+f.region:'');
   document.getElementById('tb-r').innerHTML=''
     +'<button class="btn btn-g btn-sm" onclick="nav(\'facilities\')">'+I.back+' Facilities</button>'
-    +(isAdminOps?'<button class="btn btn-p btn-sm" onclick="openFacModal('+f.id+')" style="margin-left:8px">Edit Details</button>':'');
+    +(isAdminOps?'<button class="btn btn-p btn-sm" onclick="openFacModal('+f.id+')" style="margin-left:8px">Edit details</button>':'');
+
+  // ── IDENTITY HEADER (hero moment, matching the candidate page) ───────────────
+  var heroSubtext=[f.type?esc(f.type):'',f.region?esc(f.region):'',f.beds?f.beds+' beds':''].filter(Boolean).join(' · ');
+  var ringHtmlFac=convRate!==null
+    ?'<div style="position:relative;width:76px;height:76px;flex-shrink:0">'
+      +'<div style="width:76px;height:76px;border-radius:50%;background:conic-gradient('+healthColor+' '+convRate+'%, rgba(255,255,255,.2) 0)"></div>'
+      +'<div style="position:absolute;top:8px;left:8px;width:60px;height:60px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:#fff">'+convRate+'%</div>'
+      +'</div>'
+    :'<div style="width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.65);text-align:center;flex-shrink:0">No data yet</div>';
+  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
+    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
+    +'<div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">'
+    +'<div style="display:flex;align-items:center;gap:16px;min-width:0">'
+    +'<div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">'+ico(I.hosp,26,'#fff')+'</div>'
+    +'<div style="min-width:0">'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
+    +'<span style="font-size:19px;font-weight:500;color:#fff">'+esc(f.name)+'</span>'
+    +(f.preferredStatus?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:#fff;color:var(--ok);display:inline-flex;align-items:center;gap:3px">'+ico(I.star,10)+' Preferred</span>':'')
+    +(f.state?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,.18);color:#fff;text-transform:uppercase;letter-spacing:.04em">'+esc(f.state)+'</span>':'')
+    +'</div>'
+    +'<div style="font-size:12px;color:#CECBF6">'+heroSubtext+'</div>'
+    +'</div></div>'
+    +'<div style="display:flex;align-items:center;gap:20px;flex-shrink:0">'
+    +'<div style="display:flex;gap:16px">'
+    +'<div style="text-align:center"><div style="font-size:20px;font-weight:500;color:#fff">'+activeContracts+'</div><div style="font-size:9px;color:#CECBF6;margin-top:2px">Active</div></div>'
+    +'<div style="text-align:center"><div style="font-size:20px;font-weight:500;color:#fff">'+allCons.length+'</div><div style="font-size:9px;color:#CECBF6;margin-top:2px">Placed</div></div>'
+    +'<div style="text-align:center"><div style="font-size:20px;font-weight:500;color:#fff">'+allSubs.length+'</div><div style="font-size:9px;color:#CECBF6;margin-top:2px">Submitted</div></div>'
+    +'</div>'
+    +ringHtmlFac
+    +'</div></div></div>';
 
   var left='<div class="entity-left" style="display:flex;flex-direction:column;gap:12px;position:sticky;top:24px">'
-    +'<div class="profile-card">'
-    +'<div style="font-size:17px;font-weight:800;color:var(--t1);line-height:1.2;margin-bottom:12px">'+esc(f.name)+'</div>'
-    +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">'
-    +(f.state?'<span class="badge b-pu">'+esc(f.state)+'</span>':'')
-    +(f.type?'<span class="badge b-bl">'+esc(f.type)+'</span>':'')
-    +(f.region?'<span class="badge b-tl">'+esc(f.region)+'</span>':'')
-    +(f.preferredStatus?'<span class="badge b-gn" style="display:inline-flex;align-items:center;gap:3px">'+ico(I.star,10)+' Preferred</span>':'')
-    +'</div>'
-    +(f.beds?'<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+f.beds+' beds</div>':'')
-    +'<div style="text-align:center;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:8px 0">'
-    +'<div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:4px">Placement Rate</div>'
-    +'<div style="font-size:24px;font-weight:800;color:'+healthColor+'">'+(convRate!==null?convRate+'%':'&mdash;')+'</div>'
-    +'<div style="font-size:10px;color:var(--t3)">'+allCons.length+' placed &middot; '+allSubs.length+' submitted &middot; '+activeContracts+' active</div>'
-    +'</div>'
-    +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin:8px 0">'
-    +(f.remoteLoadingApplies?'<span class="badge b-am">Remote +'+parseFloat(f.remoteLoadingPct||0)+'%</span>':'')
-    +(f.accommodationProvided?'<span class="badge b-gn">Accom Provided</span>':'')
-    +(f.carRequired?'<span class="badge b-rd">Car Required</span>':'')
-    +'</div>'
-    +(displayContact
-      ?'<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">'
-       +'<div class="key-fact-label">Primary Contact</div>'
-       +'<div style="font-size:13px;font-weight:700;color:var(--t1);margin-top:4px">'+esc(displayContact.name)+'</div>'
-       +(displayContact.title?'<div style="font-size:10px;color:var(--t3)">'+esc(displayContact.title)+'</div>':'')
-       +(displayContact.email?'<a href="mailto:'+esc(displayContact.email)+'" class="contact-btn" style="margin-top:8px">'+I.mail+''+esc(displayContact.email)+'</a>':'')
-       +(displayContact.phone?'<a href="tel:'+esc(displayContact.phone)+'" class="contact-btn">'+I.phone+''+esc(displayContact.phone)+'</a>':'')
-       +'</div>'
-      :'')
-    +(displaySubEmail
-      ?'<div style="margin-top:12px"><div class="key-fact-label">Submission Email</div>'
-       +'<div style="background:var(--brand-l);border:1px solid #c0aee8;border-radius:5px;padding:8px 12px;margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:4px">'
-       +'<span style="font-size:10px;color:var(--brand);font-weight:600;word-break:break-all">'+esc(displaySubEmail)+'</span>'
-       +'<button onclick="navigator.clipboard.writeText(\''+esc(displaySubEmail)+'\').then(function(){showToast(\'Copied\');}).catch(function(){showToast(\'Copy failed\',\'err\');})" style="background:none;border:none;cursor:pointer;color:var(--brand);flex-shrink:0;display:inline-flex" title="Copy">'+ico(I.copy,14)+'</button>'
-       +'</div></div>'
-      :'')
-    +'</div>'
     +'<div class="facts-card">'
+    +'<div class="card-section-title">Key facts</div>'
     +'<div class="key-facts" style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px">'
     +cpKeyFact('Beds',f.beds||'&mdash;')
     +cpKeyFact('Type',esc(f.type)||'&mdash;')
@@ -4476,13 +4489,29 @@ function renderFacPage(){
     +cpKeyFact('Remote Loading',f.remoteLoadingApplies?'+'+parseFloat(f.remoteLoadingPct||0)+'%':'N/A')
     +cpKeyFact('Preferred',f.preferredStatus?'<span class="badge b-gn" style="font-size:9px;display:inline-flex;align-items:center;gap:3px">'+ico(I.star,9)+' Yes</span>':'No')
     +'</div></div>'
+    +(displayContact||displaySubEmail?'<div class="facts-card">'
+      +(displayContact
+        ?'<div class="card-section-title">Primary contact</div>'
+         +'<div style="font-size:13px;font-weight:500;color:var(--t1);margin-top:4px">'+esc(displayContact.name)+'</div>'
+         +(displayContact.title?'<div style="font-size:10px;color:var(--t3)">'+esc(displayContact.title)+'</div>':'')
+         +(displayContact.email?'<a href="mailto:'+esc(displayContact.email)+'" class="contact-btn" style="margin-top:8px">'+I.mail+''+esc(displayContact.email)+'</a>':'')
+         +(displayContact.phone?'<a href="tel:'+esc(displayContact.phone)+'" class="contact-btn">'+I.phone+''+esc(displayContact.phone)+'</a>':'')
+        :'')
+      +(displaySubEmail
+        ?'<div style="margin-top:'+(displayContact?'14px':'0')+'"><div class="key-fact-label">Submission email</div>'
+         +'<div style="background:var(--brand-l);border-radius:8px;padding:8px 12px;margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:4px">'
+         +'<span style="font-size:10px;color:var(--brand);font-weight:500;word-break:break-all">'+esc(displaySubEmail)+'</span>'
+         +'<button onclick="navigator.clipboard.writeText(\''+esc(displaySubEmail)+'\').then(function(){showToast(\'Copied\');}).catch(function(){showToast(\'Copy failed\',\'err\');})" style="background:none;border:none;cursor:pointer;color:var(--brand);flex-shrink:0;display:inline-flex" title="Copy">'+ico(I.copy,14)+'</button>'
+         +'</div></div>'
+        :'')
+      +'</div>':'')
     +'<div class="facts-card">'
     +'<div class="cp-nav" style="display:flex;flex-direction:column;gap:1px">'
     +facNavA('overview','Overview')
     +facNavA('roles','Roles'+(openRoles?' ('+openRoles+' open)':''))
     +facNavA('submissions','Submissions'+(allSubs.length?' ('+allSubs.length+')':''))
     +facNavA('contracts','Contracts'+(allCons.length?' ('+allCons.length+')':''))
-    +facNavA('checklist','Submission Checklist')
+    +facNavA('checklist','Submission checklist')
     +facNavA('contacts','Contacts'+(fContacts.length?' ('+fContacts.length+')':''))
     +facNavA('documents','Documents')
     +facNavA('activity','Activity')
@@ -4492,18 +4521,21 @@ function renderFacPage(){
   var right='<div class="entity-right" style="min-width:0;display:flex;flex-direction:column;gap:14px">'
     +facSec('overview','Overview',renderFacOverview(f,d,isAdminOps))
     +facSec('roles','Roles',renderFacRoles(f,isAdminOps),
-      isAdminOps?'<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openRoleModal(null)" style="font-size:10px;padding:4px 8px">+ Add Role</button>':undefined,
+      isAdminOps?'<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openRoleModal(null)" style="font-size:10px;padding:4px 8px">+ Add role</button>':undefined,
       facRoles.length+' total')
     +facSec('submissions','Submissions',renderFacSubmissions(f),'',allSubs.length+' total')
     +facSec('contracts','Contracts',renderFacContracts(f),'',allCons.length+' total')
-    +facSec('checklist','Submission Checklist',renderFacChecklist(f,isAdminOps),
+    +facSec('checklist','Submission checklist',renderFacChecklist(f,isAdminOps),
       isAdminOps?'<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openChecklistModal('+f.id+')" style="font-size:10px;padding:4px 8px">Edit</button>':undefined)
     +facSec('contacts','Contacts',renderFacContacts(f,fContacts,isAdminOps),'',fContacts.length?fContacts.length+' on record':'')
     +facSec('documents','Documents',renderFacDocuments(f,isAdminOps),'',(f.documents||[]).length?(f.documents||[]).length+' files':'')
     +facSec('activity','Activity',renderFacActivitySection(f),'',facActivityCache[f.id]?facActivityCache[f.id].length+' entries':'loading...')
     +'</div>';
 
-  document.getElementById('page').innerHTML='<div class="entity-page" style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start">'+left+right+'</div>';
+  document.getElementById('page').innerHTML='<div style="padding:24px">'
+    +heroHtml
+    +'<div class="entity-page" style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start;padding:0">'+left+right+'</div>'
+    +'</div>';
 }
 
 function cpRenderIncrEdit(d){

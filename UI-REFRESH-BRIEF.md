@@ -22,47 +22,44 @@ Verify after each screen: the screen looks right AND everything on it still
 works (click the buttons, check a save, confirm nav). Only then commit and
 move to the next screen.
 
-## Design language (from the approved dashboard mockup)
+## Design language (from the approved HIGH-POLISH dashboard mockup)
 
-These are the rules every screen follows, so screens stay consistent.
+The bar is modern-SaaS polish (JobAdder/LiveHire/Monday tier), NOT a flat
+colour swap. A token-only pass (colours + radius + weights) is explicitly NOT
+enough - it lands at ~60% and reads unfinished. The approved mockup includes:
 
-Feel: airy and clean as the base (generous white space, calm surfaces),
-data-rich and dense where the work happens (tables, lists, guidance panels).
+- Depth: cards have soft layered shadows so they lift off the page
+  (e.g. box-shadow: 0 2px 6px rgba(38,33,92,.05), 0 16px 32px -22px rgba(38,33,92,.4)).
+  Not flat.
+- A hero header band: gradient purple (#26215C -> #534AB7) panel carrying the
+  greeting and headline numbers, with subtle decorative circles.
+- Icon tiles on metric cards (rounded-square coloured icon chips), trend pills
+  (e.g. "▲ 12%").
+- Real data viz: a trend line/area chart with gradient fill, a compliance
+  progress ring (donut), gradient-filled progress bars in the team table.
+- Rich guidance bands: the next-best-action prompt as a full coloured gradient
+  banner with icon and CTA, not a plain box.
+- Generous spacing, rounded 14-16px cards, avatar/initial chips with rounded
+  squares.
 
-Brand colour: purple #26215C (deep) and #534AB7 (mid), with #EEEDFE as the
-light purple tint. Use purple as ACCENTS - primary buttons, header pills,
-guidance boxes, avatar initials, active states - NOT as heavy background
-washes. The base stays light.
+Brand purple #26215C / #534AB7 / #EEEDFE tint. Gradients ARE allowed here
+(hero band, progress bars, guidance banners) - this is a product UI, not a
+flat doc. Semantic colours: success #0F6E56/#E1F5EE, warning #BA7517/#FAEEDA,
+danger #993C1D/#FAECE7, info #185FA5/#E6F1FB.
 
-Colour palette (semantic, consistent everywhere):
-- Success / positive: green #0F6E56 text, #E1F5EE tint
-- Warning / attention: amber #BA7517 text, #FAEEDA tint
-- Danger / overdue: #993C1D text, #FAECE7 tint
-- Info: #185FA5 text, #E6F1FB tint
-- Neutral text: primary near-black, secondary grey, muted lighter grey
+Two font weights (400/500), sentence case, clean line icons.
 
-Cards: white surface, 12px border radius, 0.5px hairline border, ~16px
-padding. Metric cards: light grey surface, no border, 12px label above, 26px
-medium-weight number below, small coloured delta line beneath.
+## CRITICAL: keep all existing functional pieces
 
-Typography: two weights only - 400 regular, 500 for emphasis/numbers/headings.
-Never heavier. Sentence case everywhere (no ALL CAPS except tiny table column
-labels, no Title Case). Headings ~20px/500.
-
-Spacing: generous. ~14-16px gaps between cards, ~22px between major sections.
-Let it breathe.
-
-Buttons: primary action = purple #26215C background, white text, 8px radius.
-Secondary = white/surface bg, 0.5px border, secondary-text colour. Sentence
-case labels, verb-first ("New submission", not "Submit").
-
-Guidance (the consultant-support element): where useful, surface a "next best
-action" prompt (light purple box, purple text, a lightbulb/clock icon) and a
-"needs attention" list that pulls urgent items (overdue follow-ups, expiring
-contracts, unconfirmed travel) to the front. This is what makes it feel like a
-tool that guides, not just displays.
-
-Icons: clean line icons only, consistent set. No emoji.
+This is a RESTYLE. Every existing functional element on a screen stays and
+keeps working - it just gets dressed in the new look. On Home specifically:
+the Morning Brief, the reminders/needs-attention list, and every existing
+action/button/link MUST remain, wired exactly as before. Do not drop, replace,
+or stub any working piece to make it "look like the mockup." The mockup shows
+the visual treatment to wrap around the real content, not a content
+replacement. If the mockup shows an element the screen doesn't have (e.g. a
+compliance ring), only add it if the data already exists to power it - never
+fake data or invent features during the restyle.
 
 ## Dark mode
 

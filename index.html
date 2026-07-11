@@ -1636,7 +1636,9 @@ function renderMorningBrief(cands){
   var b=mbBuildPriorities(cands);
   if(mbCollapsed){
     return '<div class="card" style="margin-bottom:22px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="mbExpandBrief()">'
-      +'<div style="display:flex;align-items:center;gap:10px;color:var(--brand)">'+ico(I.clock,16,'var(--brand)')+'<span style="font-size:12px;font-weight:500;color:var(--t1)">Morning brief'+(b.workload?' — '+b.workload+' action'+(b.workload!==1?'s':'')+' today':' — all clear')+'</span></div>'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--brand-l);flex-shrink:0">'+ico(I.clock,15,'var(--brand)')+'</span>'
+      +'<span style="font-size:12px;font-weight:500;color:var(--t1)">Morning brief'+(b.workload?' — '+b.workload+' action'+(b.workload!==1?'s':'')+' today':' — all clear')+'</span></div>'
       +'<button class="btn-ghost" style="font-size:11px" onclick="event.stopPropagation();mbExpandBrief()">Expand '+ico(I.chevron,11)+'</button>'
       +'</div>';
   }
@@ -1682,10 +1684,10 @@ function renderHome(){
   var totalSubs=cands.reduce(function(a,c){return a+c.submissions.length;},0);
   var activeContracts=cands.reduce(function(a,c){return a+c.contracts.filter(function(k){return k.status==="Active";}).length;},0);
   var compAlerts=autos.filter(function(a){return a.level==="red";}).length;
-  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border-radius:14px;padding:14px 16px">'
+  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
     +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,.75);margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
+    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
+    +'<div style="font-size:30px;font-weight:500;color:#fff;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.1)">'+val+'</div>'
     +'</div>';}
   var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:28px 32px;margin-bottom:22px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
     +'<div style="position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
@@ -1706,8 +1708,8 @@ function renderHome(){
   // so they're excluded here to avoid showing the same item twice.
   var chase=buildChaseList().filter(function(a){return a.label.indexOf('Call ')!==0&&a.label.indexOf('Check in:')!==0;});
   var chaseHtml=chase.length
-    ?'<div class="card" style="border-left:3px solid var(--warn);margin-bottom:22px">'
-      +'<div class="card-hd"><div class="card-title" style="color:var(--warn)">'+ico(I.warn,13,'var(--warn)')+' Other reminders</div>'
+    ?'<div class="card" style="margin-bottom:22px">'
+      +'<div class="card-hd"><div class="card-title" style="color:var(--warn)"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--warn-l)">'+ico(I.warn,13,'var(--warn)')+'</span> Other reminders</div>'
       +'<button class="btn-ghost" onclick="nav(\'alerts\')" style="font-size:11px">See all &rsaquo;</button>'
       +'</div>'
       +chase.slice(0,5).map(function(a){

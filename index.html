@@ -4461,36 +4461,138 @@ function resolveFacilityRequirements(f){
   var wardRows=complianceRequirements.filter(function(r){return r.level==='ward'&&f.healthAuthority&&r.scope_name===f.healthAuthority;});
   return {state:stateRows,healthService:hhsRows,facility:facRows,ward:wardRows};
 }
-function crReqRowHtml(r){
+function crReqRowHtml(r,isAdminOps,facilityId){
   var timingLabel=r.timing==='on_submission'?'On submission':'Before commencing';
   var timingClass=r.timing==='on_submission'?'b-bl':'b-pu';
+  var actions=isAdminOps?(
+    '<button onclick="event.stopPropagation();openReqModal('+facilityId+','+r.id+')" style="background:none;border:none;color:var(--t3);cursor:pointer;padding:2px 4px;flex-shrink:0;display:inline-flex" title="Edit">'+ico(I.pencil,12)+'</button>'
+    +'<button onclick="event.stopPropagation();deleteRequirement('+r.id+')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;flex-shrink:0" title="Delete">&times;</button>'
+  ):'';
   return '<div style="padding:8px 12px;border-bottom:1px solid var(--border)">'
     +'<div style="display:flex;align-items:center;gap:8px">'
     +'<span style="color:'+(r.required===false?'var(--t3)':'var(--brand)')+';font-size:13px;flex-shrink:0">'+(r.required===false?'&#9675;':'&#9679;')+'</span>'
     +'<span style="flex:1;font-size:12px;color:var(--t1);min-width:0">'+esc(r.item_label||r.item_key||'')+'</span>'
     +'<span class="badge '+timingClass+'" style="flex-shrink:0">'+timingLabel+'</span>'
+    +actions
     +'</div>'
     +(r.exception_note?'<div style="font-size:10px;color:var(--warn);margin-top:4px;padding-left:21px">'+esc(r.exception_note)+'</div>':'')
     +'</div>';
 }
-function crGroupHtml(label,rows){
+function crGroupHtml(label,rows,isAdminOps,facilityId){
   if(!rows.length)return'';
   return '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:8px 12px 4px">'+esc(label)+'</div>'
-    +rows.map(crReqRowHtml).join('');
+    +rows.map(function(r){return crReqRowHtml(r,isAdminOps,facilityId);}).join('');
 }
-function renderFacComplianceRequirements(f){
+function renderFacComplianceRequirements(f,isAdminOps){
   var resolved=resolveFacilityRequirements(f);
   var total=resolved.state.length+resolved.healthService.length+resolved.facility.length+resolved.ward.length;
   if(!total){
-    return '<div class="empty-st">'+I.chk+'<b>No compliance requirements loaded yet</b><p>State, health service, and facility-level requirements will appear here once loaded for '+esc(f.state||'this state')+'.</p></div>';
+    return '<div class="empty-st">'+I.chk+'<b>No compliance requirements loaded yet</b><p>State, health service, and facility-level requirements will appear here once loaded for '+esc(f.state||'this state')+'.</p>'+(isAdminOps?'<button class="btn btn-p btn-sm" onclick="openReqModal('+f.id+',null)">Add requirement</button>':'')+'</div>';
   }
   var stateLabel=(SR[f.state]&&SR[f.state].label)||f.state||'State';
   return '<div style="background:var(--bg);border-radius:12px;padding:4px 0;overflow:hidden">'
-    +crGroupHtml(stateLabel+' (all facilities)',resolved.state)
-    +crGroupHtml(f.healthAuthority||'Health service',resolved.healthService)
-    +crGroupHtml('This facility',resolved.facility)
-    +crGroupHtml('Ward-specific (conditional)',resolved.ward)
+    +crGroupHtml(stateLabel+' (all facilities)',resolved.state,isAdminOps,f.id)
+    +crGroupHtml(f.healthAuthority||'Health service',resolved.healthService,isAdminOps,f.id)
+    +crGroupHtml('This facility',resolved.facility,isAdminOps,f.id)
+    +crGroupHtml('Ward-specific (conditional)',resolved.ward,isAdminOps,f.id)
     +'</div>';
+}
+
+function reqItemKeyFromLabel(label){
+  return (label||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||('item_'+Date.now());
+}
+function reqScopeChoiceFromRow(r){
+  if(r.level==='state')return'state';
+  if(r.level==='health_service')return'health_service';
+  if(r.level==='ward')return'ward';
+  return'facility';
+}
+function openReqModal(facilityId,reqId){
+  var f=facilities.find(function(x){return x.id===facilityId;});
+  if(!f)return;
+  var existing=reqId?complianceRequirements.find(function(r){return r.id===reqId;}):null;
+  RQ={
+    id:reqId||null,facilityId:facilityId,
+    itemLabel:existing?(existing.item_label||''):'',
+    timing:existing?(existing.timing||'before_commencing'):'before_commencing',
+    scopeChoice:existing?reqScopeChoiceFromRow(existing):'facility',
+    ward:existing?(existing.ward||''):'',
+    exceptionNote:existing?(existing.exception_note||''):'',
+    required:existing?existing.required!==false:true
+  };
+  _renderReqModal();
+  document.getElementById('mo').style.display='flex';
+}
+function _renderReqModal(){
+  var f=facilities.find(function(x){return x.id===RQ.facilityId;});
+  var stateLabel=(SR[f.state]&&SR[f.state].label)||f.state||'State';
+  var scopeOpts=[{v:'facility',label:'This facility only'}];
+  if(f.healthAuthority)scopeOpts.push({v:'health_service',label:'This health service ('+f.healthAuthority+')'});
+  scopeOpts.push({v:'state',label:'State-wide ('+stateLabel+')'});
+  if(f.healthAuthority)scopeOpts.push({v:'ward',label:'Ward-specific'});
+  var body='<div style="padding:16px">'
+    +'<div class="fg"><label>Item label</label><input value="'+esc(RQ.itemLabel)+'" placeholder="e.g. AHPRA Registration" oninput="RQ.itemLabel=this.value"></div>'
+    +'<div class="fr f2">'
+    +'<div class="fg"><label>Timing</label><select onchange="RQ.timing=this.value">'
+      +'<option value="on_submission"'+(RQ.timing==='on_submission'?' selected':'')+'>On submission</option>'
+      +'<option value="before_commencing"'+(RQ.timing==='before_commencing'?' selected':'')+'>Before commencing</option>'
+      +'</select></div>'
+    +'<div class="fg"><label>Applies to</label><select onchange="RQ.scopeChoice=this.value;_renderReqModal()">'
+      +scopeOpts.map(function(o){return '<option value="'+o.v+'"'+(RQ.scopeChoice===o.v?' selected':'')+'>'+esc(o.label)+'</option>';}).join('')
+      +'</select></div>'
+    +'</div>'
+    +(RQ.scopeChoice!=='facility'?'<div style="font-size:10px;color:var(--t3);margin:-4px 0 12px">Editing a state, health-service, or ward-level item affects every facility under that scope, not just this one.</div>':'')
+    +(RQ.scopeChoice==='ward'?'<div class="fg"><label>Ward</label><input value="'+esc(RQ.ward)+'" placeholder="e.g. Mental Health" oninput="RQ.ward=this.value"></div>':'')
+    +'<div class="fg"><label>Exception note (optional)</label><input value="'+esc(RQ.exceptionNote)+'" placeholder="e.g. Woorabinda only" oninput="RQ.exceptionNote=this.value"></div>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;margin-top:4px"><input type="checkbox" '+(RQ.required?'checked ':'')+'onchange="RQ.required=this.checked"> Required</label>'
+    +'</div>';
+  document.getElementById('m-ttl').textContent=(RQ.id?'Edit':'Add')+' requirement';
+  document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
+  document.getElementById('m-body').innerHTML=body;
+  document.getElementById('m-foot').innerHTML='<span></span><div style="display:flex;gap:7px">'
+    +'<button class="btn btn-g btn-sm" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-p btn-sm" onclick="saveReqModal()">Save</button></div>';
+}
+function saveReqModal(){
+  if(!RQ.itemLabel.trim()){showToast('Enter an item label','err');return;}
+  var f=facilities.find(function(x){return x.id===RQ.facilityId;});
+  if(!f)return;
+  var stateLabel=(SR[f.state]&&SR[f.state].label)||f.state||'';
+  var level,scopeName,facilityId=null,ward=null;
+  if(RQ.scopeChoice==='facility'){level='facility';scopeName=f.name;facilityId=f.id;}
+  else if(RQ.scopeChoice==='health_service'){level='health_service';scopeName=f.healthAuthority;}
+  else if(RQ.scopeChoice==='ward'){
+    if(!RQ.ward.trim()){showToast('Enter a ward name','err');return;}
+    level='ward';scopeName=f.healthAuthority;ward=RQ.ward.trim();
+  } else {level='state';scopeName=stateLabel;}
+  var payload={state:f.state,level:level,scope_name:scopeName,facility_id:facilityId,ward:ward,
+    item_key:reqItemKeyFromLabel(RQ.itemLabel),item_label:RQ.itemLabel.trim(),
+    timing:RQ.timing,required:!!RQ.required,exception_note:RQ.exceptionNote.trim()||null};
+  if(RQ.id){
+    payload.last_edited_by=CU.name;payload.last_edited_at=new Date().toISOString();
+    sb.from('compliance_requirements').update(payload).eq('id',RQ.id).then(function(r){
+      if(r.error){showToast('Save failed: '+r.error.message,'err');console.error('[DB] req update',r.error);return;}
+      showToast('Requirement updated');closeModal();reloadComplianceRequirements();
+    });
+  } else {
+    payload.delivery='individual';payload.confirmed=false;payload.created_by=CU.name;
+    sb.from('compliance_requirements').insert([payload]).then(function(r){
+      if(r.error){showToast('Save failed: '+r.error.message,'err');console.error('[DB] req insert',r.error);return;}
+      showToast('Requirement added');closeModal();reloadComplianceRequirements();
+    });
+  }
+}
+function deleteRequirement(reqId){
+  showConfirm({title:'Delete this requirement?',message:'This cannot be undone.',confirmLabel:'Delete'},function(){
+    sb.from('compliance_requirements').delete().eq('id',reqId).then(function(r){
+      if(r.error){showToast('Delete failed: '+r.error.message,'err');console.error('[DB] req delete',r.error);return;}
+      showToast('Requirement deleted');
+      reloadComplianceRequirements();
+    });
+  });
+}
+function reloadComplianceRequirements(){
+  loadComplianceRequirements().then(function(d){complianceRequirements=d;renderPage();}).catch(function(){});
 }
 
 function renderFacContacts(f,fContacts,isAdminOps){
@@ -4661,7 +4763,8 @@ function renderFacPage(){
     +facSec('contracts','Contracts',renderFacContracts(f),'',allCons.length+' total')
     +facSec('checklist','Submission checklist',renderFacChecklist(f,isAdminOps),
       isAdminOps?'<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openChecklistModal('+f.id+')" style="font-size:10px;padding:4px 8px">Edit</button>':'')
-    +facSec('compliance','Compliance requirements',renderFacComplianceRequirements(f),'',
+    +facSec('compliance','Compliance requirements',renderFacComplianceRequirements(f,isAdminOps),
+      isAdminOps?'<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openReqModal('+f.id+',null)" style="font-size:10px;padding:4px 8px">+ Add requirement</button>':'',
       (function(){var t=resolveFacilityRequirements(f);var n=t.state.length+t.healthService.length+t.facility.length+t.ward.length;return n?n+' resolved':'';})())
     +facSec('contacts','Contacts',renderFacContacts(f,fContacts,isAdminOps),'',fContacts.length?fContacts.length+' on record':'')
     +facSec('documents','Documents',renderFacDocuments(f,isAdminOps),'',(f.documents||[]).length?(f.documents||[]).length+' files':'')
@@ -4719,6 +4822,7 @@ function cpRemoveIncrRow(st){
 var roles=[],facilityChecklists=[],complianceRequirements=[],selectedRoleId=null,roleFilt={state:'All',ward:'All',nurseType:'All',status:'All'};
 var followups=[];
 var ER=null,editCLFacId=null,editCLItems=[];
+var RQ=null;
 
 // ── SUBMISSION FLOW STATE ─────────────────────────────────────────────────
 var sfStep=1,sfCandId=null,sfRoleId=null;

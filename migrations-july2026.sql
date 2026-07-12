@@ -169,3 +169,25 @@ ALTER TABLE car_hire ADD COLUMN IF NOT EXISTS doc_added_by text;
 ALTER TABLE car_hire ADD COLUMN IF NOT EXISTS doc_added_at timestamptz;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS doc_added_by text;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS doc_added_at timestamptz;
+
+-- SUBMIT-FLOW-BRIEF Stage 2 prep: link table between submissions and the
+-- existing documents table (not jsonb, unlike checklist_snapshot — a doc
+-- attachment is a live reference to a first-class documents row that can
+-- be reused across multiple submissions, not a frozen snapshot). Mirrors
+-- the submission_followups link-table pattern already used for submissions.
+CREATE TABLE IF NOT EXISTS submission_documents (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  submission_id bigint REFERENCES submissions(id) ON DELETE CASCADE,
+  document_id bigint REFERENCES documents(id) ON DELETE CASCADE,
+  added_by text,
+  added_at timestamptz DEFAULT now(),
+  UNIQUE(submission_id, document_id)
+);
+ALTER TABLE submission_documents ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE
+    tablename='submission_documents' AND policyname='anon_all') THEN
+    CREATE POLICY "anon_all" ON submission_documents FOR ALL TO anon
+      USING (true) WITH CHECK (true);
+  END IF;
+END $$;

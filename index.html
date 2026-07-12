@@ -4683,6 +4683,7 @@ var sfStep=1,sfCandId=null,sfRoleId=null;
 var sfSpiel='',sfSavedSpiel='',sfNotes='',sfTo='',sfSubject='';
 var sfStartDate='',sfEndDate='';
 var sfCheckSnap={},sfSentConfirmed=false,sfSaveToCand=true,sfEmailOpened=false;
+var sfSelectedDocIds=[];
 
 // ── FACILITY FULL PAGE STATE ───────────────────────────────────────────────
 var curFacId=null,facEditing=null,facEditData=null;
@@ -5942,6 +5943,7 @@ function openSubFlow(candId,roleId){
   sfStep=1;sfSpiel=c.spiel||'';sfSavedSpiel=c.spiel||'';
   sfNotes='';sfCheckSnap={};sfSentConfirmed=false;sfSaveToCand=true;sfEmailOpened=false;
   sfStartDate=role?(role.startDate||''):'';sfEndDate=role?(role.endDate||''):'';
+  sfSelectedDocIds=(c.documents||[]).filter(function(d){return !d.complianceItemId&&d.category==='CV'&&d.isCurrent!==false;}).map(function(d){return d.id;});
   sfTo=(fac&&(fac.submissionEmail||fac.contactEmail))||'';
   sfSubject='HCA Submission — '+c.name+' — '+c.classification+(fac?' — '+fac.name:'');
   document.getElementById('sf-ov').style.display='flex';
@@ -5978,6 +5980,12 @@ function sfSetEmailOpened(){
   sfEmailOpened=true;
   var btn=document.getElementById('sf-confirm-btn');
   if(btn){btn.style.display='inline-flex';}
+}
+
+function sfToggleDoc(id){
+  var i=sfSelectedDocIds.indexOf(id);
+  if(i>=0)sfSelectedDocIds.splice(i,1);else sfSelectedDocIds.push(id);
+  sfRender();
 }
 
 function sfPickRole(id){
@@ -6037,11 +6045,15 @@ function sfBuildEmailBody(c,role,fac){
   }
   var compItems=(c.compliance&&c.compliance.items)||{};
   var verifiedKeys=Object.keys(compItems).filter(function(k){return compItems[k].status==='Verified';});
-  var compDocs=(c.documents||[]);
-  if(verifiedKeys.length||compDocs.length){
+  if(verifiedKeys.length){
     lines.push(sep,'COMPLIANCE DOCUMENTS');
     verifiedKeys.forEach(function(k){var it=compItems[k];lines.push('  • '+k.replace(/_/g,' ')+(it.docUrl?' — '+it.docUrl:'  ✓'));});
-    compDocs.forEach(function(d){if(d.fileUrl)lines.push('  • '+(d.fileName||'Document')+' — '+d.fileUrl);});
+    lines.push('');
+  }
+  var attachedDocs=(c.documents||[]).filter(function(d){return sfSelectedDocIds.indexOf(d.id)>=0;});
+  if(attachedDocs.length){
+    lines.push(sep,'ATTACHED DOCUMENTS');
+    attachedDocs.forEach(function(d){lines.push('  • '+(d.fileName||'Document'));});
     lines.push('');
   }
   var si=c.stateIncrements||{};
@@ -6118,17 +6130,78 @@ function sfStep2Html(c,fac){
     +'</div>';
 }
 
+function sfDocGroupHtml(label,docs){
+  if(!docs.length)return'';
+  return '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:8px 12px 4px">'+label+'</div>'
+    +docs.map(function(d){
+      var checked=sfSelectedDocIds.indexOf(d.id)>=0;
+      return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer">'
+        +'<input type="checkbox" '+(checked?'checked ':'')+'onchange="sfToggleDoc('+d.id+')">'
+        +'<span style="flex:1;font-size:12px;color:var(--t1);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(d.fileName||'Document')+'</span>'
+        +'<span class="badge '+fileCatClass(d.category)+'">'+esc(d.category||'Other')+'</span>'
+        +'</label>';
+    }).join('');
+}
+function sfDocAttachHtml(c){
+  var all=c.documents||[];
+  var compDocs=all.filter(function(d){return d.complianceItemId;});
+  var genDocs=all.filter(function(d){return !d.complianceItemId;});
+  var h='<div style="margin-top:16px">'
+    +'<div class="cp-lbl" style="margin-bottom:8px">Attach documents</div>';
+  if(!all.length){
+    h+='<div style="background:var(--bg);border-radius:8px;padding:16px;font-size:11px;color:var(--t3);text-align:center">No files on this candidate yet &mdash; upload one below, or add one via the Files tab.</div>';
+  } else {
+    h+='<div style="background:var(--bg);border-radius:12px;padding:4px 0;overflow:hidden">'
+      +sfDocGroupHtml('Compliance documents',compDocs)
+      +sfDocGroupHtml('General files',genDocs)
+      +'</div>';
+  }
+  h+='<label for="sf-doc-upload" class="btn btn-g btn-xs" style="cursor:pointer;margin-top:10px;display:inline-flex">Upload new file</label>'
+    +'<input type="file" id="sf-doc-upload" style="display:none" onchange="sfUploadNewDoc(this)">'
+    +'</div>';
+  return h;
+}
+async function sfUploadNewDoc(inputEl){
+  var file=inputEl.files&&inputEl.files[0];
+  if(!file)return;
+  inputEl.value='';
+  var c=candidates.find(function(x){return x.id===sfCandId;});
+  if(!c||!sb)return;
+  var category=guessFileCategory(file.name);
+  showToast('Uploading '+file.name+'...');
+  try{
+    var result=await uploadToStorage(sfCandId,file,category);
+    var row={candidate_id:sfCandId,file_name:file.name,file_path:result.path,file_url:result.url,
+      file_size:file.size,file_type:file.type||'',category:category,uploaded_by:CU.name,is_current:true};
+    var ins=await sb.from('documents').insert(row).select('id,uploaded_at').single();
+    if(ins.error)throw ins.error;
+    var doc={id:ins.data.id,fileName:file.name,filePath:result.path,fileUrl:result.url,
+      fileSize:file.size,fileType:file.type||'',uploadedBy:CU.name,
+      uploadedAt:ins.data.uploaded_at||new Date().toISOString(),category:category,
+      description:'',isCurrent:true,complianceItemId:null};
+    if(!c.documents)c.documents=[];
+    c.documents.unshift(doc);
+    sfSelectedDocIds.push(doc.id);
+    showToast('Uploaded and attached');
+    sfRender();
+  }catch(e){
+    showToast('Upload failed: '+e.message,'err');console.error('[DB] sf upload',e);
+  }
+}
+
 function sfStep3Html(c,role,fac){
   if(!role||!fac){
     return '<div style="background:var(--bg);border-radius:8px;padding:24px;font-size:12px;color:var(--t2);text-align:center">'
-      +'No role selected &mdash; compliance check skipped. You can still proceed.</div>';
+      +'No role selected &mdash; compliance check skipped. You can still proceed.</div>'
+      +sfDocAttachHtml(c);
   }
   var items=facilityChecklists.filter(function(ci){return ci.facility_id===fac.id;});
   if(!items.length){
     return '<div style="background:var(--bg);border-radius:12px;padding:24px">'
       +'<div style="font-size:13px;font-weight:500;color:var(--t2);margin-bottom:8px">No checklist configured for this facility.</div>'
       +'<div style="font-size:11px;color:var(--t3)">Set one up on the Facility page. You can still proceed with this submission.</div>'
-      +'</div>';
+      +'</div>'
+      +sfDocAttachHtml(c);
   }
   var compItems=(c.compliance&&c.compliance.items)||{};
   var reqItems=items.filter(function(ci){return ci.required;});
@@ -6158,7 +6231,7 @@ function sfStep3Html(c,role,fac){
       ?'<div style="font-size:11px;color:var(--ok)">All required compliance documents are on file.</div>'
       :'<div style="font-size:11px;color:var(--warn)">Missing items will be noted in the submission record.</div>')
     +'</div></div>';
-  return summary+rows;
+  return summary+rows+sfDocAttachHtml(c);
 }
 
 function sfStep4Html(c,role,fac){
@@ -6209,7 +6282,7 @@ function sfRender(){
   var role=sfRoleId?roles.find(function(r){return r.id===sfRoleId;}):null;
   var fac=role?facilities.find(function(f){return f.id===role.facilityId;}):null;
   if(!c){closeSF();return;}
-  var LABELS=['Review','Spiel','Compliance','Email Preview','Send'];
+  var LABELS=['Review','Spiel','Compliance & Docs','Email Preview','Send'];
   var stepsBar='<div style="display:flex;align-items:center;margin-bottom:24px">'
     +LABELS.map(function(lbl,i){
       var n=i+1;var done=n<sfStep;var cur=n===sfStep;
@@ -6269,6 +6342,12 @@ async function sfConfirm(){
     status:'Submitted',submittedDate:today,outcome:'',submittedBy:CU.name,roleId:sfRoleId||null,
     startDate:sfStartDate||'',endDate:sfEndDate||'',notes:sfNotes||''});
   if(newSubId)createSubmissionFollowups(newSubId,sfCandId);
+  if(newSubId&&sfSelectedDocIds.length){
+    var sdRes=await sb.from('submission_documents').insert(sfSelectedDocIds.map(function(docId){
+      return{submission_id:newSubId,document_id:docId,added_by:CU.name||null};
+    }));
+    if(sdRes.error){showToast('Document link failed: '+sdRes.error.message,'err');console.error('[DB] submission_documents ins',sdRes.error);}
+  }
   var sfCandActMsg='Submitted to '+(fac?fac.name:'facility')+(role?' for '+role.ward+' ('+role.nurseType+')':'')+(role&&role.startDate?' — '+fmt(role.startDate)+(role.endDate?' to '+fmt(role.endDate):''):'');
   var sfCandActTs=new Date().toISOString();
   sb.from('activity').insert([{candidate_id:sfCandId,entity_type:'candidate',entity_id:sfCandId,type:'Submission',

@@ -1261,6 +1261,31 @@ Decide deliberately post-demo — do not build this without those
 three questions answered first.
 
 ====================================================================
+## 24. Edit consultant user access / permissions — belongs with real auth
+## (Phase 4), not a bug
+====================================================================
+
+STATUS: Open. Logged 2026-07-12. Feature request for later, not a defect
+in current behaviour.
+
+WHAT'S MISSING
+There is no way to edit a user's access level / what they're permitted
+to do beyond picking a role (consultant/admin/ops) in the User modal.
+No granular permission editing exists anywhere.
+
+WHY THIS MATTERS / WHY NOT NOW
+The current role system is just a picker on a local users record — there
+are no real accounts or auth behind it yet. Building real access-control
+editing on top of that would be designing it against a placeholder,
+likely to be rebuilt anyway once real auth exists. This belongs with the
+real-auth build (Phase 4) — design access/permission editing alongside
+auth, not before it.
+
+LIKELY FIX (not yet agreed, not yet built)
+Defer until Phase 4 (real auth). Design the permission model and its
+edit UI together with the real account system at that time.
+
+====================================================================
 ## CLEANUP LIST — test-data artifacts to remove before real data goes in
 ====================================================================
 

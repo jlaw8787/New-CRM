@@ -6027,6 +6027,7 @@ function sfBuildEmailBody(c,role,fac){
   if(c.availableFrom)lines.push('Available From:    '+fmt(c.availableFrom));
   if(c.state)lines.push('Home State:        '+c.state);
   if(c.regions&&c.regions.length)lines.push('Preferred Regions: '+c.regions.join(', '));
+  if(sfStartDate||sfEndDate)lines.push('Proposed Dates:    '+(sfStartDate?fmt(sfStartDate):'TBC')+' — '+(sfEndDate?fmt(sfEndDate):'TBC'));
   lines.push('');
   if(sfSpiel){lines.push(sep,'ABOUT '+c.name.toUpperCase(),'',sfSpiel,'');}
   if(c.certifications&&c.certifications.length){
@@ -6069,6 +6070,10 @@ function sfStep1Html(c,role,fac){
     +'</div>'
     +(sfSpiel?'<div style="margin-top:12px;font-size:11px;color:var(--t3);font-style:italic;border-top:1px solid var(--border);padding-top:8px">'+esc(sfSpiel.slice(0,120))+(sfSpiel.length>120?'&hellip;':'')+'</div>':'')
     +'</div>';
+  var dateInputsHtml='<div style="display:flex;gap:8px;margin-top:10px">'
+    +'<div style="flex:1"><label style="font-size:10px;color:var(--t3)">Expected start</label><input type="date" id="sf-start-date" value="'+esc(sfStartDate)+'" style="width:100%;border:1px solid rgba(38,33,92,.25);border-radius:8px;padding:6px;font-size:12px;box-sizing:border-box"></div>'
+    +'<div style="flex:1"><label style="font-size:10px;color:var(--t3)">Expected end</label><input type="date" id="sf-end-date" value="'+esc(sfEndDate)+'" style="width:100%;border:1px solid rgba(38,33,92,.25);border-radius:8px;padding:6px;font-size:12px;box-sizing:border-box"></div>'
+    +'</div>';
   var roleCard;
   if(role&&fac){
     roleCard='<div style="flex:1;background:var(--brand-l);border-radius:12px;padding:16px;min-width:0">'
@@ -6076,11 +6081,13 @@ function sfStep1Html(c,role,fac){
       +'<div style="font-size:15px;font-weight:500;color:var(--t1);margin-bottom:4px">'+esc(fac.name)+'</div>'
       +'<div style="font-size:12px;color:var(--t2);margin-bottom:12px">'+esc(role.ward)+' &middot; '+esc(role.nurseType)+'</div>'
       +'<div style="font-size:11px;color:var(--t2);display:flex;flex-direction:column;gap:4px">'
-      +(role.startDate?'<div><span style="color:var(--t3)">From:</span> '+fmt(role.startDate)+(role.endDate?' &ndash; '+fmt(role.endDate):'')+'</div>':'')
+      +(role.startDate?'<div><span style="color:var(--t3)">Role dates:</span> '+fmt(role.startDate)+(role.endDate?' &ndash; '+fmt(role.endDate):'')+'</div>':'')
       +(role.positionsAvailable?'<div><span style="color:var(--t3)">Positions:</span> '+role.positionsAvailable+'</div>':'')
       +(fac.state?'<div><span style="color:var(--t3)">State:</span> '+esc(fac.state)+'</div>':'')
       +(role.description?'<div style="margin-top:8px;font-size:10px;color:var(--t3)">'+esc(role.description.slice(0,120))+(role.description.length>120?'&hellip;':'')+'</div>':'')
-      +'</div></div>';
+      +'</div>'
+      +dateInputsHtml
+      +'</div>';
   } else {
     var openR=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';});
     roleCard='<div style="flex:1;background:var(--brand-l);border-radius:12px;padding:16px;min-width:0">'
@@ -6090,10 +6097,7 @@ function sfStep1Html(c,role,fac){
       +openR.map(function(r){var f2=facilities.find(function(x){return x.id===r.facilityId;})||{name:'?'};return'<option value="'+r.id+'"'+(sfRoleId===r.id?' selected':'')+'>'+esc(f2.name)+' — '+esc(r.ward)+' ('+esc(r.nurseType)+')</option>';}).join('')
       +'</select>'
       +'<div style="margin-top:8px;font-size:11px;color:var(--brand)">Select a role or proceed without one for a direct facility submission.</div>'
-      +(sfRoleId?'':'<div style="display:flex;gap:8px;margin-top:10px">'
-        +'<div style="flex:1"><label style="font-size:10px;color:var(--t3)">Expected start</label><input type="date" id="sf-start-date" value="'+esc(sfStartDate)+'" style="width:100%;border:1px solid rgba(38,33,92,.25);border-radius:8px;padding:6px;font-size:12px"></div>'
-        +'<div style="flex:1"><label style="font-size:10px;color:var(--t3)">Expected end</label><input type="date" id="sf-end-date" value="'+esc(sfEndDate)+'" style="width:100%;border:1px solid rgba(38,33,92,.25);border-radius:8px;padding:6px;font-size:12px"></div>'
-        +'</div>')
+      +dateInputsHtml
       +'</div>';
   }
   return '<div style="display:flex;gap:14px">'+candCard+roleCard+'</div>';
@@ -6255,7 +6259,7 @@ async function sfConfirm(){
     nurse_type:role?role.nurseType:(c.nurseType||c.classification||null),
     role_id:sfRoleId||null,submitted_by:CU.id||null,
     status:'Submitted',submitted_date:today,follow_up_date:followUp,
-    start_date:sfStartDate||null,end_date:sfEndDate||null,
+    start_date:sfStartDate||null,end_date:sfEndDate||null,notes:sfNotes||null,
     checklist_snapshot:sfCheckSnap,submission_package_text:body
   }]).select();
   if(r1.error){showToast('Save error: '+r1.error.message,'err');console.error(r1.error);return;}
@@ -6263,7 +6267,7 @@ async function sfConfirm(){
   if(!c.submissions)c.submissions=[];
   c.submissions.push({id:newSubId,facilityId:fac?fac.id:null,ward:role?role.ward:'',
     status:'Submitted',submittedDate:today,outcome:'',submittedBy:CU.name,roleId:sfRoleId||null,
-    startDate:sfStartDate||'',endDate:sfEndDate||''});
+    startDate:sfStartDate||'',endDate:sfEndDate||'',notes:sfNotes||''});
   if(newSubId)createSubmissionFollowups(newSubId,sfCandId);
   var sfCandActMsg='Submitted to '+(fac?fac.name:'facility')+(role?' for '+role.ward+' ('+role.nurseType+')':'')+(role&&role.startDate?' — '+fmt(role.startDate)+(role.endDate?' to '+fmt(role.endDate):''):'');
   var sfCandActTs=new Date().toISOString();

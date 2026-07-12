@@ -4269,7 +4269,7 @@ function renderCandPage(){
 
 function openFacPage(id){
   curFacId=id;facEditing=null;facEditData=null;
-  facOpen={overview:true,roles:false,submissions:false,contracts:false,checklist:false,contacts:false,documents:false,activity:false};
+  facOpen={overview:true,roles:false,submissions:false,contracts:false,checklist:false,compliance:true,contacts:false,documents:false,activity:false};
   nav('facilityprofile');
   var f0=facilities.find(function(x){return x.id===id;});if(f0)pushRecent('facility',id,f0.name,f0.state);
   if(sb&&!facActivityCache[id]){
@@ -4454,6 +4454,45 @@ function renderFacChecklist(f,isAdminOps){
   }).join('');
 }
 
+function resolveFacilityRequirements(f){
+  var stateRows=complianceRequirements.filter(function(r){return r.level==='state'&&r.state===f.state;});
+  var hhsRows=complianceRequirements.filter(function(r){return r.level==='health_service'&&f.healthAuthority&&r.scope_name===f.healthAuthority;});
+  var facRows=complianceRequirements.filter(function(r){return r.level==='facility'&&(r.facility_id===f.id||(r.scope_name&&r.scope_name===f.name));});
+  var wardRows=complianceRequirements.filter(function(r){return r.level==='ward'&&f.healthAuthority&&r.scope_name===f.healthAuthority;});
+  return {state:stateRows,healthService:hhsRows,facility:facRows,ward:wardRows};
+}
+function crReqRowHtml(r){
+  var timingLabel=r.timing==='on_submission'?'On submission':'Before commencing';
+  var timingClass=r.timing==='on_submission'?'b-bl':'b-pu';
+  return '<div style="padding:8px 12px;border-bottom:1px solid var(--border)">'
+    +'<div style="display:flex;align-items:center;gap:8px">'
+    +'<span style="color:'+(r.required===false?'var(--t3)':'var(--brand)')+';font-size:13px;flex-shrink:0">'+(r.required===false?'&#9675;':'&#9679;')+'</span>'
+    +'<span style="flex:1;font-size:12px;color:var(--t1);min-width:0">'+esc(r.item_label||r.item_key||'')+'</span>'
+    +'<span class="badge '+timingClass+'" style="flex-shrink:0">'+timingLabel+'</span>'
+    +'</div>'
+    +(r.exception_note?'<div style="font-size:10px;color:var(--warn);margin-top:4px;padding-left:21px">'+esc(r.exception_note)+'</div>':'')
+    +'</div>';
+}
+function crGroupHtml(label,rows){
+  if(!rows.length)return'';
+  return '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:8px 12px 4px">'+esc(label)+'</div>'
+    +rows.map(crReqRowHtml).join('');
+}
+function renderFacComplianceRequirements(f){
+  var resolved=resolveFacilityRequirements(f);
+  var total=resolved.state.length+resolved.healthService.length+resolved.facility.length+resolved.ward.length;
+  if(!total){
+    return '<div class="empty-st">'+I.chk+'<b>No compliance requirements loaded yet</b><p>State, health service, and facility-level requirements will appear here once loaded for '+esc(f.state||'this state')+'.</p></div>';
+  }
+  var stateLabel=(SR[f.state]&&SR[f.state].label)||f.state||'State';
+  return '<div style="background:var(--bg);border-radius:12px;padding:4px 0;overflow:hidden">'
+    +crGroupHtml(stateLabel+' (all facilities)',resolved.state)
+    +crGroupHtml(f.healthAuthority||'Health service',resolved.healthService)
+    +crGroupHtml('This facility',resolved.facility)
+    +crGroupHtml('Ward-specific (conditional)',resolved.ward)
+    +'</div>';
+}
+
 function renderFacContacts(f,fContacts,isAdminOps){
   if(!fContacts.length&&!f.contactName){return '<div class="empty-st">'+I.person+'<b>No contacts recorded</b><p>Add a contact from the Edit Details panel to keep this facility\'s people on file.</p></div>';}
   var rows='';
@@ -4606,6 +4645,7 @@ function renderFacPage(){
     +facNavA('submissions','Submissions'+(allSubs.length?' ('+allSubs.length+')':''))
     +facNavA('contracts','Contracts'+(allCons.length?' ('+allCons.length+')':''))
     +facNavA('checklist','Submission checklist')
+    +facNavA('compliance','Compliance requirements')
     +facNavA('contacts','Contacts'+(fContacts.length?' ('+fContacts.length+')':''))
     +facNavA('documents','Documents')
     +facNavA('activity','Activity')
@@ -4621,6 +4661,8 @@ function renderFacPage(){
     +facSec('contracts','Contracts',renderFacContracts(f),'',allCons.length+' total')
     +facSec('checklist','Submission checklist',renderFacChecklist(f,isAdminOps),
       isAdminOps?'<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openChecklistModal('+f.id+')" style="font-size:10px;padding:4px 8px">Edit</button>':'')
+    +facSec('compliance','Compliance requirements',renderFacComplianceRequirements(f),'',
+      (function(){var t=resolveFacilityRequirements(f);var n=t.state.length+t.healthService.length+t.facility.length+t.ward.length;return n?n+' resolved':'';})())
     +facSec('contacts','Contacts',renderFacContacts(f,fContacts,isAdminOps),'',fContacts.length?fContacts.length+' on record':'')
     +facSec('documents','Documents',renderFacDocuments(f,isAdminOps),'',(f.documents||[]).length?(f.documents||[]).length+' files':'')
     +facSec('activity','Activity',renderFacActivitySection(f),'',facActivityCache[f.id]?facActivityCache[f.id].length+' entries':'loading...')
@@ -4674,7 +4716,7 @@ function cpRemoveIncrRow(st){
 }
 
 // ── JOB BOARD ─────────────────────────────────────────────────────────────────
-var roles=[],facilityChecklists=[],selectedRoleId=null,roleFilt={state:'All',ward:'All',nurseType:'All',status:'All'};
+var roles=[],facilityChecklists=[],complianceRequirements=[],selectedRoleId=null,roleFilt={state:'All',ward:'All',nurseType:'All',status:'All'};
 var followups=[];
 var ER=null,editCLFacId=null,editCLItems=[];
 
@@ -4687,7 +4729,7 @@ var sfSelectedDocIds=[];
 
 // ── FACILITY FULL PAGE STATE ───────────────────────────────────────────────
 var curFacId=null,facEditing=null,facEditData=null;
-var facOpen={overview:true,roles:false,submissions:false,contracts:false,checklist:false,contacts:false,documents:false,activity:false};
+var facOpen={overview:true,roles:false,submissions:false,contracts:false,checklist:false,compliance:true,contacts:false,documents:false,activity:false};
 var facilityContacts=[],facActivityCache={},facActType='Note',facFilesLoaded={};
 
 // ── EXPLAINABLE MATCH SCORE ─────────────────────────────────────────────────
@@ -6659,6 +6701,11 @@ async function loadFacilityChecklists(){
   if(r.error)throw r.error;
   return r.data||[];
 }
+async function loadComplianceRequirements(){
+  var r=await sb.from('compliance_requirements').select('*').order('id');
+  if(r.error)throw r.error;
+  return r.data||[];
+}
 async function syncRoleToDb(role){
   var payload={facility_id:role.facilityId,ward:role.ward,nurse_type:role.nurseType,
     start_date:role.startDate||null,end_date:role.endDate||null,
@@ -7439,8 +7486,8 @@ async function initApp(){
     +'<div class="skel" style="height:38px;margin-bottom:16px"></div>'
     +'<div class="skel" style="height:38px"></div>';
   try{
-    var loaded=await Promise.all([loadUsers(),loadFacilities(),loadCandidates(),loadRoles(),loadFacilityChecklists(),loadFollowups()]);
-    users=loaded[0];facilities=loaded[1];candidates=loaded[2];roles=loaded[3];facilityChecklists=loaded[4];followups=loaded[5];
+    var loaded=await Promise.all([loadUsers(),loadFacilities(),loadCandidates(),loadRoles(),loadFacilityChecklists(),loadFollowups(),loadComplianceRequirements()]);
+    users=loaded[0];facilities=loaded[1];candidates=loaded[2];roles=loaded[3];facilityChecklists=loaded[4];followups=loaded[5];complianceRequirements=loaded[6];
     // Resolve submission facility names (no 'facility' text col in DB — derive from facilityId)
     candidates.forEach(function(c){c.submissions.forEach(function(s){if(!s.facility&&s.facilityId){var f=facilities.find(function(fac){return fac.id===s.facilityId;});if(f)s.facility=f.name;}});});
     reconcileCompliance();

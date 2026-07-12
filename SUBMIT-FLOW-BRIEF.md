@@ -6,6 +6,11 @@ priority feature after the visual rollout.
 
 Written 2026-07-11.
 
+STATUS (2026-07-12): Substantially done and verified. Audit + Stages 1, 1b,
+2, and 3 are built, verified, and persisting live in Supabase. Stage 4 (pack
+vs. CV choice) is deliberately DEFERRED — see the note at the bottom of this
+file. Details on what's built are logged in KNOWN-ISSUES.md.
+
 ---
 
 ## What's missing today
@@ -43,29 +48,45 @@ bug risk.
 
 Then stage:
 
-### STAGE 1 - Start/end dates in the submit flow
+### STAGE 1 - Start/end dates in the submit flow — DONE, verified
 Add start and end date fields to the submit dialog, pre-filled from the role's
 dates, editable. Save them with the submission. Reuse existing submissions
 table columns if present; if not, a small additive migration (nullable date
 columns) first. Verify dates persist in Supabase.
+Also done alongside (Stage 1b): the proposed dates and an additional
+consultant note now flow into the email template, and the note persists to
+submissions.notes. See KNOWN-ISSUES.md for the full writeup.
 
-### STAGE 2 - Attach existing candidate file
+### STAGE 2 - Attach existing candidate file — DONE, verified
 In the submit dialog, let the consultant pick from the candidate's existing
 files/CV to include with the submission. Reuse the existing file/document
 data already on the candidate. Verify the chosen file is linked to the
 submission.
+Built as a submission_documents link table (submission_id, document_id,
+added_by, added_at) rather than jsonb — see the migration in
+migrations-july2026.sql. The attach UI groups documents into "Compliance
+documents" and "General files", both feeding the same link table.
 
-### STAGE 3 - Upload new file at submit time
+### STAGE 3 - Upload new file at submit time — DONE, verified
 Add the option to upload a new document during submission (reuse the existing
 Supabase Storage upload mechanism - the same uploadToStorage helper used for
 placement docs). Verify upload + link persists.
 
-### STAGE 4 - Pack vs CV choice
+### STAGE 4 - Pack vs CV choice — DEFERRED
 Let the consultant choose the level: quick CV-only, or a fuller compliance
 pack. For now (pre COMPLIANCE-PACKS build) the "pack" option can be a manual
 multi-doc attach; once COMPLIANCE-PACKS exists, this option pulls the
 facility's required pack. Keep the quick CV path always available for
 speculative outreach.
+
+DEFERRED 2026-07-12: the quick-CV path is effectively already covered by
+Stage 2/3's general-files attach (CV pre-ticks automatically). The remaining
+piece - a formal "full compliance pack" option - is being deferred to belong
+with the COMPLIANCE-PACKS build itself (COMPLIANCE-PACKS-BRIEF.md) rather
+than built here as a manual stand-in, since the manual version would just be
+thrown away once compliance packs exist. Build it there instead, drawing on
+the submit flow's existing submission_documents link table to attach the
+pack's documents the same way Stage 2/3 already do.
 
 ## Guard rails
 - Restyle any new UI to the established high-polish design language (the

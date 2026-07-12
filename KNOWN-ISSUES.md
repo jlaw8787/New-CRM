@@ -1286,6 +1286,61 @@ Defer until Phase 4 (real auth). Design the permission model and its
 edit UI together with the real account system at that time.
 
 ====================================================================
+## 25. Submit flow overhaul (SUBMIT-FLOW-BRIEF.md) — substantially done,
+## Stage 4 deferred to COMPLIANCE-PACKS
+====================================================================
+
+STATUS: Stages 1, 1b, 2, and 3 done and verified 2026-07-12, persisting
+live in Supabase. Stage 4 deliberately deferred (not started) — see below.
+
+WHAT WAS BUILT
+- Start/end date inputs in the submit modal's Review step now always show
+  (previously only for ad-hoc/no-role submissions), pre-filled from the
+  role's dates, editable per submission, and saved to the existing
+  submissions.start_date/end_date columns (these already existed before
+  this build - confirmed by audit, no migration needed for dates).
+- The proposed start/end dates and an "Additional note" field are now
+  included in the submission email template. The note field itself
+  already existed (previously fed the email only); it now also persists
+  to submissions.notes (checked outcome_notes/facility_response_notes
+  first - both confirmed unused anywhere in the client code, so notes was
+  the correct existing column - no migration needed for the note either).
+- Document attach: a new submission_documents link table (submission_id,
+  document_id, added_by, added_at - migration in
+  migrations-july2026.sql) rather than a jsonb column, reasoned against
+  checklist_snapshot's existing jsonb usage (a frozen snapshot) vs. a doc
+  attachment (a live reference to a documents row, reusable across
+  multiple submissions) - link table fits this app's own established
+  pattern (mirrors submission_followups) better than jsonb would.
+- The attach UI (in the submit modal's Compliance step, relabeled
+  "Compliance & Docs") groups the candidate's documents into "Compliance
+  documents" (compliance-item-linked, e.g. AHPRA, Photo ID) and "General
+  files" (CV, Contract, etc.), both feeding the same selection and the
+  same submission_documents link on confirm. The candidate's current CV
+  pre-ticks automatically. A new file can also be uploaded at submit time
+  (reuses uploadToStorage + guessFileCategory, creates a real documents
+  row so the file also lands on the candidate's own record, not just this
+  submission) and is auto-selected once uploaded.
+- Found and fixed one pre-existing inconsistency while wiring the email
+  section: the email's "COMPLIANCE DOCUMENTS" section had been
+  unconditionally dumping every document on the candidate regardless of
+  anything selected, which would have made the new attach checkboxes
+  meaningless for the email. Split into two sections - COMPLIANCE
+  DOCUMENTS (verified checklist items only) and a new ATTACHED DOCUMENTS
+  section (only what's actually selected).
+
+STAGE 4 (pack vs. CV choice) — DEFERRED, not started
+The quick-CV path is effectively already covered by the general-files
+attach (CV pre-ticks automatically, so a fast/speculative submission
+needs no extra steps). What remains - a formal "attach a full compliance
+pack" option - is being deferred to belong with the COMPLIANCE-PACKS
+build (COMPLIANCE-PACKS-BRIEF.md) instead of being built here as a manual
+stand-in, since a manual multi-doc-attach placeholder would just be
+discarded once compliance packs exist. When COMPLIANCE-PACKS is built,
+it should attach a pack's documents via the same submission_documents
+link table Stage 2/3 already established here, not a new mechanism.
+
+====================================================================
 ## CLEANUP LIST — test-data artifacts to remove before real data goes in
 ====================================================================
 

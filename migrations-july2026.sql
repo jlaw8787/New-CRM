@@ -191,3 +191,45 @@ DO $$ BEGIN
       USING (true) WITH CHECK (true);
   END IF;
 END $$;
+
+-- COMPLIANCE-PACKS-BRIEF Stage 1 (Track 1 demo slice): cascading
+-- requirement model. A placement's required pack is the SUM of every
+-- level that applies (state + health_service + facility + ward);
+-- "X Only" exceptions are just facility/ward-level rows, with
+-- exception_note preserving the source spreadsheet's original wording.
+-- No separate exception level needed. facility_id is a real FK when the
+-- row maps to an existing facilities row; scope_name is the readable
+-- label used for health_service-level matching (against
+-- facilities.health_authority) and for display at every level.
+CREATE TABLE IF NOT EXISTS compliance_requirements (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  state text NOT NULL,
+  level text NOT NULL,
+  scope_name text,
+  facility_id bigint REFERENCES facilities(id) ON DELETE CASCADE,
+  ward text,
+  item_key text NOT NULL,
+  item_label text NOT NULL,
+  timing text DEFAULT 'before_commencing',
+  delivery text DEFAULT 'individual',
+  required boolean DEFAULT true,
+  exception_note text,
+  confirmed boolean DEFAULT false,
+  source_last_updated date,
+  created_by text,
+  created_at timestamptz DEFAULT now(),
+  last_edited_by text,
+  last_edited_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS compliance_requirements_state_level_idx
+  ON compliance_requirements(state, level);
+CREATE INDEX IF NOT EXISTS compliance_requirements_facility_id_idx
+  ON compliance_requirements(facility_id);
+ALTER TABLE compliance_requirements ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE
+    tablename='compliance_requirements' AND policyname='anon_all') THEN
+    CREATE POLICY "anon_all" ON compliance_requirements FOR ALL TO anon
+      USING (true) WITH CHECK (true);
+  END IF;
+END $$;

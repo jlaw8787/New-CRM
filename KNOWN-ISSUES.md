@@ -1341,6 +1341,42 @@ it should attach a pack's documents via the same submission_documents
 link table Stage 2/3 already established here, not a new mechanism.
 
 ====================================================================
+## 26. Enterprise CRM integration — strategic/post-demo, not a demo task
+====================================================================
+
+STATUS: Open. Logged 2026-07-13. Strategic/integration item, not a bug
+and not scoped for the demo build.
+
+WHAT THIS IS
+Explore connecting/syncing this app's data with the company's existing
+enterprise CRM (the actual system of record), so data flows through to
+the enterprise backend rather than living only in this app's Supabase
+instance.
+
+WHY NOT SCOPED NOW
+Feasibility depends entirely on what the enterprise CRM allows - API
+access, export/import, direct DB access, or nothing at all - and that's
+unknown. First step is finding out what integration surface the
+enterprise CRM actually supports; there's no point designing a sync
+mechanism before that's answered. This is also a significant project
+requiring IT involvement (not a solo build), and depends on Phase 4
+(real auth/security) being done first - syncing real candidate/facility
+data into a company system of record before this app has real
+authentication would be the wrong order of operations.
+
+DEMO HANDLING
+Can be mentioned in the demo as a stated design intention/direction -
+"this is built to eventually integrate with the enterprise CRM" - without
+being built or even started. Do not build anything toward this before
+the demo.
+
+LIKELY NEXT STEP (post-demo, not yet agreed, not yet started)
+Find out from IT/the enterprise CRM vendor what integration options
+exist (API, export/import, DB-level access), then plan the sync
+approach deliberately once that's known and once Phase 4 auth is in
+place. No technical design possible before that discovery step.
+
+====================================================================
 ## CLEANUP LIST — test-data artifacts to remove before real data goes in
 ====================================================================
 

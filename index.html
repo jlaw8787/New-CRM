@@ -6335,15 +6335,132 @@ async function sfUploadNewDoc(inputEl){
   }
 }
 
+// ── Compliance pack matching (submit flow) — reuses resolveFacilityRequirements
+// unchanged. Three tiers, in order: (1) exact item_key match, (2) a curated
+// synonym-group match for the well-known compliance concepts (AHPRA, Photo ID,
+// immunisations, references, police check, etc.) so common items match reliably
+// instead of falling back to generic word overlap, (3) generic key-substring /
+// label-word-overlap fallback for anything not covered by (1) or (2). MET
+// requires the matched candidate item(s) to be "done" per the app's own
+// compItemDone() (Verified OR Received — same rule the rest of the app already
+// uses) and not expired. Tier 3 never resolves to MET on its own, only tiers 1/2
+// can — genuinely uncertain matches stay UNVERIFIED rather than a false MET.
+// MISSING only when no candidate item corresponds at all, by any tier.
+var REQ_SYNONYM_GROUPS=[
+  {triggers:['ahpra'],candKeys:['ahpra']},
+  {triggers:['photo id','photo_id','passport'],candKeys:['photo_id']},
+  {triggers:['police'],candKeys:['police_check']},
+  {triggers:['working with children','wwc','blue card'],candKeys:['wwc']},
+  {triggers:['ndis'],candKeys:['ndis']},
+  {triggers:['reference'],candKeys:['ref1','ref2']},
+  {triggers:['immunis','immuniz','vaccin','hep b','hep_b','mmr','varicella','pertussis'],candKeys:['hep_b','covid','flu']},
+  {triggers:['visa','work rights','work_rights'],candKeys:['work_rights']},
+  {triggers:['resume','cv'],candKeys:['cv']},
+  {triggers:['als','life support'],candKeys:['als']}
+];
+function reqIsInfoRow(req){
+  return /_note$/i.test(req.item_key||'')||/^note:/i.test((req.item_label||'').trim());
+}
+function reqItemValid(it){
+  return !!it&&compItemDone(it)&&!(it.expiry&&ddiff(it.expiry)<0);
+}
+function reqSynonymCandKeys(req){
+  var hay=((req.item_key||'')+' '+(req.item_label||'')).toLowerCase();
+  var found=[];
+  REQ_SYNONYM_GROUPS.forEach(function(g){
+    if(g.triggers.some(function(t){return hay.indexOf(t)>=0;})){
+      g.candKeys.forEach(function(k){if(found.indexOf(k)<0)found.push(k);});
+    }
+  });
+  return found;
+}
+function reqNormWords(s){
+  var stop={the:1,and:1,for:1,with:1,not:1,all:1,only:1,from:1,last:1,plus:1,pre:1,per:1,any:1,you:1,are:1,note:1,doses:1};
+  return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').split(' ').filter(function(w){
+    return w.length>=3&&!stop[w]&&!/^[0-9]+$/.test(w);
+  });
+}
+function reqWordsOverlap(aWords,bWords){
+  return aWords.some(function(a){return bWords.some(function(b){return a.indexOf(b)>=0||b.indexOf(a)>=0;});});
+}
+function reqMatchCandidate(req,c){
+  var compItems=(c.compliance&&c.compliance.items)||{};
+  // Tier 1: exact item_key match
+  var exact=compItems[req.item_key];
+  if(exact)return reqItemValid(exact)?{status:'met',match:exact}:{status:'unverified',match:exact};
+  // Tier 2: curated synonym group — checks ALL relevant candidate keys for the
+  // concept (e.g. immunisations -> hep_b + covid + flu); MET only if every
+  // matched item found is itself valid.
+  var synKeys=reqSynonymCandKeys(req).filter(function(k){return compItems[k];});
+  if(synKeys.length){
+    var allValid=synKeys.every(function(k){return reqItemValid(compItems[k]);});
+    return allValid?{status:'met',match:compItems[synKeys[0]]}:{status:'unverified',match:compItems[synKeys[0]]};
+  }
+  // Tier 3: generic fallback — key substring or label word overlap. Can only
+  // ever land on UNVERIFIED, never MET.
+  var reqWords=reqNormWords(req.item_label);
+  var keys=Object.keys(compItems);
+  var fuzzyKey=keys.find(function(k){
+    if(req.item_key&&(k.indexOf(req.item_key)>=0||req.item_key.indexOf(k)>=0))return true;
+    return reqWordsOverlap(reqWords,reqNormWords(compItems[k].itemLabel||k));
+  });
+  if(fuzzyKey)return{status:'unverified',match:compItems[fuzzyKey]};
+  return{status:'missing',match:null};
+}
+function sfPackRowHtml(r,m){
+  var isInfo=reqIsInfoRow(r);
+  var pill=isInfo?{label:'Info',cls:'b-gr'}:{met:{label:'Met',cls:'b-gn'},unverified:{label:'Check manually',cls:'b-am'},missing:{label:'Missing',cls:'b-rd'}}[m.status];
+  return '<div style="padding:8px 12px;border-bottom:1px solid var(--border)">'
+    +'<div style="display:flex;align-items:center;gap:8px">'
+    +'<span style="flex:1;font-size:12px;color:var(--t1);min-width:0">'+esc(r.item_label||r.item_key||'')+'</span>'
+    +'<span class="badge '+(r.timing==='on_submission'?'b-bl':'b-pu')+'" style="flex-shrink:0">'+(r.timing==='on_submission'?'On submission':'Before commencing')+'</span>'
+    +'<span class="badge '+pill.cls+'" style="flex-shrink:0">'+pill.label+'</span>'
+    +'</div>'
+    +(r.exception_note?'<div style="font-size:10px;color:var(--warn);margin-top:4px">'+esc(r.exception_note)+'</div>':'')
+    +'</div>';
+}
+function sfCompliancePackHtml(c,fac){
+  var resolved=resolveFacilityRequirements(fac);
+  var allReqs=resolved.state.concat(resolved.healthService,resolved.facility,resolved.ward);
+  if(!allReqs.length)return'';
+  var matchOf={};
+  allReqs.forEach(function(r){matchOf[r.id]=reqMatchCandidate(r,c);});
+  var countableReqs=allReqs.filter(function(r){return !reqIsInfoRow(r);});
+  var metCount=countableReqs.filter(function(r){return matchOf[r.id].status==='met';}).length;
+  var totalCount=countableReqs.length;
+  var pct=totalCount>0?Math.round(metCount/totalCount*100):100;
+  var allGood=pct===100;
+  var stateLabel=(SR[fac.state]&&SR[fac.state].label)||fac.state||'State';
+  function grp(label,rows){
+    if(!rows.length)return'';
+    return '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:8px 12px 4px">'+esc(label)+'</div>'
+      +rows.map(function(r){return sfPackRowHtml(r,matchOf[r.id]);}).join('');
+  }
+  var summary='<div style="display:flex;align-items:center;gap:14px;background:'+(allGood?'var(--ok-l)':'var(--warn-l)')+';border-radius:12px;padding:16px 16px;margin-bottom:12px">'
+    +'<div style="font-size:28px;font-weight:500;color:'+(allGood?'var(--ok)':'var(--warn)')+'">'+pct+'%</div>'
+    +'<div><div style="font-size:13px;font-weight:500;color:var(--t1)">'+metCount+' of '+totalCount+' requirements met</div>'
+    +'<div style="font-size:11px;color:var(--t3)">Heads-up only &mdash; this does not block submission.</div>'
+    +'</div></div>';
+  return '<div class="cp-lbl" style="margin-bottom:8px">Compliance pack &mdash; '+esc(fac.name)+'</div>'
+    +summary
+    +'<div style="background:var(--bg);border-radius:12px;padding:4px 0;overflow:hidden;margin-bottom:16px">'
+    +grp(stateLabel+' (all facilities)',resolved.state)
+    +grp(fac.healthAuthority||'Health service',resolved.healthService)
+    +grp('This facility',resolved.facility)
+    +grp('Ward-specific (conditional)',resolved.ward)
+    +'</div>';
+}
+
 function sfStep3Html(c,role,fac){
   if(!role||!fac){
     return '<div style="background:var(--bg);border-radius:8px;padding:24px;font-size:12px;color:var(--t2);text-align:center">'
       +'No role selected &mdash; compliance check skipped. You can still proceed.</div>'
       +sfDocAttachHtml(c);
   }
+  var packHtml=sfCompliancePackHtml(c,fac);
   var items=facilityChecklists.filter(function(ci){return ci.facility_id===fac.id;});
   if(!items.length){
-    return '<div style="background:var(--bg);border-radius:12px;padding:24px">'
+    return packHtml+'<div style="background:var(--bg);border-radius:12px;padding:24px">'
       +'<div style="font-size:13px;font-weight:500;color:var(--t2);margin-bottom:8px">No checklist configured for this facility.</div>'
       +'<div style="font-size:11px;color:var(--t3)">Set one up on the Facility page. You can still proceed with this submission.</div>'
       +'</div>'
@@ -6377,7 +6494,7 @@ function sfStep3Html(c,role,fac){
       ?'<div style="font-size:11px;color:var(--ok)">All required compliance documents are on file.</div>'
       :'<div style="font-size:11px;color:var(--warn)">Missing items will be noted in the submission record.</div>')
     +'</div></div>';
-  return summary+rows+sfDocAttachHtml(c);
+  return packHtml+'<div class="cp-lbl" style="margin-bottom:8px">Facility submission checklist</div>'+summary+rows+sfDocAttachHtml(c);
 }
 
 function sfStep4Html(c,role,fac){

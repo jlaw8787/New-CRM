@@ -501,6 +501,39 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .sb-mute.muted{color:#ffd166;border-color:#ffd166}
 .jb-new-chip{background:var(--danger);color:#fff;font-size:8px;font-weight:500;letter-spacing:.05em;padding:1px 5px;border-radius:3px;text-transform:uppercase}
 
+/* ── AI ASSISTANT (Stage 1 — shell only, no responses) ──────────────────── */
+.ai-launcher{position:fixed;bottom:24px;right:24px;z-index:450;display:flex;align-items:center;gap:9px;background:var(--brand-grad);color:#fff;border:none;border-radius:999px;padding:8px 18px 8px 8px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(38,33,92,.35),0 2px 6px rgba(38,33,92,.2);transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease,visibility .15s}
+.ai-launcher:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(38,33,92,.4),0 4px 10px rgba(38,33,92,.25)}
+.ai-launcher img{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.ai-launcher.hide{opacity:0;visibility:hidden;transform:translateY(8px) scale(.94);pointer-events:none}
+
+.ai-panel{position:fixed;top:0;right:0;bottom:0;width:370px;max-width:92vw;background:var(--surface);box-shadow:-12px 0 40px rgba(26,26,46,.18);z-index:450;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.16,.8,.3,1);}
+.ai-panel.open{transform:translateX(0)}
+.ai-panel-hdr{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:16px 16px;border-bottom:1px solid var(--border);background:var(--brand-grad)}
+.ai-panel-hdr .ai-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.ai-hdr-txt{flex:1;min-width:0}
+.ai-hdr-title{font-size:14px;font-weight:500;color:#fff}
+.ai-hdr-status{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.75);margin-top:2px}
+.ai-status-dot{width:6px;height:6px;border-radius:50%;background:#3DDC8A;box-shadow:0 0 0 2px rgba(61,220,138,.25);flex-shrink:0}
+.ai-close{background:rgba(255,255,255,.14);border:none;color:#fff;width:26px;height:26px;border-radius:8px;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.ai-close:hover{background:rgba(255,255,255,.24)}
+
+.ai-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.ai-msg{display:flex;gap:9px;align-items:flex-start}
+.ai-msg-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;margin-top:2px}
+.ai-bubble{background:var(--bg);border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:10px 13px;font-size:12.5px;line-height:1.55;color:var(--t1);max-width:270px}
+
+.ai-chips{flex-shrink:0;display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 14px}
+.ai-chip{background:var(--brand-l);color:var(--brand);border:1px solid rgba(38,33,92,.15);border-radius:20px;padding:6px 12px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .12s,border-color .12s}
+.ai-chip:hover{background:var(--brand-grad);color:#fff;border-color:transparent}
+
+.ai-input-row{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--border)}
+.ai-input-row input{flex:1;border:1px solid var(--border);border-radius:20px;padding:9px 15px;font-size:12.5px;font-family:inherit;background:var(--bg);color:var(--t1)}
+.ai-input-row input:focus{outline:none;border-color:var(--brand)}
+.ai-send{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:var(--brand-grad);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s}
+.ai-send:hover{transform:scale(1.06)}
+@media (max-width:640px){.ai-panel{width:100vw;max-width:100vw}}
+
 /* LOGIN */
 #ls{position:fixed;inset:0;background:linear-gradient(135deg,#1a1d2e,#250d48 50%,#003888 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
 .lc{background:var(--surface);border-radius:8px;padding:30px 26px;width:100%;max-width:380px;box-shadow:0 28px 70px rgba(0,0,0,.35)}
@@ -647,6 +680,38 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 </div>
 <div class="toast" id="toast"></div>
 <div class="job-toast-stack" id="job-toast-stack"></div>
+
+<!-- AI ASSISTANT (Stage 1 — UI shell only, no responses yet) -->
+<button class="ai-launcher" id="ai-launcher" onclick="toggleAssistant()">
+  <img src="Images/robot-assistant.webp" alt="">
+  <span>Ask assistant</span>
+</button>
+<div class="ai-panel" id="ai-panel">
+  <div class="ai-panel-hdr">
+    <img src="Images/robot-assistant.webp" alt="" class="ai-avatar">
+    <div class="ai-hdr-txt">
+      <div class="ai-hdr-title">Assistant</div>
+      <div class="ai-hdr-status"><span class="ai-status-dot"></span>Ready</div>
+    </div>
+    <button class="ai-close" onclick="toggleAssistant()">&#215;</button>
+  </div>
+  <div class="ai-msgs" id="ai-msgs">
+    <div class="ai-msg">
+      <img src="Images/robot-assistant.webp" alt="" class="ai-msg-avatar">
+      <div class="ai-bubble">Hi, I'm your assistant — still a preview, but soon I'll help you draft follow-ups, summarise candidates, and keep you on top of today's priorities.</div>
+    </div>
+  </div>
+  <div class="ai-chips">
+    <button class="ai-chip">Draft follow-up</button>
+    <button class="ai-chip">Summarise candidate</button>
+    <button class="ai-chip">What's on today?</button>
+  </div>
+  <div class="ai-input-row">
+    <input type="text" id="ai-input" placeholder="Ask me anything...">
+    <button class="ai-send" aria-label="Send"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg></button>
+  </div>
+</div>
+
 <script>
 
 
@@ -2769,6 +2834,15 @@ function openSearch(q){
   setTimeout(function(){document.getElementById("sr-inp").focus();},50);
 }
 function closeSearch(){document.getElementById("sr-ov").style.display="none";var gs=document.getElementById("gsearch");if(gs)gs.value="";_popFocusRestore();}
+
+// AI assistant (Stage 1 — shell only). Toggles the slide-in panel and hides
+// the launcher while it's open; input/chips are not wired to anything yet.
+var aiOpen=false;
+function toggleAssistant(){
+  aiOpen=!aiOpen;
+  document.getElementById("ai-panel").classList.toggle("open",aiOpen);
+  document.getElementById("ai-launcher").classList.toggle("hide",aiOpen);
+}
 
 function doSearch(q){
   if(!q||q.length<2){document.getElementById("sr-res").innerHTML='<div class="sr-empty">Type at least 2 characters</div>';return;}

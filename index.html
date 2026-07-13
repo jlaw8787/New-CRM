@@ -33,7 +33,8 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 
 /* SIDEBAR */
 .sb-logo{height:56px;padding:0 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
-.sb-mark{width:32px;height:32px;background:var(--brand-grad);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:500;color:#fff;letter-spacing:.5px;box-shadow:0 3px 8px rgba(38,33,92,.35)}
+.sb-mark{width:32px;height:32px;background:var(--brand-grad);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:500;color:#fff;letter-spacing:.5px;box-shadow:0 3px 8px rgba(38,33,92,.35);overflow:hidden}
+.sb-mark img{width:100%;height:100%;object-fit:cover;display:block}
 .sb-brand b{display:block;font-size:14px;font-weight:500;color:var(--t1);line-height:1.2}
 .sb-brand small{font-size:10px;color:var(--t3);letter-spacing:.01em}
 .sb-nav{flex:1;overflow-y:auto;padding:8px 0}
@@ -542,8 +543,9 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 <!-- APP -->
 <div class="app" id="app" style="display:none">
 <nav id="sb">
+  <!-- AI assistant panel (not yet built): use Images/robot-assistant.webp as its avatar when that panel is added. -->
   <div class="sb-logo">
-    <div class="sb-mark">HCA</div>
+    <div class="sb-mark"><img src="Images/platypus-logo.webp" alt="HCA mascot"></div>
     <div class="sb-brand"><b>HCA</b><small>Travel Nursing</small></div>
   </div>
   <div class="sb-nav">

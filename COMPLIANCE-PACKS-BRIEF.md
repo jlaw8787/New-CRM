@@ -9,6 +9,13 @@ Source data: Contract_Specific_Paperwork_Requirements.xlsx (per-state tabs) and
 the Contract-Paperwork-Checklist.html / compliance_pack_form*.html the user
 built. These hold the real requirement matrix.
 
+UPDATE 2026-07-13: a cleaner, complete replacement source file now exists in
+the CRM folder - Contract_Paperwork_Requirements_CLEAN.xlsx. All 8 states, a
+Regions & Facilities directory (524 rows mapping facilities to state/region),
+facility abbreviations, and ward mappings. This supersedes the original xlsx
+as the source for Track 2 (see Track 2 section below) - NOT loaded yet, demo
+runs on the existing Central QLD slice only.
+
 Written 2026-07-11.
 
 ---
@@ -90,6 +97,16 @@ Deliberately NOT in the demo slice: all 8 states, perfect data cleaning, ward
 level for every site, the full exception engine. Those are Track 2.
 
 ### TRACK 2 - FULL BUILD (after the demo)
+
+SOURCE DATA FOR THIS TRACK (added 2026-07-13): use
+Contract_Paperwork_Requirements_CLEAN.xlsx (in the CRM folder), not the
+original Contract_Specific_Paperwork_Requirements.xlsx - the CLEAN file is a
+complete, tidier replacement covering all 8 states, plus a dedicated Regions &
+Facilities directory (524 rows mapping facilities to state/region), facility
+abbreviations, and ward mappings, all in one place. Do NOT load this before
+the demo - the demo runs entirely on the existing manually-seeded Central QLD
+slice (compliance-qld-seed.sql). This file is for the post-demo full build
+only.
 
 - Clean and load all state tabs (ACT, QLD, NSW, SA, NT, TAS, VIC, WA) plus the
   Facility Abbreviations and RHH Wards reference tabs.

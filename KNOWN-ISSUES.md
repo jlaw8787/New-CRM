@@ -1377,6 +1377,41 @@ approach deliberately once that's known and once Phase 4 auth is in
 place. No technical design possible before that discovery step.
 
 ====================================================================
+## 27. Complete national compliance-requirements source file added —
+## Track 2 source data, not loaded yet
+====================================================================
+
+STATUS: Open. Logged 2026-07-13. Follow-on to item #25's deferred
+Stage 4 / Track 2 (COMPLIANCE-PACKS-BRIEF.md) — data-availability note,
+not a bug.
+
+WHAT WAS ADDED
+A cleaner, complete replacement source file now sits in the CRM folder:
+Contract_Paperwork_Requirements_CLEAN.xlsx. It supersedes the original
+Contract_Specific_Paperwork_Requirements.xlsx referenced at the top of
+COMPLIANCE-PACKS-BRIEF.md. Per the user, it covers all 8 states, plus a
+dedicated Regions & Facilities directory (524 rows mapping facilities
+to state/region), facility abbreviations, and ward mappings, all in one
+file rather than scattered across tabs/reference sheets.
+
+WHY NOT LOADED NOW
+This is source data for COMPLIANCE-PACKS-BRIEF.md's TRACK 2 (full
+national build), explicitly out of scope for the demo. The demo runs
+entirely on the existing, manually-seeded Central QLD slice
+(compliance-qld-seed.sql, loaded 2026-07-12) — nothing about that
+changes. Do not load this file before the demo.
+
+NEXT STEP (post-demo, not yet started)
+When Track 2 begins, parse this file (not the original xlsx) into
+compliance_requirements rows for the remaining 7 states plus a fuller
+QLD pass, using the Regions & Facilities directory to resolve real
+facility_id matches instead of the scope_name-only fallback the QLD
+demo seed relies on for facilities not yet in the live facilities
+table (e.g. Woorabinda, Capricornia Correctional Centre). Cross-
+reference COMPLIANCE-PACKS-BRIEF.md's Track 2 section, updated with
+this same note.
+
+====================================================================
 ## CLEANUP LIST — test-data artifacts to remove before real data goes in
 ====================================================================
 

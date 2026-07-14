@@ -1326,6 +1326,8 @@ var subView=localStorage.getItem('hca_subview')||'list';
 var _kbMenu=null;
 var _declinedExpanded=false;
 var _withdrawnExpanded=false;
+var cpSubResolvedOpen=false;
+var travelPastOpen={flights:false,accommodation:false,expenses:false};
 function setSubView(v){subView=v;localStorage.setItem('hca_subview',v);renderSubmissions();}
 function setSubFilt(k,v){if(k==='st'){subFiltStatus=v;localStorage.setItem('hca_sf_st',v);}else if(k==='co'){subFiltConsId=v;localStorage.setItem('hca_sf_co',v);}else{subFiltFacility=v;localStorage.setItem('hca_sf_fa',v);}renderSubmissions();}
 var dashActType="All",dashActCons="All";
@@ -2507,12 +2509,28 @@ function renderTravel(){
     +'</div></div>';
 
   var apB=function(st){return'<span class="ap-pill '+(st==="Approved"?"ap-ok":st==="Rejected"?"ap-r":"ap-p")+'">'+st+'</span>';};
-  var tSec=function(title,hdrs,rows){return'<div class="card" style="margin-bottom:16px"><div class="card-hd"><div class="card-title">'+title+'</div></div><table class="tbl"><thead><tr>'+hdrs.map(function(h){return'<th>'+h+'</th>';}).join("")+'</tr></thead><tbody>'+(rows||'<tr><td colspan="'+hdrs.length+'"><div class="empty-st" style="padding:12px">None</div></td></tr>')+'</tbody></table></div>';};
-  var fR=cands.reduce(function(a,c){return a.concat(c.travel.flights.map(function(f){return'<tr onclick="'+(f.contractId?("openManagePlacement("+f.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(f.airline)+" "+esc(f.flightNo)+'</td><td style="font-size:10px">'+esc(f.from)+" &rarr; "+esc(f.to)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(f.departDate)+'</td><td style="font-weight:500">'+( f.cost?"$"+f.cost:"—")+'</td><td>'+apB(f.approvalStatus)+'</td></tr>';}));}, []).join("");
-  var aR=cands.reduce(function(a,c){return a.concat(c.travel.accommodation.map(function(ac){return'<tr onclick="'+(ac.contractId?("openManagePlacement("+ac.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(ac.name)+'</td><td style="font-size:10px;color:var(--t3)">'+esc(ac.address)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(ac.checkIn)+'</td><td style="font-weight:500">'+( ac.cost?"$"+ac.cost+"/"+ac.costUnit:"—")+'</td><td>'+apB(ac.approvalStatus)+'</td></tr>';}));}, []).join("");
-  var eR=cands.reduce(function(a,c){return a.concat(c.travel.expenses.map(function(e){return'<tr onclick="'+(e.contractId?("openManagePlacement("+e.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(e.type)+'</td><td style="font-size:10px;color:var(--t3)">'+esc(e.description)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(e.date)+'</td><td style="font-weight:500">'+( e.amount?"$"+e.amount:"—")+'</td><td>'+apB(e.approvalStatus)+'</td></tr>';}));}, []).join("");
-  document.getElementById("page").innerHTML=heroHtml+tSec("Flights",["Candidate","Flight","Route","Depart","Cost","Approval"],fR)+tSec("Accommodation",["Candidate","Property","Address","Check-in","Cost","Approval"],aR)+tSec("Expenses & allowances",["Candidate","Type","Description","Date","Amount","Approval"],eR);
+  // Past = relevant date strictly before today (ddiff<0). Missing/unparseable date defaults to Active so nothing vanishes.
+  var travelIsPast=function(d){var dd=ddiff(d);return dd!==null&&dd<0;};
+  var tSec=function(title,hdrs,activeRows,pastRows,key){
+    var pastToggle=pastRows.length?('<tr><td colspan="'+hdrs.length+'" style="padding:0"><div onclick="toggleTravelPast(\''+key+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;user-select:none;background:var(--bg)">'
+      +'<span style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)">Past ('+pastRows.length+')</span>'
+      +'<span class="cp-arr">'+(travelPastOpen[key]?'&#9650;':'&#9660;')+'</span>'
+      +'</div></td></tr>'):'';
+    var body=activeRows.join("")+pastToggle+(travelPastOpen[key]?pastRows.join(""):"");
+    if(!activeRows.length&&!pastRows.length)body='<tr><td colspan="'+hdrs.length+'"><div class="empty-st" style="padding:12px">None</div></td></tr>';
+    return'<div class="card" style="margin-bottom:16px"><div class="card-hd"><div class="card-title">'+title+'</div></div><table class="tbl"><thead><tr>'+hdrs.map(function(h){return'<th>'+h+'</th>';}).join("")+'</tr></thead><tbody>'+body+'</tbody></table></div>';
+  };
+  var fAll=cands.reduce(function(a,c){return a.concat(c.travel.flights.map(function(f){return{past:travelIsPast(f.departDate),html:'<tr onclick="'+(f.contractId?("openManagePlacement("+f.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(f.airline)+" "+esc(f.flightNo)+'</td><td style="font-size:10px">'+esc(f.from)+" &rarr; "+esc(f.to)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(f.departDate)+'</td><td style="font-weight:500">'+( f.cost?"$"+f.cost:"—")+'</td><td>'+apB(f.approvalStatus)+'</td></tr>'};}));}, []);
+  var aAll=cands.reduce(function(a,c){return a.concat(c.travel.accommodation.map(function(ac){return{past:travelIsPast(ac.checkOut),html:'<tr onclick="'+(ac.contractId?("openManagePlacement("+ac.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(ac.name)+'</td><td style="font-size:10px;color:var(--t3)">'+esc(ac.address)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(ac.checkIn)+'</td><td style="font-weight:500">'+( ac.cost?"$"+ac.cost+"/"+ac.costUnit:"—")+'</td><td>'+apB(ac.approvalStatus)+'</td></tr>'};}));}, []);
+  var eAll=cands.reduce(function(a,c){return a.concat(c.travel.expenses.map(function(e){return{past:travelIsPast(e.date),html:'<tr onclick="'+(e.contractId?("openManagePlacement("+e.contractId+")"):("openCandPage("+c.id+")"))+'" style="cursor:pointer">'+'<td class="cp">'+esc(c.name)+'</td><td style="font-size:11px">'+esc(e.type)+'</td><td style="font-size:10px;color:var(--t3)">'+esc(e.description)+'</td><td style="font-size:10px;color:var(--t3)">'+fmt(e.date)+'</td><td style="font-weight:500">'+( e.amount?"$"+e.amount:"—")+'</td><td>'+apB(e.approvalStatus)+'</td></tr>'};}));}, []);
+  var grp=function(all){return{active:all.filter(function(x){return !x.past;}).map(function(x){return x.html;}),past:all.filter(function(x){return x.past;}).map(function(x){return x.html;})};};
+  var fG=grp(fAll),aG=grp(aAll),eG=grp(eAll);
+  document.getElementById("page").innerHTML=heroHtml
+    +tSec("Flights",["Candidate","Flight","Route","Depart","Cost","Approval"],fG.active,fG.past,'flights')
+    +tSec("Accommodation",["Candidate","Property","Address","Check-in","Cost","Approval"],aG.active,aG.past,'accommodation')
+    +tSec("Expenses & allowances",["Candidate","Type","Description","Date","Amount","Approval"],eG.active,eG.past,'expenses');
 }
+function toggleTravelPast(key){travelPastOpen[key]=!travelPastOpen[key];renderTravel();}
 
 function renderContracts(){
   var all=vc().reduce(function(a,c){return a.concat(c.contracts.map(function(k){return Object.assign({},k,{cid:c.id,cn:c.name,cc:c.classification,cConsId:c.consultantId});}));}, []);
@@ -3433,44 +3451,58 @@ function cpFollowupHtml(subId){
     +'</div>';
 }
 
+var SUB_RESOLVED=['Accepted','Withdrawn','Declined'];
+function cpToggleResolvedSubs(){cpSubResolvedOpen=!cpSubResolvedOpen;renderCandPage();}
+function cpSubCard(c,s){
+  var col=SUB_COL[s.status]||'#888';
+  var cpBg=SUB_BG[s.status]||'#f5f5f5';
+  var PROG=['Promoting','Submitted','Accepted'];
+  var progIdx=PROG.indexOf(s.status);
+  var rateClean=cleanRate(s.rate);
+  return '<div id="cpsub-'+s.id+'" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;padding:12px 16px;border-left:3px solid '+col+';transition:background .4s">'
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+    +'<div style="flex:1">'
+    +'<div style="font-size:13px;font-weight:600">'+esc(s.facility)+'</div>'
+    +'<div style="font-size:11px;color:var(--t3)">'+esc(s.ward)+(s.nurseType?' · '+esc(s.nurseType):'')+'</div>'
+    +(s.submittedDate?'<div style="font-size:10px;color:var(--t3);margin-top:4px">Submitted '+fmt(s.submittedDate)+'</div>':'')
+    +(rateClean!==''?'<div style="font-size:11px;color:var(--ok);font-weight:700;margin-top:4px">$'+rateClean+'/hr</div>':'')
+    +cpFollowupHtml(s.id)
+    +'</div>'
+    +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">'
+    +'<span style="font-size:9px;padding:4px 8px;border-radius:9px;background:'+cpBg+';color:'+col+';font-weight:700">'+esc(s.status)+'</span>'
+    +'<select onchange="cpUpdateSubStatus('+s.id+','+c.id+',this.value);styleSubSel(this)" onclick="event.stopPropagation()" style="font-size:10px;padding:4px 4px;border:1px solid var(--border);border-radius:5px;background:'+cpBg+';color:'+col+';font-weight:600">'
+    +SUB_ALL.map(function(st){return'<option'+(s.status===st?' selected':'')+'>'+st+'</option>';}).join('')
+    +'</select>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin-top:8px;display:flex;gap:2px">'
+    +PROG.map(function(st,i){
+      var done=progIdx>=i&&['Withdrawn','Declined'].indexOf(s.status)<0;
+      return'<div style="flex:1;height:3px;border-radius:2px;background:'+(done?col:'var(--border)')+'"></div>';
+    }).join('')
+    +'</div>'
+    +(s.notes?'<div style="font-size:10px;color:var(--t2);margin-top:8px;padding:8px 8px;background:var(--bg);border-radius:4px;line-height:1.5">'+esc(s.notes)+'</div>':'')
+    +(s.status==='Accepted'&&!hasContractForSub(c.id,s.id)
+      ?'<button class="btn btn-p btn-sm" style="margin-top:8px" onclick="event.stopPropagation();openContractModal('+s.id+')">+ Create Contract</button>'
+      :'')
+    +'</div>';
+}
 function renderCpSubmissions(c){
   var subs=c.submissions||[];
   var h='<div style="margin-bottom:12px"><button class="btn btn-p btn-sm" onclick="openSubFlow('+c.id+',null)">+ New Submission</button></div>';
   if(!subs.length)return h+'<div style="text-align:center;padding:24px 0;color:var(--t3);font-size:12px">No submissions yet.</div>';
-  subs.slice().reverse().forEach(function(s){
-    var col=SUB_COL[s.status]||'#888';
-    var cpBg=SUB_BG[s.status]||'#f5f5f5';
-    var PROG=['Promoting','Submitted','Accepted'];
-    var progIdx=PROG.indexOf(s.status);
-    var rateClean=cleanRate(s.rate);
-    h+='<div id="cpsub-'+s.id+'" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;padding:12px 16px;border-left:3px solid '+col+';transition:background .4s">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
-      +'<div style="flex:1">'
-      +'<div style="font-size:13px;font-weight:600">'+esc(s.facility)+'</div>'
-      +'<div style="font-size:11px;color:var(--t3)">'+esc(s.ward)+(s.nurseType?' · '+esc(s.nurseType):'')+'</div>'
-      +(s.submittedDate?'<div style="font-size:10px;color:var(--t3);margin-top:4px">Submitted '+fmt(s.submittedDate)+'</div>':'')
-      +(rateClean!==''?'<div style="font-size:11px;color:var(--ok);font-weight:700;margin-top:4px">$'+rateClean+'/hr</div>':'')
-      +cpFollowupHtml(s.id)
-      +'</div>'
-      +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">'
-      +'<span style="font-size:9px;padding:4px 8px;border-radius:9px;background:'+cpBg+';color:'+col+';font-weight:700">'+esc(s.status)+'</span>'
-      +'<select onchange="cpUpdateSubStatus('+s.id+','+c.id+',this.value);styleSubSel(this)" onclick="event.stopPropagation()" style="font-size:10px;padding:4px 4px;border:1px solid var(--border);border-radius:5px;background:'+cpBg+';color:'+col+';font-weight:600">'
-      +SUB_ALL.map(function(st){return'<option'+(s.status===st?' selected':'')+'>'+st+'</option>';}).join('')
-      +'</select>'
-      +'</div>'
-      +'</div>'
-      +'<div style="margin-top:8px;display:flex;gap:2px">'
-      +PROG.map(function(st,i){
-        var done=progIdx>=i&&['Withdrawn','Declined'].indexOf(s.status)<0;
-        return'<div style="flex:1;height:3px;border-radius:2px;background:'+(done?col:'var(--border)')+'"></div>';
-      }).join('')
-      +'</div>'
-      +(s.notes?'<div style="font-size:10px;color:var(--t2);margin-top:8px;padding:8px 8px;background:var(--bg);border-radius:4px;line-height:1.5">'+esc(s.notes)+'</div>':'')
-      +(s.status==='Accepted'&&!hasContractForSub(c.id,s.id)
-        ?'<button class="btn btn-p btn-sm" style="margin-top:8px" onclick="event.stopPropagation();openContractModal('+s.id+')">+ Create Contract</button>'
-        :'')
+  var ordered=subs.slice().reverse();
+  // Anything not in SUB_RESOLVED (including a missing/unrecognized status) counts as Open, so a submission never disappears.
+  var openSubs=ordered.filter(function(s){return SUB_RESOLVED.indexOf(s.status)<0;});
+  var resolvedSubs=ordered.filter(function(s){return SUB_RESOLVED.indexOf(s.status)>=0;});
+  h+=openSubs.map(function(s){return cpSubCard(c,s);}).join('');
+  if(resolvedSubs.length){
+    h+='<div onclick="cpToggleResolvedSubs()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;cursor:pointer;user-select:none;border-top:1px solid var(--border);margin-top:4px;margin-bottom:8px">'
+      +'<span style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)">Resolved ('+resolvedSubs.length+')</span>'
+      +'<span class="cp-arr">'+(cpSubResolvedOpen?'&#9650;':'&#9660;')+'</span>'
       +'</div>';
-  });
+    if(cpSubResolvedOpen)h+=resolvedSubs.map(function(s){return cpSubCard(c,s);}).join('');
+  }
   return h;
 }
 

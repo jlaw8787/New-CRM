@@ -110,6 +110,8 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .toggle-pill.on{background:var(--brand);color:#fff}
 .card.clickable{cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease,transform .12s ease}
 .card.clickable:hover{box-shadow:0 4px 10px rgba(38,33,92,.08),0 20px 36px -22px rgba(38,33,92,.45);border-color:var(--brand);transform:translateY(-1px)}
+.mgmt-tile-click{cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease,transform .12s ease}
+.mgmt-tile-click:hover{box-shadow:0 4px 10px rgba(38,33,92,.08),0 20px 36px -22px rgba(38,33,92,.45);border-color:var(--brand);transform:translateY(-1px)}
 
 /* CARDS */
 .card{background:var(--surface);border-radius:16px;border:0.5px solid var(--border);box-shadow:var(--shadow-card)}
@@ -534,6 +536,21 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .ai-send:hover{transform:scale(1.06)}
 @media (max-width:640px){.ai-panel{width:100vw;max-width:100vw}}
 
+/* ── AI ASSISTANT Stage 2 — scripted responses ──────────────────────────── */
+.ai-bubble.user{background:var(--brand-grad);color:#fff;border-radius:14px 14px 4px 14px;margin-left:auto}
+.ai-bubble.ai-typing{display:flex;gap:4px;align-items:center;padding:12px 14px}
+.ai-bubble.ai-typing span{width:6px;height:6px;border-radius:50%;background:var(--t3);animation:aiTypingBounce 1.1s infinite ease-in-out}
+.ai-bubble.ai-typing span:nth-child(2){animation-delay:.15s}
+.ai-bubble.ai-typing span:nth-child(3){animation-delay:.3s}
+@keyframes aiTypingBounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+.ai-draft{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 12px;margin-top:8px;font-size:12px;line-height:1.6;color:var(--t1);white-space:pre-wrap;max-width:270px}
+.ai-draft-acts{display:flex;gap:6px;margin-top:9px}
+.ai-draft-btn{background:var(--surface);border:1px solid var(--border);color:var(--t2);border-radius:7px;padding:5px 11px;font-size:10.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .12s,border-color .12s}
+.ai-draft-btn:hover{background:var(--brand-l);border-color:var(--brand);color:var(--brand)}
+#ai-input:disabled{opacity:.6}
+.ai-send:disabled{opacity:.5;cursor:default}
+.ai-send:disabled:hover{transform:none}
+
 /* LOGIN */
 #ls{position:fixed;inset:0;background:linear-gradient(135deg,#1a1d2e,#250d48 50%,#003888 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
 .lc{background:var(--surface);border-radius:8px;padding:30px 26px;width:100%;max-width:380px;box-shadow:0 28px 70px rgba(0,0,0,.35)}
@@ -553,6 +570,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)!important}.g2,.g3{grid-template-columns:1fr}.f2,.f3,.f4{grid-template-columns:1fr}.rate-grid{grid-template-columns:repeat(2,1fr)}#panel{width:100%}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
 <!-- LOGIN -->
@@ -698,17 +716,17 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
   <div class="ai-msgs" id="ai-msgs">
     <div class="ai-msg">
       <img src="Images/robot-assistant.webp" alt="" class="ai-msg-avatar">
-      <div class="ai-bubble">Hi, I'm your assistant — still a preview, but soon I'll help you draft follow-ups, summarise candidates, and keep you on top of today's priorities.</div>
+      <div class="ai-bubble">Hi, I'm your assistant — still a preview, but I can already draft a follow-up, summarise a candidate you're viewing, prep a submission email, or run through what's on today. Try a quick action below, or just ask.</div>
     </div>
   </div>
   <div class="ai-chips">
-    <button class="ai-chip">Draft follow-up</button>
-    <button class="ai-chip">Summarise candidate</button>
-    <button class="ai-chip">What's on today?</button>
+    <button class="ai-chip" onclick="aiChipClick('followup')">Draft follow-up</button>
+    <button class="ai-chip" onclick="aiChipClick('summary')">Summarise candidate</button>
+    <button class="ai-chip" onclick="aiChipClick('today')">What's on today?</button>
   </div>
   <div class="ai-input-row">
-    <input type="text" id="ai-input" placeholder="Ask me anything...">
-    <button class="ai-send" aria-label="Send"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg></button>
+    <input type="text" id="ai-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter'){event.preventDefault();aiSendUser(this.value);}">
+    <button class="ai-send" aria-label="Send" onclick="aiSendUser(document.getElementById('ai-input').value)"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg></button>
   </div>
 </div>
 
@@ -2743,6 +2761,24 @@ function renderTeam(){
 }
 function drillCon(id){VCon=id;nav("candidates");}
 
+// Management Dashboard stat tiles -> filtered navigation. Sets the target
+// page's own EXISTING filter globals directly (same pattern as drillCon
+// above), never calling the page-local setter (setPF/setSubFilt), since
+// those also trigger their own render and we're about to nav() anyway.
+// Guarded so a bad/unrecognised kind falls back to Home rather than throwing.
+function mgmtTileNav(kind){
+  try{
+    if(kind==='subs-all'){subFiltStatus='All';subFiltConsId='All';subFiltFacility='All';}
+    else if(kind==='subs-accepted'){subFiltStatus='Accepted';subFiltConsId='All';subFiltFacility='All';}
+    else if(kind==='candidates-placed'){phF='On Assignment';}
+    var page={'subs-all':'submissions','subs-accepted':'submissions','contracts':'contracts','candidates-placed':'candidates'}[kind]||'home';
+    nav(page);
+  }catch(e){
+    console.error('[mgmt tile nav]',e);
+    try{nav('home');}catch(e2){}
+  }
+}
+
 function renderRateRef(){document.getElementById("tb-h").textContent="Rate Reference";document.getElementById("tb-s").textContent="State health regions, loadings, per diems and band rate guides";document.getElementById("tb-r").innerHTML="";var stateCards=Object.entries(SR).map(function(entry){var sk=entry[0];var st=entry[1];var regionBlocks=Object.entries(st.regions).map(function(re){var rk=re[0];var rd=re[1];return'<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500">'+esc(rk)+'</span><span class="badge b-pu">'+rd.hours+'hr/wk</span>'+(rd.loading?'<span class="badge b-rd">'+rd.loading+'% loading</span>':"")+(rd.pd?'<span class="badge b-tl">$'+rd.pd+'/day per diem</span>':"")+'</div><div style="font-size:10px;color:var(--t3);margin-bottom:8px;font-style:italic">'+esc(rd.note)+'</div><table class="btbl"><thead><tr><th>Band</th><th style="text-align:center">Base rate</th>'+(rd.loading?'<th style="text-align:center">With '+rd.loading+'% loading</th>':"")+'</tr></thead><tbody>'+rd.bands.map(function(b){return'<tr><td style="font-weight:500;font-size:11px">'+esc(b.b)+'</td><td class="br">$'+b.mn+' to $'+b.mx+'/hr</td>'+(rd.loading?'<td class="bl">$'+Math.round(b.mn*(1+rd.loading/100))+' to $'+Math.round(b.mx*(1+rd.loading/100))+'/hr</td>':"")+'</tr>';}).join("")+'</tbody></table></div>';}).join('<hr style="border:none;border-top:1px solid var(--border);margin:14px 0">');return'<div class="card" style="margin-bottom:16px"><div class="card-hd"><div class="card-title"><span class="dot" style="background:'+st.color+'"></span>'+esc(st.label)+'</div><span style="font-size:10px;color:var(--t3)">'+Object.keys(st.regions).length+' regions</span></div><div style="padding:16px">'+regionBlocks+'</div></div>';}).join("");document.getElementById("page").innerHTML='<div class="callout c-amber" style="margin-bottom:16px">'+I.warn+' Indicative rate guidance only. Confirm against the current enterprise agreement before issuing any contract.</div>'+stateCards;}
 
 function renderSettings(){document.getElementById("tb-h").textContent="Settings";document.getElementById("tb-s").textContent="Users, roles and targets";document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="openUserModal()">Add user</button>';var rows=users.map(function(u){return'<tr onclick="openUserModal('+u.id+')" style="cursor:pointer">'+'<td><div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:24px;border-radius:8px;background:'+u.color+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:500;color:#fff">'+u.initials+'</div><span class="cp">'+esc(u.name)+'</span></div></td>'+'<td><span class="badge '+({ops:"b-pu",consultant:"b-bl",admin:"b-tl"}[u.role]||"b-gr")+'">'+ROLES[u.role]+'</span></td>'+'<td style="font-size:10px;color:var(--t3)">'+(u.role==="admin"?users.filter(function(c){return u.adminFor.indexOf(c.id)>=0;}).map(function(c){return c.name;}).join(", ")||"None":"—")+'</td>'+'<td style="font-size:10px;color:var(--t3)">'+(u.targets&&u.targets.p||0)+' pl &middot; '+(u.targets&&u.targets.s||0)+' sub &middot; $'+Math.round(((u.targets&&u.targets.rev)||0)/1000)+'k</td>'+'<td><button class="btn btn-g btn-xs" onclick="event.stopPropagation();openUserModal('+u.id+')">Edit</button></td>'+'</tr>';}).join("");document.getElementById("page").innerHTML='<div class="card"><table class="tbl"><thead><tr><th>User</th><th>Role</th><th>Admin for</th><th>Targets</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+'<div class="card" style="margin-top:16px;padding:16px"><div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);margin-bottom:12px">Data tools</div><div style="display:flex;gap:10px;align-items:center"><button class="btn btn-p" onclick="seedDatabase()">Seed sandbox data</button><span id="seed-status" style="font-size:11px;color:var(--t3)"></span></div><div style="font-size:10px;color:var(--t3);margin-top:8px">Inserts the 6 original test candidates with activity, submissions, contracts and travel records. Only use on an empty candidates table.</div></div>';}
@@ -2780,7 +2816,7 @@ function closeModal(){document.getElementById("mo").style.display="none";}
 var EF=null,EFid=null;
 function openFacModal(id){
   EFid=id||null;
-  EF=id?JSON.parse(JSON.stringify(facilities.find(function(f){return f.id===id;}))):({id:uid(),name:"",state:"NT",region:"",type:"Public",beds:"",wards:[],contactName:"",contactEmail:"",contactPhone:"",notes:""});
+  EF=id?JSON.parse(JSON.stringify(facilities.find(function(f){return f.id===id;}))):({id:uid(),name:"",state:"NT",region:"",type:"Public",beds:"",wards:[],contactName:"",contactEmail:"",contactPhone:"",notes:"",address:"",addressSuburb:"",addressPostcode:""});
   if(!EF.wards)EF.wards=[];
   document.getElementById("modal").style.maxWidth="640px";
   document.getElementById("m-ttl").textContent=id?"Edit Facility":"New Facility";
@@ -2807,6 +2843,9 @@ function renderFacModalBody(){
     +'<div class="fr f2"><div class="fg"><label>Region</label><input value="'+esc(EF.region||"")+'" oninput="EF.region=this.value" placeholder="e.g. NT — Remote"></div>'
     +'<div class="fg"><label>Type</label><select onchange="EF.type=this.value">'+["Public","Private","NGO","Remote Community"].map(function(t){return '<option '+(EF.type===t?"selected":"")+'>'+t+'</option>';}).join("")+'</select></div></div>'
     +'<div class="fg"><label>Beds</label><input type="number" value="'+(EF.beds||"")+'" oninput="EF.beds=this.value" placeholder="350" style="max-width:120px"></div>'
+    +'<div class="fg"><label>Street Address</label><input value="'+esc(EF.address||"")+'" oninput="EF.address=this.value" placeholder="e.g. 15 Hospital Rd"></div>'
+    +'<div class="fr f2"><div class="fg"><label>Suburb</label><input value="'+esc(EF.addressSuburb||"")+'" oninput="EF.addressSuburb=this.value"></div>'
+    +'<div class="fg"><label>Postcode</label><input value="'+esc(EF.addressPostcode||"")+'" oninput="EF.addressPostcode=this.value" maxlength="4"></div></div>'
     +'<div class="sh" style="display:flex;justify-content:space-between;align-items:center">Wards &amp; Nurse Types Required'
       +'<div style="display:flex;gap:6px">'
       +'<button class="btn btn-g btn-xs" onclick="applyMPSPreset()">+ MPS Preset</button>'
@@ -2853,13 +2892,189 @@ function openSearch(q){
 }
 function closeSearch(){document.getElementById("sr-ov").style.display="none";var gs=document.getElementById("gsearch");if(gs)gs.value="";_popFocusRestore();}
 
-// AI assistant (Stage 1 — shell only). Toggles the slide-in panel and hides
-// the launcher while it's open; input/chips are not wired to anything yet.
+// AI assistant. Toggles the slide-in panel and hides the launcher while open.
 var aiOpen=false;
 function toggleAssistant(){
   aiOpen=!aiOpen;
   document.getElementById("ai-panel").classList.toggle("open",aiOpen);
   document.getElementById("ai-launcher").classList.toggle("hide",aiOpen);
+}
+
+// ── AI assistant Stage 2 — scripted responses ───────────────────────────────
+// CONCEPT ONLY: everything below is client-side pattern matching against
+// on-screen data (curPage/curCandId/candidates/CU/getAutos). No API call, no
+// key, no network request, nothing ever written to Supabase. Per
+// AI-ASSISTANT-BRIEF.md this must never throw visibly — every entry point is
+// wrapped so an unexpected input always ends in a graceful reply, never a
+// broken panel.
+var aiTypingActive=false,aiDraftSeq=0,aiDrafts={};
+
+function aiCurrentCandidate(){
+  if(curPage==='candidateprofile'&&curCandId)return candidates.find(function(c){return c.id===curCandId;})||null;
+  return null;
+}
+function aiLatestSubmission(c){
+  return (c.submissions||[]).slice().sort(function(a,b){return (b.submittedDate||'')<(a.submittedDate||'')?-1:1;})[0]||null;
+}
+function aiSetInputEnabled(on){
+  var inp=document.getElementById('ai-input');var btn=document.querySelector('.ai-send');
+  if(inp)inp.disabled=!on;
+  if(btn)btn.disabled=!on;
+}
+function aiShowTyping(){
+  var wrap=document.getElementById('ai-msgs');if(!wrap)return;
+  var div=document.createElement('div');
+  div.className='ai-msg';div.id='ai-typing-row';
+  div.innerHTML='<img src="Images/robot-assistant.webp" alt="" class="ai-msg-avatar"><div class="ai-bubble ai-typing"><span></span><span></span><span></span></div>';
+  wrap.appendChild(div);wrap.scrollTop=wrap.scrollHeight;
+}
+function aiHideTyping(){var el=document.getElementById('ai-typing-row');if(el)el.remove();}
+function aiTypingThen(fn){
+  aiTypingActive=true;aiSetInputEnabled(false);aiShowTyping();
+  setTimeout(function(){
+    aiHideTyping();
+    try{fn();}catch(e){
+      console.error('[ai]',e);
+      aiAppendBotMsg("Sorry, I tripped over that one — I'm still a preview. Try rephrasing, or use one of the quick actions below.");
+    }
+    aiTypingActive=false;aiSetInputEnabled(true);
+    var inp=document.getElementById('ai-input');if(inp)inp.focus();
+  },550+Math.random()*450);
+}
+function aiAppendUserMsg(text){
+  var wrap=document.getElementById('ai-msgs');if(!wrap)return;
+  var div=document.createElement('div');
+  div.className='ai-msg user';
+  div.innerHTML='<div class="ai-bubble user">'+esc(text)+'</div>';
+  wrap.appendChild(div);wrap.scrollTop=wrap.scrollHeight;
+}
+function aiAppendBotMsg(bubbleHtml,extraHtml){
+  var wrap=document.getElementById('ai-msgs');if(!wrap)return;
+  var div=document.createElement('div');
+  div.className='ai-msg';
+  div.innerHTML='<img src="Images/robot-assistant.webp" alt="" class="ai-msg-avatar">'
+    +'<div style="display:flex;flex-direction:column;min-width:0">'
+    +'<div class="ai-bubble">'+bubbleHtml+'</div>'
+    +(extraHtml||'')
+    +'</div>';
+  wrap.appendChild(div);wrap.scrollTop=wrap.scrollHeight;
+}
+// text is treated as PLAIN TEXT (no HTML) — escaped once here, so callers
+// must not pre-escape or embed markup in it.
+function aiDraftBoxHtml(text){
+  aiDraftSeq++;
+  var id='ai-draft-'+aiDraftSeq;
+  aiDrafts[id]=text;
+  return '<div class="ai-draft" id="'+id+'">'+esc(text).replace(/\n/g,'<br>')+'</div>'
+    +'<div class="ai-draft-acts">'
+    +'<button class="ai-draft-btn" onclick="aiCopyDraft(\''+id+'\')">Copy</button>'
+    +'<button class="ai-draft-btn" onclick="aiRefineDraft(\''+id+'\')">Refine</button>'
+    +'</div>';
+}
+function aiFallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');showToast('Copied to clipboard');}catch(e){showToast('Could not copy — select the text manually','err');}
+  document.body.removeChild(ta);
+}
+function aiCopyDraft(id){
+  var text=aiDrafts[id];if(!text)return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){showToast('Copied to clipboard');}).catch(function(){aiFallbackCopy(text);});
+  } else {
+    aiFallbackCopy(text);
+  }
+}
+function aiRefineText(text){
+  var lines=text.split('\n').filter(Boolean);
+  var greeting=lines[0]||'Hi,';
+  var closing=lines.slice(-2).join('\n');
+  return greeting+'\n\nQuick note — hope things are tracking well! Wanted to check in and see if you need anything from me before we go further.\n\n'+closing;
+}
+function aiRefineDraft(id){
+  var text=aiDrafts[id];if(!text||aiTypingActive)return;
+  aiTypingThen(function(){aiAppendBotMsg('Here\'s a shorter, warmer version:',aiDraftBoxHtml(aiRefineText(text)));});
+}
+
+function aiDraftFollowup(){
+  var c=aiCurrentCandidate();
+  if(!c){aiAppendBotMsg("I'd love to help draft a follow-up — open a candidate's profile first, then ask again.");return;}
+  var lastSub=aiLatestSubmission(c);
+  var facBit=lastSub&&lastSub.facility?(' at <b>'+esc(lastSub.facility)+'</b>'):'';
+  var draft='Hi '+c.name.split(' ')[0]+',\n\nJust checking in'+(lastSub&&lastSub.facility?' following your submission to '+lastSub.facility:'')+' — wanted to see how things are tracking and if you had any questions.\n\n'
+    +(c.nextAction?('One thing on my list: '+c.nextAction+'. '):'')
+    +'Let me know a good time for a quick call this week.\n\nThanks,\n'+(CU&&CU.name?CU.name.split(' ')[0]:'Your consultant');
+  aiAppendBotMsg('Here\'s a follow-up draft for <b>'+esc(c.name)+'</b>'+facBit+':',aiDraftBoxHtml(draft));
+}
+function aiDraftSubmissionEmail(){
+  var c=aiCurrentCandidate();
+  if(!c){aiAppendBotMsg("Tell me — or open — which candidate you'd like to submit, and I'll draft the email.");return;}
+  var openSub=(c.submissions||[]).find(function(s){return s.status==='Promoting'||s.status==='Submitted';})||aiLatestSubmission(c);
+  var facName=openSub&&openSub.facility?openSub.facility:null;
+  var subject='Submission — '+c.name+(facName?' — '+facName:'');
+  var body='Hi'+(facName?' team at '+facName:'')+',\n\nPlease find '+c.name+' ('+(c.classification||'RN')+') submitted for your consideration'+(facName?' at '+facName:'')+'.\n\n'
+    +(c.yearsExperience?c.yearsExperience+' years’ experience. ':'')+(c.availableFrom?'Available from '+fmt(c.availableFrom)+'.':'')
+    +'\n\nHappy to answer any questions — let me know next steps.\n\nKind regards,\n'+(CU&&CU.name?CU.name:'');
+  aiAppendBotMsg('Draft submission email for <b>'+esc(c.name)+'</b>'+(facName?' &rarr; <b>'+esc(facName)+'</b>':'')+':',aiDraftBoxHtml('Subject: '+subject+'\n\n'+body));
+}
+function aiSummariseCandidate(){
+  var c=aiCurrentCandidate();
+  if(!c){aiAppendBotMsg("Open a candidate's profile and ask me again, or tell me who you'd like summarised.");return;}
+  var pct=cmpScore(c);
+  var activeContract=(c.contracts||[]).find(function(k){return k.status==='Active';});
+  var lastSub=aiLatestSubmission(c);
+  var bits=[];
+  bits.push(c.name+' — '+(c.classification||'')+(c.nurseType&&c.nurseType!==c.classification?' ('+c.nurseType+')':''));
+  bits.push('Phase: '+(c.phase||'—')+(c.hot?' · Flagged Hot':''));
+  bits.push('Compliance: '+pct+'% complete');
+  if(activeContract)bits.push('On assignment: '+(activeContract.facility||'')+' ('+(activeContract.ward||'')+'), ends '+fmt(activeContract.endDate));
+  else if(lastSub)bits.push('Last submission: '+(lastSub.facility||'')+' — '+(lastSub.status||''));
+  if(c.nextAction)bits.push('Next action: '+c.nextAction+(c.nextActionDue?' (due '+fmt(c.nextActionDue)+')':''));
+  aiAppendBotMsg('Here\'s a quick summary of <b>'+esc(c.name)+'</b>:',aiDraftBoxHtml(bits.join('\n')));
+}
+function aiWhatsOnToday(){
+  if(!CU){aiAppendBotMsg("Once you're logged in I can pull your real priorities for the day.");return;}
+  var first=(CU.name||'').split(' ')[0];
+  var alerts=getAutos(vc()).filter(function(a){return !snzOk(a.id||'');});
+  if(!alerts.length){aiAppendBotMsg('Looking good, '+esc(first)+' — nothing urgent on your list right now. Might be a good day to work the Job Board for new matches.');return;}
+  var reds=alerts.filter(function(a){return a.level==='red';});
+  var ambers=alerts.filter(function(a){return a.level==='amber';});
+  var lines=[];
+  if(reds.length){lines.push(reds.length+' urgent item'+(reds.length!==1?'s':'')+' today:');reds.slice(0,3).forEach(function(a){lines.push('- '+a.title);});}
+  if(ambers.length){lines.push((lines.length?'':'')+ambers.length+' more worth a look this week:');ambers.slice(0,3).forEach(function(a){lines.push('- '+a.title);});}
+  aiAppendBotMsg('Here\'s what\'s on today, '+esc(first)+':',aiDraftBoxHtml(lines.join('\n')));
+}
+
+function aiChipClick(kind){
+  if(aiTypingActive)return;
+  var labels={followup:'Draft follow-up',summary:'Summarise candidate',today:"What's on today?"};
+  aiAppendUserMsg(labels[kind]||kind);
+  aiTypingThen(function(){
+    if(kind==='followup')aiDraftFollowup();
+    else if(kind==='summary')aiSummariseCandidate();
+    else if(kind==='today')aiWhatsOnToday();
+  });
+}
+function aiRespondToText(text){
+  var q=text.toLowerCase();
+  var first=CU&&CU.name?CU.name.split(' ')[0]:'';
+  if(/^(hi|hey|hello|yo)\b/.test(q)){aiAppendBotMsg('Hey'+(first?' '+esc(first):'')+'! What can I help with — a follow-up draft, a candidate summary, or today\'s priorities?');return;}
+  if(/thank/.test(q)){aiAppendBotMsg("Anytime! I'm still just a preview for now, but happy to help however I can.");return;}
+  if(/help|what can you do|what do you do/.test(q)){aiAppendBotMsg('Right now I can draft a follow-up, summarise a candidate you\'re viewing, prep a submission email, or give you a rundown of what\'s on today. Try one of the chips below, or just ask.');return;}
+  if(/follow.?up/.test(q)){aiDraftFollowup();return;}
+  if(/submi(t|ssion)/.test(q)&&/(email|draft|write|send)/.test(q)){aiDraftSubmissionEmail();return;}
+  if(/summar/.test(q)){aiSummariseCandidate();return;}
+  if(/today|priorit|agenda|what.?s (on|up)/.test(q)){aiWhatsOnToday();return;}
+  if(/\b(book|approve|schedule a call|call them|actually send|send it|save this|delete)\b/.test(q)){aiAppendBotMsg("I'm only a preview right now, so I can't take real actions yet — no sending, booking, or saving. I can draft the words for you to send yourself though!");return;}
+  aiAppendBotMsg('I\'m still a preview, so my range is limited today — I\'m built for drafting follow-ups, summarising a candidate, prepping a submission email, or a quick "what\'s on today." Try one of the chips below, or ask me one of those directly.');
+}
+function aiSendUser(text){
+  text=(text||'').trim();
+  if(!text||aiTypingActive)return;
+  aiAppendUserMsg(text);
+  var inp=document.getElementById('ai-input');if(inp)inp.value='';
+  aiTypingThen(function(){aiRespondToText(text);});
 }
 
 function doSearch(q){
@@ -2998,24 +3213,25 @@ function renderMgmtDash(){
     return d&&d>0?t+r*h*(d/7):t;
   },0);},0);
   var fmtMon=function(n){return n>=1e6?"$"+(n/1e6).toFixed(1)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"K":"$"+Math.round(n);};
-  function sc(lbl,val,sub,col,urg){
-    return '<div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid '+col+';border-radius:8px;padding:16px">'
+  function sc(lbl,val,sub,col,urg,navKind){
+    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="mgmtTileNav(\''+navKind+'\')"':'';
+    return '<div'+clickAttrs+' style="background:var(--surface);border:1px solid var(--border);border-top:3px solid '+col+';border-radius:8px;padding:16px">'
       +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:4px">'+lbl+'</div>'
       +'<div style="font-size:28px;font-weight:800;color:'+(urg?'var(--danger)':col)+';line-height:1">'+val+'</div>'
       +'<div style="font-size:11px;color:var(--t3);margin-top:4px">'+sub+'</div></div>';
   }
   var topRow='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">'
-    +sc("Total Subs",total,"all time","var(--accent)",false)
+    +sc("Total Subs",total,"all time","var(--accent)",false,'subs-all')
     +sc("No Outcome",noOutPct+"%",noOutN+" of "+total+" subs",noOutPct>=50?"var(--danger)":"#d4900a",noOutPct>=50)
-    +sc("Overdue F/U",overdue.length,"need chasing now","var(--danger)",overdue.length>0)
-    +sc("Stale 7d+",stale.length,"no update in 7+ days","var(--danger)",stale.length>0)
+    +sc("Overdue F/U",overdue.length,"need chasing now","var(--danger)",overdue.length>0,'subs-all')
+    +sc("Stale 7d+",stale.length,"no update in 7+ days","var(--danger)",stale.length>0,'subs-all')
     +'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">'
-    +sc("Placed",placed.length,"on assignment","var(--ok)",false)
-    +sc("Active Contracts",activeCon,"running now","var(--ok)",false)
-    +sc("Accepted Rate",convRate+"%","of subs with outcome","#3b1a6e",false)
-    +sc("In Pipeline",inPipe.length,"submitted/under review","var(--accent)",false)
-    +sc("Pipeline Value",fmtMon(pipelineVal),"active contract rev. remaining","#1a6e3b",false)
+    +sc("Placed",placed.length,"on assignment","var(--ok)",false,'candidates-placed')
+    +sc("Active Contracts",activeCon,"running now","var(--ok)",false,'contracts')
+    +sc("Accepted Rate",convRate+"%","of subs with outcome","#3b1a6e",false,'subs-accepted')
+    +sc("In Pipeline",inPipe.length,"submitted/under review","var(--accent)",false,'subs-all')
+    +sc("Pipeline Value",fmtMon(pipelineVal),"active contract rev. remaining","#1a6e3b",false,'contracts')
     +'</div>';
   var rows=cons.map(function(u){
     var mc=allC.filter(function(c){return c.consultantId===u.id;});
@@ -6094,6 +6310,177 @@ function mpDeleteExpense(id){
   });
 }
 
+// ── Captain Contract PDF generator ──────────────────────────────────────────
+// Client-side only: merges real contract/candidate/facility data into an
+// original template and renders it with jsPDF. No Supabase write, no send —
+// preview (blob URL in the existing modal) and download only. Every value
+// goes through pdfTbc() so a missing field renders as "TBC" and this never
+// throws on incomplete data.
+function pdfTbc(v){
+  if(v===undefined||v===null)return'TBC';
+  var s=String(v).trim();
+  if(!s||s.toLowerCase()==='undefined'||s.toLowerCase()==='null')return'TBC';
+  return s;
+}
+function contractFacilityAddress(f){
+  if(!f)return'TBC';
+  var street=pdfTbc(f.address);
+  var tail=[f.addressSuburb,f.state,f.addressPostcode].filter(Boolean).join(' ');
+  if(street!=='TBC')return street+(tail?', '+tail:'');
+  var fallback=[f.region,f.state].filter(Boolean).join(', ');
+  return fallback||'TBC';
+}
+function generateContractPdf(contractId){
+  try{
+    var hit=findContractById(contractId),k=hit.contract,cand=hit.cand;
+    if(!k||!cand){showToast('Contract not found','err');return null;}
+    var fac=k.facilityId?(facilities.find(function(f){return f.id===k.facilityId;})||null):null;
+    var consultant=cand.consultantId?uById(cand.consultantId):null;
+    var jsPDFCtor=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:null;
+    if(!jsPDFCtor){showToast('PDF library failed to load — check your connection','err');return null;}
+
+    var doc=new jsPDFCtor({unit:'pt',format:'a4'});
+    var pageW=doc.internal.pageSize.getWidth();
+    var pageH=doc.internal.pageSize.getHeight();
+    var margin=48,y=56,lineH=15;
+
+    function ensureRoom(next){if(y+next>pageH-56){doc.addPage();y=56;}}
+    function sectionTitle(t){
+      ensureRoom(30);
+      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(38,33,92);
+      doc.text(t.toUpperCase(),margin,y);
+      y+=6;
+      doc.setDrawColor(200,200,210);doc.line(margin,y,pageW-margin,y);
+      y+=16;doc.setTextColor(20,20,30);
+    }
+    function field(label,value){
+      ensureRoom(lineH);
+      doc.setFont('helvetica','bold');doc.setFontSize(9);
+      doc.text(label+':',margin,y);
+      doc.setFont('helvetica','normal');doc.setFontSize(9);
+      var wrapped=doc.splitTextToSize(pdfTbc(value),pageW-margin*2-150);
+      doc.text(wrapped,margin+150,y);
+      y+=lineH*Math.max(1,wrapped.length);
+    }
+    function paragraph(text){
+      doc.setFont('helvetica','normal');doc.setFontSize(9);
+      var wrapped=doc.splitTextToSize(text,pageW-margin*2);
+      wrapped.forEach(function(line){ensureRoom(lineH);doc.text(line,margin,y);y+=lineH;});
+      y+=6;
+    }
+
+    doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(38,33,92);
+    doc.text('Captain Contract',margin,y);
+    y+=20;
+    doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(60,60,70);
+    doc.text('Casual Nursing Engagement Agreement',margin,y);
+    y+=14;
+    doc.setFontSize(9);doc.setTextColor(100,100,110);
+    doc.text('Contract number: '+pdfTbc(k.contractNumber)+'   |   Generated: '+fmt(new Date().toISOString()),margin,y);
+    y+=24;doc.setTextColor(20,20,30);
+
+    sectionTitle('1. Nurse Details');
+    field('Full name',cand.name);
+    field('Classification',cand.nurseType||cand.classification);
+    field('Email',cand.email);
+    field('Phone',cand.phone);
+    field('AHPRA number',cand.ahpraNumber);
+    field('Payment type',cand.paymentType);
+    if(cand.paymentType==='ABN Contractor')field('ABN',cand.abnNumber);
+
+    sectionTitle('2. Employer Details');
+    field('Engaging entity','Captain Contract');
+    paragraph('The Nurse is engaged directly by Captain Contract for the assignment set out in this agreement. The placement takes place at the Facility named below, which provides the workplace and clinical direction for the assignment but is not a party to this agreement.');
+
+    sectionTitle('3. Facility Details');
+    field('Facility',fac?fac.name:null);
+    field('Address',contractFacilityAddress(fac));
+    field('Health authority / region',fac?(fac.healthAuthority||fac.region):null);
+    field('Facility contact',fac?fac.contactName:null);
+    field('Contact phone',fac?fac.contactPhone:null);
+    field('Contact email',fac?fac.contactEmail:null);
+
+    sectionTitle('4. Assignment Details');
+    field('Ward / specialty',k.ward);
+    field('Start date',k.startDate?fmt(k.startDate):null);
+    field('End date',k.endDate?fmt(k.endDate):null);
+    field('First shift time',k.firstShiftTime);
+
+    sectionTitle('5. Remuneration');
+    var rateClean=cleanRate(k.rate),perDiemClean=cleanRate(k.perDiem);
+    field('Engagement type',k.rateType);
+    field('Base rate',rateClean!==''?('$'+rateClean+'/hr'):null);
+    field('Weekly hours',(k.hours!==undefined&&k.hours!==null&&k.hours!=='')?(k.hours+' hrs/wk'):null);
+    field('Loading',(k.loadingPct!==undefined&&k.loadingPct!==null&&k.loadingPct!=='')?(k.loadingPct+'%'):null);
+    field('Per diem',perDiemClean!==''?('$'+perDiemClean+'/day'):null);
+    field('On-call rate',k.oncallRate);
+
+    sectionTitle('6. Contract Conditions');
+    paragraph('6.1 Compliance. The Nurse must hold and maintain all registrations, immunisations, background checks, and other credentials required by Captain Contract, the Facility, or applicable health department policy for the duration of this engagement, and must provide evidence of these on request.');
+    paragraph('6.2 Conduct. The Nurse will comply with the Facility’s codes of conduct, clinical policies, work health and safety requirements, and rostering instructions while on assignment.');
+    paragraph('6.3 Hours and overtime. Rostered hours set out in this agreement are indicative only and may vary at the Facility’s discretion to meet operational and patient care needs. Rosters are arranged directly with the Facility, and the Nurse should confirm shift times and any changes with the Facility ahead of each roster period. Overtime is only payable where it has been authorised in advance by Captain Contract. Where extra hours arise at the Facility’s request, they must still be confirmed by Captain Contract before they are payable as overtime.');
+    paragraph('6.4 Confidentiality. The Nurse must keep patient, staff, and Facility information confidential, both during and after the engagement, except as required by law or professional obligation.');
+    paragraph('6.5 Variation. Any change to the dates, rate, hours, or location of this engagement must be agreed in writing between the Nurse and Captain Contract before it takes effect. Such changes may arise from Facility requirements, but they are only binding once confirmed in writing between the Nurse and Captain Contract.');
+    paragraph('6.6 Termination. Either the Nurse or Captain Contract may end this engagement early in line with the notice period agreed at the time of booking, or immediately for serious misconduct or a serious safety concern.');
+    paragraph('6.7 Independent review. This document is a working record of the engagement terms set out above. It is not a substitute for independent legal advice, and either party may seek their own review before treating it as final.');
+
+    sectionTitle('7. Consultant Details');
+    field('Consultant',consultant?consultant.name:(CU&&CU.name?CU.name:null));
+    field('Consultant phone',consultant?consultant.phone:null);
+    field('Consultant email',consultant?consultant.email:null);
+
+    sectionTitle('8. Acceptance');
+    paragraph('By signing below, the Nurse and an authorised Captain Contract representative confirm they have read and agree to the assignment and remuneration details set out above, with the assignment to take place at '+pdfTbc(fac?fac.name:null)+'.');
+    ensureRoom(60);
+    y+=14;
+    doc.line(margin,y+28,margin+200,y+28);
+    doc.line(pageW-margin-200,y+28,pageW-margin,y+28);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);
+    doc.text('Nurse signature / date',margin,y+40);
+    doc.text('Captain Contract representative signature / date',pageW-margin-200,y+40);
+    y+=60;
+
+    var pageCount=doc.internal.getNumberOfPages();
+    for(var p=1;p<=pageCount;p++){
+      doc.setPage(p);
+      doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(140,140,150);
+      doc.text('This is a template document generated by Captain Contract for record-keeping purposes only. It is not legal advice — seek independent legal review before relying on it as a binding agreement.',margin,pageH-32,{maxWidth:pageW-margin*2});
+      doc.setTextColor(20,20,30);
+    }
+    return doc;
+  }catch(e){
+    console.error('[Captain Contract PDF]',e);
+    showToast('Could not generate the contract PDF','err');
+    return null;
+  }
+}
+var _cpPdfDoc=null,_cpPdfBlobUrl=null,_cpPdfContractId=null;
+function openContractPdfPreview(contractId){
+  var doc=generateContractPdf(contractId);
+  if(!doc)return;
+  _cpPdfDoc=doc;_cpPdfContractId=contractId;
+  if(_cpPdfBlobUrl){try{URL.revokeObjectURL(_cpPdfBlobUrl);}catch(e){}}
+  _cpPdfBlobUrl=doc.output('bloburl');
+  var hit=findContractById(contractId),cand=hit.cand;
+  document.getElementById('modal').style.maxWidth='820px';
+  document.getElementById('m-ttl').textContent='Contract Preview'+(cand?(' — '+esc(cand.name)):'');
+  document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
+  document.getElementById('m-body').innerHTML='<div style="padding:0 0 8px">'
+    +'<iframe src="'+_cpPdfBlobUrl+'" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:8px"></iframe>'
+    +'</div>';
+  document.getElementById('m-foot').innerHTML='<button class="btn btn-g btn-sm" onclick="mpRenderBody()">Back</button>'
+    +'<div style="display:flex;gap:7px">'
+    +'<button class="btn btn-g btn-sm" onclick="closeModal()">Close</button>'
+    +'<button class="btn btn-p btn-sm" onclick="downloadContractPdf()">Download PDF</button>'
+    +'</div>';
+}
+function downloadContractPdf(){
+  if(!_cpPdfDoc){showToast('Nothing to download','err');return;}
+  var hit=findContractById(_cpPdfContractId),cand=hit.cand,k=hit.contract;
+  var fname='Captain-Contract-'+(cand?cand.name.replace(/[^a-z0-9]+/gi,'-'):'contract')+(k&&k.id?'-'+k.id:'')+'.pdf';
+  _cpPdfDoc.save(fname);
+}
+
 function openManagePlacement(contractId){
   MPContractId=contractId;
   MPFlightEditId=null;MPAccomEditId=null;MPCarEditId=null;MPExpenseEditId=null;
@@ -6131,9 +6518,14 @@ function mpRenderBody(){
   document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
   document.getElementById('m-body').innerHTML='<div style="padding:16px">'
     +'<div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:12px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+    +'<div>'
     +'<div style="font-size:13px;font-weight:500">'+esc(cand.name)+'</div>'
     +'<div style="font-size:11px;color:var(--t2);margin-top:2px">'+esc(k.facility||'')+(k.ward?' — '+esc(k.ward):'')+'</div>'
     +'<div style="font-size:11px;color:var(--t3);margin-top:2px">'+fmt(k.startDate)+' → '+fmt(k.endDate)+'</div>'
+    +'</div>'
+    +'<button class="btn btn-p btn-sm" style="flex-shrink:0" onclick="openContractPdfPreview('+k.id+')">Preview Contract</button>'
+    +'</div>'
     +'</div>'
     +'<div style="font-size:11px;font-weight:500;color:var(--brand);margin-bottom:16px;padding:10px 14px;background:var(--brand-l);border-radius:10px">'+glanceLine+'</div>'
     +mpFlightsSectionHtml(fls)
@@ -7090,6 +7482,7 @@ function mapFacility(f,wards){
   return{id:f.id,name:f.name,state:f.state||'',region:f.region||'',type:f.type||'Public',
     beds:f.beds||0,contactName:f.contact_name||'',contactEmail:f.contact_email||'',
     contactPhone:f.contact_phone||'',notes:f.notes||'',
+    address:f.address||'',addressSuburb:f.address_suburb||'',addressPostcode:f.address_postcode||'',
     lastEditedBy:f.last_edited_by||'',lastEditedAt:f.last_edited_at||'',
     createdBy:f.created_by||'',createdAt:f.created_at||'',
     healthAuthority:f.health_authority||'',
@@ -7565,6 +7958,7 @@ function saveFac(){
     var payload={name:EF.name,state:EF.state,region:EF.region||null,
       type:EF.type,beds:EF.beds||null,contact_name:EF.contactName||null,
       contact_email:EF.contactEmail||null,contact_phone:EF.contactPhone||null,
+      address:EF.address||null,address_suburb:EF.addressSuburb||null,address_postcode:EF.addressPostcode||null,
       notes:EF.notes||null,last_edited_by:EF.lastEditedBy,last_edited_at:EF.lastEditedAt,
       created_by:EF.createdBy||null,created_at:EF.createdAt||null
     };

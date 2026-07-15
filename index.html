@@ -4996,6 +4996,7 @@ function renderFacPage(){
   var primaryContact=fContacts.find(function(c){return c.isPrimary;})||fContacts[0]||null;
   var displayContact=primaryContact||(f.contactName?{name:f.contactName,email:f.contactEmail,phone:f.contactPhone,title:''}:null);
   var displaySubEmail=f.submissionEmail||f.contactEmail||'';
+  var facAddrLine=[f.address,[f.addressSuburb,f.state,f.addressPostcode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   var facRoles=roles.filter(function(r){return r.facilityId===f.id;});
   var openRoles=facRoles.filter(function(r){return r.status==='Open'||r.status==='Likely';}).length;
 
@@ -5043,6 +5044,7 @@ function renderFacPage(){
     +cpKeyFact('Type',esc(f.type)||'&mdash;')
     +cpKeyFact('Health Authority',f.healthAuthority?esc(f.healthAuthority):'&mdash;')
     +cpKeyFact('Region',f.region?esc(f.region):'&mdash;')
+    +(facAddrLine?cpKeyFact('Address',esc(facAddrLine)):'')
     +cpKeyFact('Accommodation',f.accommodationProvided?(f.accommodationType?esc(f.accommodationType):'Provided'):'Not provided')
     +cpKeyFact('Car Required',f.carRequired?'<span class="badge b-rd" style="font-size:9px">Yes</span>':'No')
     +cpKeyFact('Remote Loading',f.remoteLoadingApplies?'+'+parseFloat(f.remoteLoadingPct||0)+'%':'N/A')

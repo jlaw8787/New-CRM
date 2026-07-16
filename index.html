@@ -1331,7 +1331,7 @@ function getAutos(cands){
 // LOGIN / STATE
 var CU=null,VCon=null,curPage="home",phF="All",srchQ="",pTab="Activity",MTab="Profile",facSort="name",facState="All",facType="All",facQ="";
 var jbNewCount=0,jobMatchFilt=null;
-var mbCollapsed=false,mbAvailExpanded=false;
+var mbCollapsed=false,mbAvailExpanded=false,mbRolesExpanded=false,mbCompExpanded=false,mbCheckinExpanded=false,mbFollowupExpanded=false;
 var subFiltStatus=localStorage.getItem('hca_sf_st')||'All';
 var subFiltConsId=localStorage.getItem('hca_sf_co')||'All';
 var subFiltFacility=localStorage.getItem('hca_sf_fa')||'All';
@@ -1649,7 +1649,7 @@ function mbBuildPriorities(cands){
     var facNames=roleM.slice(0,2).map(function(x){var f=facilities.find(function(ff){return ff.id===x.role.facilityId;});return(f?f.name:"Role")+" ("+x.strong+")";}).join(" · ");
     rows.push({key:"roles",icon:I.case,color:"var(--ok)",badge:"b-gn",
       title:roleM.length+" open role"+(roleM.length!==1?"s":"")+" with strong matches",
-      detail:facNames,count:roleM.length,actionLabel:"View matches",onclick:"mbGoRoles()"});
+      detail:facNames,count:roleM.length,actionLabel:mbRolesExpanded?"Hide list":"View matches",onclick:"mbToggleRoles()",expandable:true});
   }
   var avail=mbAvailSoon(cands);
   if(avail.length){
@@ -1663,7 +1663,7 @@ function mbBuildPriorities(cands){
     rows.push({key:"comp",icon:I.warn,color:comp[0].d<0?"var(--danger)":"#d4900a",badge:comp[0].d<0?"b-rd":"b-am",
       title:comp.length+" compliance item"+(comp.length!==1?"s":"")+" expiring within 14 days",
       detail:"Most urgent: "+comp[0].label+" — "+(comp[0].d<0?"expired "+Math.abs(comp[0].d)+"d ago":"expires in "+comp[0].d+"d")+" ("+comp[0].cname+")",
-      count:comp.length,actionLabel:"Open",onclick:"mbGoCompliance()"});
+      count:comp.length,actionLabel:mbCompExpanded?"Hide list":"Open",onclick:"mbToggleComp()",expandable:true});
   }
   var chk=mbOverdueCheckins(cands);
   if(chk.length){
@@ -1671,19 +1671,27 @@ function mbBuildPriorities(cands){
     rows.push({key:"checkin",icon:I.person,color:"var(--danger)",badge:"b-rd",
       title:chk.length+" candidate"+(chk.length!==1?"s":"")+" overdue for check-in (14+ days)",
       detail:"Most overdue: "+top.name+" — "+(dchk===null?"never contacted":Math.abs(dchk)+"d since last contact"),
-      count:chk.length,actionLabel:"Log check-in",onclick:"mbGoCheckin()"});
+      count:chk.length,actionLabel:mbCheckinExpanded?"Hide list":"Log check-in",onclick:"mbToggleCheckin()",expandable:true});
   }
   var fu=mbFollowups(cands);
   if(fu.length){
     rows.push({key:"followup",icon:I.phone,color:"var(--danger)",badge:"b-rd",
       title:fu.length+" submission"+(fu.length!==1?"s":"")+" awaiting follow-up",
       detail:"Most urgent: "+fu[0].facility+" — "+fu[0].label+", "+fu[0].hrs+"h overdue ("+fu[0].cname+")",
-      count:fu.length,actionLabel:"Follow up",onclick:"mbGoFollowup()"});
+      count:fu.length,actionLabel:mbFollowupExpanded?"Hide list":"Follow up",onclick:"mbToggleFollowup()",expandable:true});
   }
   var workload=rows.reduce(function(a,r){return a+r.count;},0);
   return{rows:rows,workload:workload};
 }
 function mbToggleAvail(){mbAvailExpanded=!mbAvailExpanded;renderHome();}
+function mbToggleRoles(){mbRolesExpanded=!mbRolesExpanded;renderHome();}
+function mbToggleComp(){mbCompExpanded=!mbCompExpanded;renderHome();}
+function mbToggleCheckin(){mbCheckinExpanded=!mbCheckinExpanded;renderHome();}
+function mbToggleFollowup(){mbFollowupExpanded=!mbFollowupExpanded;renderHome();}
+// mbGoRoles/mbGoCompliance/mbGoCheckin/mbGoFollowup jump to the single most-
+// urgent [0] item. No longer used by the priority rows' own action buttons
+// (replaced by the toggles above), but kept for mbStartDay below, which
+// still walks priorities in order and jumps straight to the top item.
 function mbGoRoles(){var m=mbTopRoleMatches(vc());if(m.length){selectedRoleId=m[0].role.id;nav("jobboard");}}
 function mbGoCompliance(){var items=mbComplianceExpiring(vc());if(items.length)openCandAtComp(items[0].cid,items[0].key);}
 function mbGoCheckin(){var list=mbOverdueCheckins(vc());if(list.length)openCandAtCheckin(list[0].id);}
@@ -1704,6 +1712,38 @@ function mbRowHtml(r){
     var avail=mbAvailSoon(vc());
     expandBody='<div style="padding:4px 16px 12px 46px;display:flex;flex-wrap:wrap;gap:6px">'
       +avail.map(function(c){return'<button class="btn-ghost" style="font-size:11px;background:var(--brand-l);border-radius:6px;padding:4px 9px" onclick="openCandPage('+c.id+')">'+esc(c.name)+' — '+fmt(c.availableFrom)+'</button>';}).join('')
+      +'</div>';
+  } else if(r.key==="roles"&&mbRolesExpanded){
+    var roleM=mbTopRoleMatches(vc());
+    expandBody='<div style="padding:4px 16px 12px 46px;display:flex;flex-wrap:wrap;gap:6px">'
+      +roleM.map(function(x){
+        var role=x.role||{};
+        var fac=role.facilityId?facilities.find(function(f){return f.id===role.facilityId;}):null;
+        var facName=fac?fac.name:'Unknown facility';
+        return'<button class="btn-ghost" style="font-size:11px;background:var(--brand-l);border-radius:6px;padding:4px 9px" onclick="selectedRoleId='+(role.id||'null')+';nav(\'jobboard\')">'+esc(facName)+' — '+esc(role.ward||'—')+' — '+x.strong+' match'+(x.strong!==1?'es':'')+' — '+fmt(role.startDate)+'</button>';
+      }).join('')
+      +'</div>';
+  } else if(r.key==="comp"&&mbCompExpanded){
+    var comp=mbComplianceExpiring(vc());
+    expandBody='<div style="padding:4px 16px 12px 46px;display:flex;flex-wrap:wrap;gap:6px">'
+      +comp.map(function(it){
+        return'<button class="btn-ghost" style="font-size:11px;background:var(--brand-l);border-radius:6px;padding:4px 9px" onclick="openCandAtComp('+it.cid+',\''+it.key+'\')">'+esc(it.cname)+' — '+esc(it.label)+' — '+(it.d<0?'expired '+Math.abs(it.d)+'d ago':'expires in '+it.d+'d')+'</button>';
+      }).join('')
+      +'</div>';
+  } else if(r.key==="checkin"&&mbCheckinExpanded){
+    var chkList=mbOverdueCheckins(vc());
+    expandBody='<div style="padding:4px 16px 12px 46px;display:flex;flex-wrap:wrap;gap:6px">'
+      +chkList.map(function(c){
+        var d=ddiff(c.lastCheckin);
+        return'<button class="btn-ghost" style="font-size:11px;background:var(--brand-l);border-radius:6px;padding:4px 9px" onclick="openCandAtCheckin('+c.id+')">'+esc(c.name)+' — '+(d===null?'never contacted':Math.abs(d)+'d overdue')+'</button>';
+      }).join('')
+      +'</div>';
+  } else if(r.key==="followup"&&mbFollowupExpanded){
+    var fuList=mbFollowups(vc());
+    expandBody='<div style="padding:4px 16px 12px 46px;display:flex;flex-wrap:wrap;gap:6px">'
+      +fuList.map(function(f){
+        return'<button class="btn-ghost" style="font-size:11px;background:var(--brand-l);border-radius:6px;padding:4px 9px" onclick="openCandAtSubAlert('+f.cid+','+(f.subId||'null')+')">'+esc(f.cname)+' — '+esc(f.facility||'—')+' — '+esc(f.label)+', '+f.hrs+'h overdue</button>';
+      }).join('')
       +'</div>';
   }
   var tileBg=r.color.indexOf('var(--')===0?r.color.slice(0,-1)+'-l)':'rgba(212,144,10,.15)';

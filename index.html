@@ -1512,11 +1512,18 @@ function downloadTemplate(type){
   a.click();
 }
 
-// Auth stage 2 of 5: real Supabase Auth sign-in, running ALONGSIDE the
-// profile picker below (not replacing it). This only proves a session can
-// be minted — it does not set CU, does not navigate into the app, and does
-// not touch the picker path at all. Mapping the authenticated user to CU
-// is stage 3.
+// Auth stages 2-3 of 5: real Supabase Auth sign-in, running ALONGSIDE the
+// profile picker below (not replacing it — the picker's own functions are
+// untouched). A successful sign-in resolves the auth user to a users row
+// via supabase_auth_id (already loaded client-side in `users`, so this is
+// a lookup, not a query) and then reuses completeLogin(), the same path
+// the picker uses. An authenticated user with no linked row is signed
+// back out immediately rather than left in a half-logged-in state.
+function resolveAuthUser(authUser){
+  var authId=authUser&&authUser.id;
+  if(!authId)return null;
+  return users.find(function(x){return x.supabaseAuthId&&x.supabaseAuthId===authId;})||null;
+}
 function authErrorMessage(err){
   var msg=(err&&err.message)||'';
   var lower=msg.toLowerCase();
@@ -1553,9 +1560,18 @@ function doAuthLogin(){
         return;
       }
       console.log('[auth] session minted',r&&r.data);
-      showToast('Signed in as '+((r&&r.data&&r.data.user&&r.data.user.email)||email));
-      // Stage 2 stops here on purpose: no CU assignment, no nav(). The
-      // picker below is completely unaffected by this succeeding or failing.
+      var authUser=r&&r.data&&r.data.user;
+      var matched=resolveAuthUser(authUser);
+      if(!matched){
+        console.error('[auth] signed in but no linked users row',authUser&&authUser.id);
+        sb.auth.signOut().catch(function(e2){console.error('[auth] sign-out after unlinked login failed',e2);});
+        var noLinkMsg="Your account isn't linked to a profile yet. Contact an admin.";
+        if(msgEl)msgEl.textContent=noLinkMsg;
+        showToast(noLinkMsg,'err');
+        return;
+      }
+      completeLogin(matched);
+      // The picker below is completely unaffected by any of this.
     }).catch(function(e){
       if(btn){btn.disabled=false;btn.textContent='Sign in';}
       console.error('[auth] sign-in threw',e);
@@ -1571,9 +1587,51 @@ function doAuthLogin(){
     showToast(msg,'err');
   }
 }
+// Called once on page load, after users are loaded. If a Supabase session
+// already exists and resolves to a linked users row, logs straight in and
+// the login screen is never shown to the user. If a session exists but
+// doesn't resolve, signs out — same "no half-logged-in state" rule as the
+// interactive sign-in path above. Returns true if it completed a login.
+async function tryResumeSession(){
+  if(!sb||!sb.auth)return false;
+  try{
+    var r=await sb.auth.getSession();
+    if(r&&r.error){console.error('[auth] getSession failed',r.error);return false;}
+    var session=r&&r.data&&r.data.session;
+    if(!session||!session.user)return false;
+    var matched=resolveAuthUser(session.user);
+    if(!matched){
+      console.error('[auth] existing session has no linked users row',session.user.id);
+      try{await sb.auth.signOut();}catch(e2){console.error('[auth] sign-out after unresolved session failed',e2);}
+      var msgEl=document.getElementById('l-auth-msg');
+      if(msgEl)msgEl.textContent="Your account isn't linked to a profile yet. Contact an admin.";
+      return false;
+    }
+    completeLogin(matched);
+    return true;
+  }catch(e){
+    console.error('[auth] tryResumeSession threw',e);
+    try{if(sb&&sb.auth)await sb.auth.signOut();}catch(e2){}
+    return false;
+  }
+}
 function initLogin(){var sel=document.getElementById("l-sel");users.forEach(function(u){var o=document.createElement("option");o.value=u.id;o.textContent=u.name+" — "+ROLES[u.role];sel.appendChild(o);});}
 function lPrev(){var id=parseInt(document.getElementById("l-sel").value);var u=users.find(function(x){return x.id===id;});var div=document.getElementById("l-prev");if(!u){div.innerHTML="";return;}var rc={ops:"b-pu",consultant:"b-bl",admin:"b-tl"}[u.role]||"b-gr";var rl={ops:"Full platform — all candidates, team, settings",consultant:"Your pipeline, targets and alerts",admin:"Candidates across assigned consultants"}[u.role]||"";div.innerHTML='<span class="badge '+rc+'" style="margin-bottom:4px;display:inline-block">'+ROLES[u.role]+'</span><div style="font-size:10px;color:var(--t3)">'+rl+'</div>';}
-function doLogin(){var id=parseInt(document.getElementById("l-sel").value);if(!id){showToast("Please select a profile.","err");return;}CU=users.find(function(u){return u.id===id;});VCon=CU.role==="consultant"?CU.id:null;document.getElementById("ls").style.display="none";document.getElementById("app").style.display="flex";var av=document.getElementById("sb-av");av.textContent=CU.initials;av.style.background=CU.color;document.getElementById("sb-name").textContent=CU.name;document.getElementById("sb-role").textContent=ROLES[CU.role];document.getElementById("sb-mgmt").style.display=CU.role==="consultant"?"none":"";updateBadges();updateMuteBtn();subscribeRolesFeed();subscribeSubmissionsFeed();requestDesktopNotifyPermission();var _h=(location.hash||'').replace(/^#/,'');if(_h&&_h!=='home'){routeFromHash();}else{nav('home');}
+// Shared post-login path — same steps doLogin() always ran, extracted so
+// the auth path (stage 3) can reuse it instead of duplicating it. Sets CU
+// to a users row and proceeds into the app exactly as before; nothing
+// about the picker's own behaviour changed.
+function completeLogin(user){
+  CU=user;VCon=CU.role==="consultant"?CU.id:null;
+  document.getElementById("ls").style.display="none";document.getElementById("app").style.display="flex";
+  var av=document.getElementById("sb-av");av.textContent=CU.initials;av.style.background=CU.color;
+  document.getElementById("sb-name").textContent=CU.name;document.getElementById("sb-role").textContent=ROLES[CU.role];
+  document.getElementById("sb-mgmt").style.display=CU.role==="consultant"?"none":"";
+  updateBadges();updateMuteBtn();subscribeRolesFeed();subscribeSubmissionsFeed();requestDesktopNotifyPermission();
+  var _h=(location.hash||'').replace(/^#/,'');
+  if(_h&&_h!=='home'){routeFromHash();}else{nav('home');}
+}
+function doLogin(){var id=parseInt(document.getElementById("l-sel").value);if(!id){showToast("Please select a profile.","err");return;}var u=users.find(function(x){return x.id===id;});if(!u){showToast("Profile not found.","err");return;}completeLogin(u);
 }
 function showSwitch(){document.getElementById("app").style.display="none";document.getElementById("ls").style.display="flex";document.getElementById("l-sel").value="";document.getElementById("l-prev").innerHTML="";}
 
@@ -7639,7 +7697,7 @@ var _dbRoleIds=new Set(); // tracks which role ids exist in DB
 // ── MAPPING: DB rows → JS objects ─────────────────
 function mapUser(u){
   return{id:u.id,name:u.name,initials:u.initials||'',role:u.role,color:u.color||'#0050c8',
-    email:u.email||'',
+    email:u.email||'',supabaseAuthId:u.supabase_auth_id||null,
     targets:u.targets||{p:0,s:0,rev:0,hrs:0},adminFor:u.admin_for||[],editLevel:u.edit_level||'',
     notifyMuted:!!u.notify_muted};
 }
@@ -8702,6 +8760,11 @@ async function initApp(){
     backfillSubmissionFollowups();
     body.innerHTML=origHtml;
     initLogin();
+    // Auth stage 3: if a session already exists and resolves, this logs the
+    // user straight in (hiding #ls again) and the login screen the two
+    // lines above just restored is never actually seen. The picker is
+    // still fully populated either way, so showSwitch() keeps working.
+    await tryResumeSession();
   }catch(e){
     console.error('[initApp]',e);
     // Distinguish a real connectivity/DB failure (network TypeError, or a PostgREST

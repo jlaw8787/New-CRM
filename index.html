@@ -6653,17 +6653,17 @@ function whBuildEntry(e){
   var flights=((cand&&cand.travel&&cand.travel.flights)||[]).filter(function(f){return f&&k.id!=null&&f.contractId===k.id;});
   var accs=((cand&&cand.travel&&cand.travel.accommodation)||[]).filter(function(a){return a&&k.id!=null&&a.contractId===k.id;});
 
+  // Counted gaps are limited to things that actually block weekend coverage
+  // (no way to reach the candidate/facility, or no confirmed travel for
+  // someone starting). Every field below still renders ** MISSING ** on the
+  // page via field()'s own null-check regardless of whether it's counted
+  // here — name/email/ward/first-shift/supervisor/contact-name are visible
+  // flags but don't inflate the summary count, since most placements have
+  // some low-stakes blank field and that was drowning out the real gaps.
   var gaps=[];
-  if(!candName)gaps.push('Candidate name missing');
   if(!candPhone)gaps.push('Candidate phone missing');
-  if(!candEmail)gaps.push('Candidate email missing');
-  if(!facName)gaps.push('Facility name missing');
-  if(!facAddr)gaps.push('Facility address missing');
-  if(!facContactName)gaps.push('Facility contact name missing');
   if(!facContactPhone)gaps.push('Facility contact phone missing');
-  if(!ward)gaps.push('Ward missing');
-  if(!firstShift)gaps.push('First shift time missing');
-  if(!supervisor)gaps.push('Supervisor missing');
+  if(!facAddr)gaps.push('Facility address missing (no region/state fallback either)');
   if(e.starting&&!flights.length)gaps.push('No flight record for this starting placement');
   if(e.starting&&!accs.length)gaps.push('No accommodation record for this starting placement');
 
@@ -6796,7 +6796,7 @@ function generateWeekendHandoverPdf(startStr,endStr){
       if(d.flights.length){
         d.flights.forEach(function(fl){
           var carrier=[whResolve(fl.airline),whResolve(fl.flightNo)].filter(Boolean).join(' ')||'** MISSING **';
-          var route=[whResolve(fl.from),whResolve(fl.to)].filter(Boolean).join(' → ')||'** MISSING **';
+          var route=[whResolve(fl.from),whResolve(fl.to)].filter(Boolean).join(' -> ')||'** MISSING **';
           var depart=fl.departDate?fmt(fl.departDate):'** MISSING **';
           var ref=whResolve(fl.bookingRef)||'** MISSING **';
           plainLine(carrier+' — '+route+' — depart '+depart+' — ref '+ref);

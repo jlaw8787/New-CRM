@@ -1331,6 +1331,33 @@ function getAutos(cands){
         alerts.push({id:aid,level:lvl,type:type,title:item.label+' expiring in '+d+'d',desc:c.name+' — expires '+fmt(ci2.expiry),cid:c.id,key:item.key,itemName:item.label,tab:'Compliance'});
       }
     });
+    // Compliance-during-contract check — deliberately separate from the comp/ahpra
+    // type above. That check is "expiring soon relative to today"; this one is
+    // "will lapse while this specific placement is running", which the 60-day
+    // window can miss entirely (a 90-day-out expiry inside a long contract) or
+    // flag too early (an item expiring after the contract already ends). Isolated
+    // per-contract loop so it can't perturb the existing contract/comp alerts above.
+    c.contracts.forEach(function(k){
+      if(["Signed","Active"].indexOf(k.status)<0)return;
+      if(!k.startDate||!k.endDate)return;
+      var pStart=new Date(k.startDate),pEnd=new Date(k.endDate);
+      if(isNaN(pStart.getTime())||isNaN(pEnd.getTime()))return;
+      var totalDays=Math.round((pEnd-pStart)/86400000)+1;
+      if(totalDays<1)return;
+      getCmpItems(c).forEach(function(item){
+        var ci3=c.compliance&&c.compliance.items&&c.compliance.items[item.key];
+        if(!ci3||!ci3.expiry)return;
+        var exp=new Date(ci3.expiry);
+        if(isNaN(exp.getTime()))return;
+        if(ci3.expiry<k.startDate||ci3.expiry>k.endDate)return;
+        var dayOfPlacement=Math.round((exp-pStart)/86400000)+1;
+        alerts.push({id:'contract_comp:'+c.id+':'+k.id+':'+item.key,
+          level:k.status==='Active'?'red':'amber',type:'contract_comp',
+          title:item.label+' expires during placement at '+(k.facility||'facility TBC'),
+          desc:c.name+' — expires '+fmt(ci3.expiry)+', day '+dayOfPlacement+' of '+totalDays+(k.ward?' — '+k.ward:''),
+          cid:c.id,key:item.key,itemName:item.label,contractId:k.id,tab:'Compliance'});
+      });
+    });
   });
   return alerts;
 }
@@ -2267,7 +2294,7 @@ function alertRowHtml(a){
   var lvlBg={red:'#fff8f8',amber:'#fffdf5',blue:'#f5f8ff'}[a.level]||'#f5f8ff';
   var lvlBd={red:'#f0b8b8',amber:'#e8c850',blue:'#b0c8f0'}[a.level]||'#b0c8f0';
   var rowClick='';
-  if(a.type==='comp'||a.type==='ahpra'){rowClick='openCandAtComp('+a.cid+',\''+a.key+'\''+')';}
+  if(a.type==='comp'||a.type==='ahpra'||a.type==='contract_comp'){rowClick='openCandAtComp('+a.cid+',\''+a.key+'\''+')';}
   else if(a.type==='sub'){rowClick='openCandAtSubAlert('+a.cid+','+(a.subId||'null')+')';}
   else if(a.type==='checkin'){rowClick='openCandAtCheckin('+a.cid+')';}
   else{rowClick='openCandPage('+a.cid+')';}
@@ -2281,7 +2308,7 @@ function alertRowHtml(a){
         +'<button class="ai-act" style="background:#e8f0ff;color:var(--accent);margin-left:4px" onclick="event.stopPropagation();openCandAtSubs('+a.cid+')">Open Sub</button>'
       :'<button class="ai-act" style="background:var(--ok-l);color:var(--ok)" onclick="event.stopPropagation();alertMarkFU('+a.cid+','+a.si+',\''+aid+'\')">Mark Done</button>'
         +'<button class="ai-act" style="background:#e8f0ff;color:var(--accent);margin-left:4px" onclick="event.stopPropagation();openCandAtSubs('+a.cid+')">Open Sub</button>';
-  } else if(a.type==='comp'||a.type==='ahpra'){
+  } else if(a.type==='comp'||a.type==='ahpra'||a.type==='contract_comp'){
     actions='<button class="ai-act" style="background:var(--ok-l);color:var(--ok)" onclick="event.stopPropagation();alertMarkVerified('+a.cid+',\''+a.key+'\',\''+aid+'\')">Mark Verified</button>';
   } else {
     actions='<button class="ai-act" style="background:#e8f0ff;color:var(--accent)" onclick="event.stopPropagation();openCandPage('+a.cid+')">Open</button>';
@@ -2315,6 +2342,7 @@ function renderAlerts(){
   document.getElementById("tb-r").innerHTML='';
   var groups=[
     {key:'critical',label:'Critical',color:'var(--danger)',items:all.filter(function(a){return (a.type==='ahpra'&&a.level==='red')||(a.type==='comp'&&a.level==='red')||(a.type==='contract'&&a.level==='red');})},
+    {key:'placementcomp',label:'Compliance Expiring During Placement',color:'var(--danger)',items:all.filter(function(a){return a.type==='contract_comp';})},
     {key:'followups',label:'Follow-ups Due',color:'var(--danger)',items:all.filter(function(a){return a.type==='sub';})},
     {key:'checkins',label:'Check-ins Overdue',color:'var(--warn)',items:all.filter(function(a){return a.type==='checkin';})},
     {key:'travel',label:'Travel Not Arranged',color:'#d97706',items:all.filter(function(a){return a.type==='travel';})},
@@ -7021,6 +7049,34 @@ function mpRenderBody(){
   }
   var glanceLine='Flight: '+esc(flightStatus||'Not set')+'  ·  Accom: '+esc(accomStatus||'Not set')+esc(accomSubsidyBit)+'  ·  Car: '+esc(carStatus||'Not set');
 
+  // Persistent compliance-during-placement marker — the durable backstop
+  // counterpart to the contract_comp alert in getAutos(). Deliberately NOT
+  // driven by alerts/snooze state at all: it's recomputed fresh from
+  // cand.compliance.items + k.startDate/k.endDate on every render, so it
+  // can't be dismissed or go stale. Guarded so missing dates, missing
+  // compliance data, or a malformed expiry just yields no marker, never a
+  // throw.
+  var placementCompRisk=[];
+  if(k.startDate&&k.endDate&&cand.compliance&&cand.compliance.items){
+    var pStart=new Date(k.startDate),pEnd=new Date(k.endDate);
+    if(!isNaN(pStart.getTime())&&!isNaN(pEnd.getTime())){
+      getCmpItems(cand).forEach(function(item){
+        var ci4=cand.compliance.items[item.key];
+        if(!ci4||!ci4.expiry)return;
+        var exp=new Date(ci4.expiry);
+        if(isNaN(exp.getTime()))return;
+        if(ci4.expiry<k.startDate||ci4.expiry>k.endDate)return;
+        placementCompRisk.push({label:item.label,expiry:ci4.expiry});
+      });
+    }
+  }
+  placementCompRisk.sort(function(a,b){return a.expiry<b.expiry?-1:1;});
+  var placementCompHtml=placementCompRisk.length
+    ?'<div class="callout c-red">'+I.warn+' <b>Compliance expires during this placement:</b> '
+      +placementCompRisk.map(function(r){return esc(r.label)+' — '+fmt(r.expiry);}).join('; ')
+      +'</div>'
+    :'';
+
   document.getElementById('m-ttl').textContent='Manage Placement — '+esc(cand.name);
   document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
   document.getElementById('m-body').innerHTML='<div style="padding:16px">'
@@ -7034,6 +7090,7 @@ function mpRenderBody(){
     +'<button class="btn btn-p btn-sm" style="flex-shrink:0" onclick="openContractPdfPreview('+k.id+')">Preview Contract</button>'
     +'</div>'
     +'</div>'
+    +placementCompHtml
     +'<div style="font-size:11px;font-weight:500;color:var(--brand);margin-bottom:16px;padding:10px 14px;background:var(--brand-l);border-radius:10px">'+glanceLine+'</div>'
     +mpFlightsSectionHtml(fls)
     +mpAccomSectionHtml(acs)

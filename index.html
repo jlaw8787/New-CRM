@@ -2554,7 +2554,7 @@ function renderContracts(){
   var all=vc().reduce(function(a,c){return a.concat(c.contracts.map(function(k){return Object.assign({},k,{cid:c.id,cn:c.name,cc:c.classification,cConsId:c.consultantId});}));}, []);
   document.getElementById("tb-h").textContent="Contracts";
   document.getElementById("tb-s").textContent=all.length+" contracts — "+all.filter(function(k){return k.status==="Active";}).length+" active";
-  document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="qMod(&apos;Contracts&apos;)">Add contract</button> <button class="btn btn-g btn-sm" onclick="expAll(&apos;contracts&apos;)">'+I.dl+' Export</button>';
+  document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="qMod(&apos;Contracts&apos;)">Add contract</button> <button class="btn btn-g btn-sm" onclick="expAll(&apos;contracts&apos;)">'+I.dl+' Export</button> <button class="btn btn-g btn-sm" onclick="openWeekendHandover()">Weekend Handover</button>';
 
   // ── HERO (summary strip) — real aggregates from `all`; pipeline-value uses
   // the same rate*hours*(days-remaining/7) formula already used on the
@@ -6481,6 +6481,290 @@ function downloadContractPdf(){
   var hit=findContractById(_cpPdfContractId),cand=hit.cand,k=hit.contract;
   var fname='Captain-Contract-'+(cand?cand.name.replace(/[^a-z0-9]+/gi,'-'):'contract')+(k&&k.id?'-'+k.id:'')+'.pdf';
   _cpPdfDoc.save(fname);
+}
+
+// ── Weekend Handover report ─────────────────────────────────────────────────
+// Client-side only: flattens every contract across the FULL candidate roster
+// (not vc() — on-call covers everyone regardless of consultant), filters to
+// contracts starting or finishing in the picked date range, and renders a
+// gap-flagging PDF via jsPDF. No Supabase write, no send — preview (blob URL
+// in the existing modal) and download only. Every displayed field resolves
+// through whResolve() so a missing value renders as "** MISSING **" instead
+// of blank, and every lookup (facility, contacts, travel) is guarded so a
+// dangling reference degrades to a flag rather than throwing.
+var whRangeStart='',whRangeEnd='';
+function whResolve(v){
+  if(v===undefined||v===null)return null;
+  var s=String(v).trim();
+  if(!s||s.toLowerCase()==='undefined'||s.toLowerCase()==='null')return null;
+  return s;
+}
+function whUpcomingFriday(){
+  var d=new Date();d.setHours(0,0,0,0);
+  var add=(5-d.getDay()+7)%7;
+  d.setDate(d.getDate()+add);
+  return d;
+}
+function whDateInput(d){return d.toISOString().slice(0,10);}
+function openWeekendHandover(){
+  if(!whRangeStart||!whRangeEnd){
+    var fri=whUpcomingFriday(),mon=new Date(fri);mon.setDate(fri.getDate()+3);
+    whRangeStart=whDateInput(fri);whRangeEnd=whDateInput(mon);
+  }
+  document.getElementById('modal').style.maxWidth='420px';
+  document.getElementById('m-ttl').textContent='Weekend Handover';
+  document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
+  document.getElementById('m-body').innerHTML='<div style="padding:16px">'
+    +'<div style="font-size:11px;color:var(--t3);margin-bottom:14px">Every contract starting or finishing in this range, across all consultants. Missing details are flagged on the report, not hidden.</div>'
+    +'<div class="fr f2">'
+    +'<div class="fg"><label>From</label><input type="date" id="wh-from" value="'+esc(whRangeStart)+'" oninput="whRangeStart=this.value"></div>'
+    +'<div class="fg"><label>To</label><input type="date" id="wh-to" value="'+esc(whRangeEnd)+'" oninput="whRangeEnd=this.value"></div>'
+    +'</div></div>';
+  document.getElementById('m-foot').innerHTML='<span></span><div style="display:flex;gap:7px">'
+    +'<button class="btn btn-g btn-sm" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-p btn-sm" onclick="generateWeekendHandover()">Generate</button>'
+    +'</div>';
+  document.getElementById('mo').style.display='flex';
+}
+function generateWeekendHandover(){
+  var fromEl=document.getElementById('wh-from'),toEl=document.getElementById('wh-to');
+  if(fromEl)whRangeStart=fromEl.value;
+  if(toEl)whRangeEnd=toEl.value;
+  if(!whRangeStart||!whRangeEnd){showToast('Pick a start and end date','err');return;}
+  if(whRangeStart>whRangeEnd){showToast('Start date must be on or before end date','err');return;}
+  openWeekendHandoverPreview();
+}
+function whBuildEntry(e){
+  var cand=e.cand||null,k=e.k||{};
+  var fac=(k&&k.facilityId&&typeof facilities!=='undefined'&&facilities)?(facilities.find(function(f){return f&&f.id===k.facilityId;})||null):null;
+  var fContacts=(fac&&typeof facilityContacts!=='undefined'&&facilityContacts)?facilityContacts.filter(function(c){return c&&c.facilityId===fac.id;}):[];
+  var primaryContact=fContacts.find(function(c){return c&&c.isPrimary;})||fContacts[0]||null;
+
+  var candName=whResolve(cand&&cand.name);
+  var candPhone=whResolve(cand&&cand.phone);
+  var candEmail=whResolve(cand&&cand.email);
+
+  var facName=whResolve(fac&&fac.name);
+  var facAddrRaw=fac?contractFacilityAddress(fac):null;
+  var facAddr=(facAddrRaw&&facAddrRaw!=='TBC')?facAddrRaw:null;
+  var facContactName=whResolve(primaryContact?primaryContact.name:(fac&&fac.contactName));
+  var facContactPhone=whResolve(primaryContact?primaryContact.phone:(fac&&fac.contactPhone));
+
+  var ward=whResolve(k.ward);
+  var firstShift=whResolve(k.firstShiftTime);
+  var supervisor=whResolve(k.supervisor);
+
+  var flights=((cand&&cand.travel&&cand.travel.flights)||[]).filter(function(f){return f&&k.id!=null&&f.contractId===k.id;});
+  var accs=((cand&&cand.travel&&cand.travel.accommodation)||[]).filter(function(a){return a&&k.id!=null&&a.contractId===k.id;});
+
+  var gaps=[];
+  if(!candName)gaps.push('Candidate name missing');
+  if(!candPhone)gaps.push('Candidate phone missing');
+  if(!candEmail)gaps.push('Candidate email missing');
+  if(!facName)gaps.push('Facility name missing');
+  if(!facAddr)gaps.push('Facility address missing');
+  if(!facContactName)gaps.push('Facility contact name missing');
+  if(!facContactPhone)gaps.push('Facility contact phone missing');
+  if(!ward)gaps.push('Ward missing');
+  if(!firstShift)gaps.push('First shift time missing');
+  if(!supervisor)gaps.push('Supervisor missing');
+  if(e.starting&&!flights.length)gaps.push('No flight record for this starting placement');
+  if(e.starting&&!accs.length)gaps.push('No accommodation record for this starting placement');
+
+  return{cand:cand,k:k,starting:e.starting,finishing:e.finishing,
+    candName:candName,candPhone:candPhone,candEmail:candEmail,
+    facName:facName,facAddr:facAddr,facContactName:facContactName,facContactPhone:facContactPhone,
+    ward:ward,firstShift:firstShift,supervisor:supervisor,
+    flights:flights,accs:accs,gaps:gaps};
+}
+function generateWeekendHandoverPdf(startStr,endStr){
+  try{
+    var jsPDFCtor=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:null;
+    if(!jsPDFCtor){showToast('PDF library failed to load — check your connection','err');return null;}
+
+    var rangeStart=startStr?new Date(startStr):null;
+    var rangeEnd=endStr?new Date(endStr):null;
+    if(rangeStart&&isNaN(rangeStart.getTime()))rangeStart=null;
+    if(rangeEnd&&isNaN(rangeEnd.getTime()))rangeEnd=null;
+    if(rangeEnd)rangeEnd=new Date(rangeEnd.getTime()+86399999); // inclusive end-of-day
+    function inRange(dateStr){
+      if(!dateStr)return false;
+      var d=new Date(dateStr);
+      if(isNaN(d.getTime()))return false;
+      if(rangeStart&&d<rangeStart)return false;
+      if(rangeEnd&&d>rangeEnd)return false;
+      return true;
+    }
+
+    var entries=[];
+    ((typeof candidates!=='undefined'&&candidates)||[]).forEach(function(cand){
+      if(!cand)return;
+      (cand.contracts||[]).forEach(function(k){
+        if(!k)return;
+        var startsIn=inRange(k.startDate),endsIn=inRange(k.endDate);
+        if(!startsIn&&!endsIn)return;
+        entries.push({cand:cand,k:k,starting:startsIn,finishing:endsIn});
+      });
+    });
+    entries.sort(function(a,b){
+      var ad=(a.starting?a.k.startDate:a.k.endDate)||'';
+      var bd=(b.starting?b.k.startDate:b.k.endDate)||'';
+      return ad<bd?-1:(ad>bd?1:0);
+    });
+    var entryData=entries.map(whBuildEntry);
+    var startingCount=entryData.filter(function(d){return d.starting;}).length;
+    var finishingCount=entryData.filter(function(d){return d.finishing;}).length;
+    var totalGaps=entryData.reduce(function(s,d){return s+d.gaps.length;},0);
+
+    var doc=new jsPDFCtor({unit:'pt',format:'a4'});
+    var pageW=doc.internal.pageSize.getWidth();
+    var pageH=doc.internal.pageSize.getHeight();
+    var margin=48,y=56,lineH=14;
+
+    function ensureRoom(next){if(y+next>pageH-40){doc.addPage();y=56;}}
+    function field(label,value){
+      ensureRoom(lineH);
+      var missing=(value===null||value===undefined);
+      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(20,20,30);
+      doc.text(label+':',margin,y);
+      doc.setFont('helvetica',missing?'bold':'normal');doc.setFontSize(9);
+      if(missing)doc.setTextColor(190,30,30);
+      var wrapped=doc.splitTextToSize(missing?'** MISSING **':String(value),pageW-margin*2-140);
+      doc.text(wrapped,margin+140,y);
+      doc.setTextColor(20,20,30);
+      y+=lineH*Math.max(1,wrapped.length);
+    }
+    function subHeading(t){
+      ensureRoom(lineH+2);
+      doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(90,85,140);
+      doc.text(t.toUpperCase(),margin,y);
+      y+=lineH;doc.setTextColor(20,20,30);
+    }
+    function plainLine(text){
+      ensureRoom(lineH);
+      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(20,20,30);
+      var wrapped=doc.splitTextToSize(text,pageW-margin*2-10);
+      wrapped.forEach(function(line){ensureRoom(lineH);doc.text(line,margin+10,y);y+=lineH;});
+    }
+    function flagLine(text){
+      ensureRoom(lineH);
+      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(190,30,30);
+      var wrapped=doc.splitTextToSize('** MISSING ** — '+text,pageW-margin*2-10);
+      wrapped.forEach(function(line){ensureRoom(lineH);doc.text(line,margin+10,y);y+=lineH;});
+      doc.setTextColor(20,20,30);
+    }
+    function entryHeader(t){
+      ensureRoom(30);
+      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(38,33,92);
+      doc.text(t,margin,y);
+      y+=6;
+      doc.setDrawColor(200,200,210);doc.line(margin,y,pageW-margin,y);
+      y+=14;doc.setTextColor(20,20,30);
+    }
+
+    doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(38,33,92);
+    doc.text('Weekend Handover',margin,y);
+    y+=20;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(100,100,110);
+    doc.text('Range: '+(startStr?fmt(startStr):'—')+' to '+(endStr?fmt(endStr):'—')+'   |   Generated: '+fmt(new Date().toISOString()),margin,y);
+    y+=22;doc.setTextColor(20,20,30);
+
+    doc.setFont('helvetica','bold');doc.setFontSize(10);
+    doc.setTextColor(totalGaps>0?190:20,totalGaps>0?30:20,totalGaps>0?30:30);
+    doc.text('Starting: '+startingCount+'   |   Finishing: '+finishingCount+'   |   Flagged gaps: '+totalGaps,margin,y);
+    doc.setTextColor(20,20,30);
+    y+=26;
+
+    if(!entryData.length){
+      doc.setFont('helvetica','normal');doc.setFontSize(10);
+      doc.text('No contracts starting or finishing in this range.',margin,y);
+      return doc;
+    }
+
+    entryData.forEach(function(d){
+      var label=d.starting&&d.finishing
+        ?'STARTING '+fmt(d.k.startDate)+'   &   FINISHING '+fmt(d.k.endDate)
+        :d.starting?'STARTING '+fmt(d.k.startDate):'FINISHING '+fmt(d.k.endDate);
+      entryHeader((d.candName||'** MISSING **')+'  —  '+label);
+      field('Phone',d.candPhone);
+      field('Email',d.candEmail);
+      field('Facility',d.facName);
+      field('Address',d.facAddr);
+      field('Facility contact',d.facContactName);
+      field('Contact phone',d.facContactPhone);
+      field('Ward',d.ward);
+      field('First shift time',d.firstShift);
+      field('Supervisor',d.supervisor);
+
+      subHeading('Flights');
+      if(d.flights.length){
+        d.flights.forEach(function(fl){
+          var carrier=[whResolve(fl.airline),whResolve(fl.flightNo)].filter(Boolean).join(' ')||'** MISSING **';
+          var route=[whResolve(fl.from),whResolve(fl.to)].filter(Boolean).join(' → ')||'** MISSING **';
+          var depart=fl.departDate?fmt(fl.departDate):'** MISSING **';
+          var ref=whResolve(fl.bookingRef)||'** MISSING **';
+          plainLine(carrier+' — '+route+' — depart '+depart+' — ref '+ref);
+        });
+      }else if(d.starting){
+        flagLine('No flight record on file for this starting placement.');
+      }else{
+        plainLine('No flight record on file for this contract.');
+      }
+
+      subHeading('Accommodation');
+      if(d.accs.length){
+        d.accs.forEach(function(a){
+          var name=whResolve(a.name)||'** MISSING **';
+          var addr=whResolve(a.address)||'** MISSING **';
+          var ci=a.checkIn?fmt(a.checkIn):'** MISSING **';
+          var co=a.checkOut?fmt(a.checkOut):'** MISSING **';
+          plainLine(name+' — '+addr+' — check-in '+ci+' — check-out '+co);
+        });
+      }else if(d.starting){
+        flagLine('No accommodation record on file for this starting placement.');
+      }else{
+        plainLine('No accommodation record on file for this contract.');
+      }
+      y+=10;
+    });
+
+    var pageCount=doc.internal.getNumberOfPages();
+    for(var p=1;p<=pageCount;p++){
+      doc.setPage(p);
+      doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(140,140,150);
+      doc.text('Internal working document generated by Captain Contract. Fields marked ** MISSING ** were empty in the system at generation time and need follow-up before the weekend.',margin,pageH-32,{maxWidth:pageW-margin*2});
+      doc.setTextColor(20,20,30);
+    }
+    return doc;
+  }catch(e){
+    console.error('[Weekend Handover PDF]',e);
+    showToast('Could not generate the handover report','err');
+    return null;
+  }
+}
+var _whPdfDoc=null,_whPdfBlobUrl=null;
+function openWeekendHandoverPreview(){
+  var doc=generateWeekendHandoverPdf(whRangeStart,whRangeEnd);
+  if(!doc)return;
+  _whPdfDoc=doc;
+  if(_whPdfBlobUrl){try{URL.revokeObjectURL(_whPdfBlobUrl);}catch(e){}}
+  _whPdfBlobUrl=doc.output('bloburl');
+  document.getElementById('modal').style.maxWidth='820px';
+  document.getElementById('m-ttl').textContent='Weekend Handover Preview';
+  document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
+  document.getElementById('m-body').innerHTML='<div style="padding:0 0 8px">'
+    +'<iframe src="'+_whPdfBlobUrl+'" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:8px"></iframe>'
+    +'</div>';
+  document.getElementById('m-foot').innerHTML='<button class="btn btn-g btn-sm" onclick="openWeekendHandover()">Back</button>'
+    +'<div style="display:flex;gap:7px">'
+    +'<button class="btn btn-g btn-sm" onclick="closeModal()">Close</button>'
+    +'<button class="btn btn-p btn-sm" onclick="downloadWeekendHandoverPdf()">Download PDF</button>'
+    +'</div>';
+}
+function downloadWeekendHandoverPdf(){
+  if(!_whPdfDoc){showToast('Nothing to download','err');return;}
+  var fname='Weekend-Handover-'+(whRangeStart||'range')+'-to-'+(whRangeEnd||'range')+'.pdf';
+  _whPdfDoc.save(fname);
 }
 
 function openManagePlacement(contractId){

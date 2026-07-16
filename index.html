@@ -1788,7 +1788,9 @@ function renderHome(){
   var totalSubs=cands.reduce(function(a,c){return a+c.submissions.length;},0);
   var activeContracts=cands.reduce(function(a,c){return a+c.contracts.filter(function(k){return k.status==="Active";}).length;},0);
   var compAlerts=autos.filter(function(a){return a.level==="red";}).length;
-  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
+  function heroStat(icon,label,val,navKind){
+    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="homeTileNav(\''+navKind+'\')"':'';
+    return'<div'+clickAttrs+' style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
     +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
     +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
     +'<div style="font-size:30px;font-weight:500;color:#fff;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.1)">'+val+'</div>'
@@ -1800,10 +1802,10 @@ function renderHome(){
     +'<div style="font-size:20px;font-weight:500;color:#fff;margin-bottom:4px">Welcome, '+esc(firstName)+'</div>'
     +'<div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:22px">'+dateStr+' — '+ROLES[CU.role]+'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.person,'Placements',placed)
-    +heroStat(I.mail,'Submissions',totalSubs)
-    +heroStat(I.doc,'Active contracts',activeContracts)
-    +heroStat(I.warn,'Compliance alerts',compAlerts)
+    +heroStat(I.person,'Placements',placed,'placements')
+    +heroStat(I.mail,'Submissions',totalSubs,'submissions')
+    +heroStat(I.doc,'Active contracts',activeContracts,'contracts')
+    +heroStat(I.warn,'Compliance alerts',compAlerts,'alerts')
     +'</div></div></div>';
 
   // OTHER REMINDERS — chase-list items not yet folded into a Morning Brief
@@ -2633,7 +2635,9 @@ function renderFacilities(){
   var preferredCount=facilities.filter(function(f){return f.preferredStatus;}).length;
   var publicCount=facilities.filter(function(f){return (f.type||'Public')==='Public';}).length;
   var privateCount=facilities.filter(function(f){return f.type==='Private';}).length;
-  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
+  function heroStat(icon,label,val,navKind){
+    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="facTileNav(\''+navKind+'\')"':'';
+    return'<div'+clickAttrs+' style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
     +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
     +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
     +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
@@ -2643,8 +2647,8 @@ function renderFacilities(){
     +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
     +heroStat(I.hosp,'Total facilities',facilities.length)
     +heroStat(I.star,'Preferred',preferredCount)
-    +heroStat(I.doc,'Public',publicCount)
-    +heroStat(I.case,'Private',privateCount)
+    +heroStat(I.doc,'Public',publicCount,'public')
+    +heroStat(I.case,'Private',privateCount,'private')
     +'</div></div>';
 
   var filtered=facilities.filter(function(f){
@@ -2775,6 +2779,48 @@ function mgmtTileNav(kind){
     nav(page);
   }catch(e){
     console.error('[mgmt tile nav]',e);
+    try{nav('home');}catch(e2){}
+  }
+}
+
+// Home dashboard hero tiles -> filtered navigation. Same pattern as
+// mgmtTileNav above: sets the target page's own EXISTING filter globals,
+// then nav(). 'submissions' also resets subView to 'list' since subFiltStatus
+// is silently ignored in pipeline view (known quirk, not fixed here) — this
+// keeps the unfiltered nav predictable. Guarded, falls back to Home.
+function homeTileNav(kind){
+  try{
+    if(kind==='placements'){phF='On Assignment';}
+    else if(kind==='submissions'){subFiltStatus='All';subFiltConsId='All';subFiltFacility='All';subView='list';}
+    var page={'placements':'candidates','submissions':'submissions','contracts':'contracts','alerts':'alerts'}[kind]||'home';
+    nav(page);
+  }catch(e){
+    console.error('[home tile nav]',e);
+    try{nav('home');}catch(e2){}
+  }
+}
+
+// Facilities hero tiles -> filtered navigation. Same pattern as mgmtTileNav.
+function facTileNav(kind){
+  try{
+    if(kind==='public'){facType='Public';}
+    else if(kind==='private'){facType='Private';}
+    nav('facilities');
+  }catch(e){
+    console.error('[facilities tile nav]',e);
+    try{nav('home');}catch(e2){}
+  }
+}
+
+// Job Board hero tiles -> filtered navigation. Same pattern as mgmtTileNav.
+// 'Total positions' shares the 'open' kind — same target filter as Open roles.
+function jobTileNav(kind){
+  try{
+    if(kind==='open'){roleFilt.status='Open';}
+    else if(kind==='likely'){roleFilt.status='Likely';}
+    nav('jobboard');
+  }catch(e){
+    console.error('[job board tile nav]',e);
     try{nav('home');}catch(e2){}
   }
 }
@@ -5268,7 +5314,9 @@ function renderJobBoard(){
   var likelyRoles=roles.filter(function(r){return r.status==='Likely';});
   var totalPositions=openRoles.reduce(function(s,r){return s+(r.positionsAvailable||1);},0);
   var facilitiesRepped=new Set(openRoles.concat(likelyRoles).map(function(r){return r.facilityId;})).size;
-  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
+  function heroStat(icon,label,val,navKind){
+    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="jobTileNav(\''+navKind+'\')"':'';
+    return'<div'+clickAttrs+' style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
     +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
     +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
     +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
@@ -5276,9 +5324,9 @@ function renderJobBoard(){
   var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
     +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
     +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.doc,'Open roles',openRoles.length)
-    +heroStat(I.person,'Total positions',totalPositions)
-    +heroStat(I.clock,'Likely',likelyRoles.length)
+    +heroStat(I.doc,'Open roles',openRoles.length,'open')
+    +heroStat(I.person,'Total positions',totalPositions,'open')
+    +heroStat(I.clock,'Likely',likelyRoles.length,'likely')
     +heroStat(I.hosp,'Facilities',facilitiesRepped)
     +'</div></div>';
 

@@ -582,8 +582,16 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
     </div>
     <div id="lc-body">
     <h2>Sign In</h2>
+    <p>Sign in with your email and password.</p>
+    <div class="fg"><label>Email</label><input type="email" id="l-auth-email" autocomplete="username" placeholder="name@hca.com"></div>
+    <div class="fg" style="margin-bottom:8px"><label>Password</label><input type="password" id="l-auth-pw" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuthLogin()"></div>
+    <div id="l-auth-msg" style="font-size:11px;color:var(--danger);min-height:14px;margin-bottom:8px"></div>
+    <button class="lc-btn" id="l-auth-btn" onclick="doAuthLogin()">Sign in</button>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px">
+
+    <label>Quick switch (dev)</label>
     <p>Select your profile to access your workspace</p>
-    <label>User Profile</label>
     <select id="l-sel" onchange="lPrev()"><option value="">Select profile</option></select>
     <div class="lc-prev" id="l-prev"></div>
     <button class="lc-btn" onclick="doLogin()">Continue</button>
@@ -1504,6 +1512,65 @@ function downloadTemplate(type){
   a.click();
 }
 
+// Auth stage 2 of 5: real Supabase Auth sign-in, running ALONGSIDE the
+// profile picker below (not replacing it). This only proves a session can
+// be minted — it does not set CU, does not navigate into the app, and does
+// not touch the picker path at all. Mapping the authenticated user to CU
+// is stage 3.
+function authErrorMessage(err){
+  var msg=(err&&err.message)||'';
+  var lower=msg.toLowerCase();
+  if(lower.indexOf('invalid login credentials')>=0)return'Incorrect email or password.';
+  if(lower.indexOf('email not confirmed')>=0)return'Email not confirmed yet — check your inbox.';
+  if(lower.indexOf('network')>=0||lower.indexOf('fetch')>=0||lower.indexOf('failed to fetch')>=0)return'Network error — check your connection and try again.';
+  return msg||'Sign-in failed — please try again.';
+}
+function doAuthLogin(){
+  var emailEl=document.getElementById('l-auth-email');
+  var pwEl=document.getElementById('l-auth-pw');
+  var msgEl=document.getElementById('l-auth-msg');
+  var btn=document.getElementById('l-auth-btn');
+  if(msgEl)msgEl.textContent='';
+  var email=((emailEl&&emailEl.value)||'').trim();
+  var password=(pwEl&&pwEl.value)||'';
+  if(!email||!password){
+    if(msgEl)msgEl.textContent='Enter your email and password.';
+    return;
+  }
+  if(!sb||!sb.auth){
+    if(msgEl)msgEl.textContent='Auth is not ready yet — try again in a moment.';
+    return;
+  }
+  if(btn){btn.disabled=true;btn.textContent='Signing in…';}
+  try{
+    sb.auth.signInWithPassword({email:email,password:password}).then(function(r){
+      if(btn){btn.disabled=false;btn.textContent='Sign in';}
+      if(r&&r.error){
+        console.error('[auth] sign-in failed',r.error);
+        var msg=authErrorMessage(r.error);
+        if(msgEl)msgEl.textContent=msg;
+        showToast(msg,'err');
+        return;
+      }
+      console.log('[auth] session minted',r&&r.data);
+      showToast('Signed in as '+((r&&r.data&&r.data.user&&r.data.user.email)||email));
+      // Stage 2 stops here on purpose: no CU assignment, no nav(). The
+      // picker below is completely unaffected by this succeeding or failing.
+    }).catch(function(e){
+      if(btn){btn.disabled=false;btn.textContent='Sign in';}
+      console.error('[auth] sign-in threw',e);
+      var msg=authErrorMessage(e);
+      if(msgEl)msgEl.textContent=msg;
+      showToast(msg,'err');
+    });
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='Sign in';}
+    console.error('[auth] sign-in threw sync',e);
+    var msg='Sign-in failed — please try again.';
+    if(msgEl)msgEl.textContent=msg;
+    showToast(msg,'err');
+  }
+}
 function initLogin(){var sel=document.getElementById("l-sel");users.forEach(function(u){var o=document.createElement("option");o.value=u.id;o.textContent=u.name+" — "+ROLES[u.role];sel.appendChild(o);});}
 function lPrev(){var id=parseInt(document.getElementById("l-sel").value);var u=users.find(function(x){return x.id===id;});var div=document.getElementById("l-prev");if(!u){div.innerHTML="";return;}var rc={ops:"b-pu",consultant:"b-bl",admin:"b-tl"}[u.role]||"b-gr";var rl={ops:"Full platform — all candidates, team, settings",consultant:"Your pipeline, targets and alerts",admin:"Candidates across assigned consultants"}[u.role]||"";div.innerHTML='<span class="badge '+rc+'" style="margin-bottom:4px;display:inline-block">'+ROLES[u.role]+'</span><div style="font-size:10px;color:var(--t3)">'+rl+'</div>';}
 function doLogin(){var id=parseInt(document.getElementById("l-sel").value);if(!id){showToast("Please select a profile.","err");return;}CU=users.find(function(u){return u.id===id;});VCon=CU.role==="consultant"?CU.id:null;document.getElementById("ls").style.display="none";document.getElementById("app").style.display="flex";var av=document.getElementById("sb-av");av.textContent=CU.initials;av.style.background=CU.color;document.getElementById("sb-name").textContent=CU.name;document.getElementById("sb-role").textContent=ROLES[CU.role];document.getElementById("sb-mgmt").style.display=CU.role==="consultant"?"none":"";updateBadges();updateMuteBtn();subscribeRolesFeed();subscribeSubmissionsFeed();requestDesktopNotifyPermission();var _h=(location.hash||'').replace(/^#/,'');if(_h&&_h!=='home'){routeFromHash();}else{nav('home');}

@@ -113,6 +113,24 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .mgmt-tile-click{cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease,transform .12s ease}
 .mgmt-tile-click:hover{box-shadow:0 4px 10px rgba(38,33,92,.08),0 20px 36px -22px rgba(38,33,92,.45);border-color:var(--brand);transform:translateY(-1px)}
 
+/* ── Home dashboard reskin trial (renderHome only) ──────────────────────
+   Everything below is scoped under .hd-v2, which only renderHome() emits.
+   Restrained/flat direction: no gradients, no heavy shadow, hairline
+   borders, purple as a small accent only. Must never affect any other
+   page — do not remove the .hd-v2 scope from any of these selectors. */
+.hd-v2 .card{box-shadow:none}
+.hd-v2 .card-hd{padding:11px 14px}
+.hd-v2 .hd-greet{margin-bottom:14px}
+.hd-v2 .hd-greet-name{font-size:14px;font-weight:600;color:var(--t1)}
+.hd-v2 .hd-greet-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.hd-v2 .hd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.hd-v2 .hd-stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px}
+.hd-v2 .hd-stat-label{font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.hd-v2 .hd-stat-val{font-size:20px;font-weight:600;color:var(--t1);line-height:1}
+.hd-v2 .hd-clickable{cursor:pointer;transition:border-color .12s ease}
+.hd-v2 .hd-clickable:hover{border-color:var(--brand)}
+.hd-v2 .hd-icon{flex-shrink:0;width:26px;height:26px;border-radius:6px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+
 /* CARDS */
 .card{background:var(--surface);border-radius:16px;border:0.5px solid var(--border);box-shadow:var(--shadow-card)}
 .card>.tbl:first-child th:first-child{border-top-left-radius:15px}
@@ -1834,21 +1852,20 @@ function mbStartDay(){
 // One expanded-list line, full width, stacked (not a chip) — same shell as
 // the "Other reminders" rows on this page (dim-hover, icon tile, bold
 // primary line, muted subline, hairline border-bottom separator).
-function mbListRowHtml(icon,color,tileBg,onclick,primary,secondary){
-  return '<div class="dim-hover" onclick="'+onclick+'" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">'
-    +'<div style="flex-shrink:0;width:32px;height:32px;border-radius:9px;background:'+tileBg+';color:'+color+';display:flex;align-items:center;justify-content:center">'+ico(icon,17)+'</div>'
+function mbListRowHtml(icon,color,onclick,primary,secondary){
+  return '<div class="dim-hover" onclick="'+onclick+'" style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border)">'
+    +'<div class="hd-icon" style="color:'+color+'">'+ico(icon,14)+'</div>'
     +'<div style="flex:1;min-width:0">'
     +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(primary)+'</div>'
-    +(secondary?'<div style="font-size:10px;color:var(--t2);margin-top:2px">'+esc(secondary)+'</div>':'')
+    +(secondary?'<div style="font-size:10px;color:var(--t3);margin-top:2px">'+esc(secondary)+'</div>':'')
     +'</div></div>';
 }
 function mbRowHtml(r){
   var expandBody="";
-  var tileBg=r.color.indexOf('var(--')===0?r.color.slice(0,-1)+'-l)':'rgba(212,144,10,.15)';
   if(r.key==="avail"&&mbAvailExpanded){
     var avail=mbAvailSoon(vc());
     expandBody=avail.map(function(c){
-      return mbListRowHtml(r.icon,r.color,tileBg,'openCandPage('+c.id+')',c.name,fmt(c.availableFrom));
+      return mbListRowHtml(r.icon,r.color,'openCandPage('+c.id+')',c.name,fmt(c.availableFrom));
     }).join('');
   } else if(r.key==="roles"&&mbRolesExpanded){
     var roleM=mbTopRoleMatches(vc());
@@ -1858,33 +1875,33 @@ function mbRowHtml(r){
       var facName=fac?fac.name:'Unknown facility';
       var primary=facName+(role.ward?' — '+role.ward:'');
       var secondary=x.strong+' match'+(x.strong!==1?'es':'')+' — '+fmt(role.startDate);
-      return mbListRowHtml(r.icon,r.color,tileBg,'selectedRoleId='+(role.id||'null')+';nav(\'jobboard\')',primary,secondary);
+      return mbListRowHtml(r.icon,r.color,'selectedRoleId='+(role.id||'null')+';nav(\'jobboard\')',primary,secondary);
     }).join('');
   } else if(r.key==="comp"&&mbCompExpanded){
     var comp=mbComplianceExpiring(vc());
     expandBody=comp.map(function(it){
       var secondary=it.label+' — '+(it.d<0?'expired '+Math.abs(it.d)+'d ago':'expires in '+it.d+'d');
-      return mbListRowHtml(r.icon,r.color,tileBg,'openCandAtComp('+it.cid+',\''+it.key+'\')',it.cname,secondary);
+      return mbListRowHtml(r.icon,r.color,'openCandAtComp('+it.cid+',\''+it.key+'\')',it.cname,secondary);
     }).join('');
   } else if(r.key==="checkin"&&mbCheckinExpanded){
     var chkList=mbOverdueCheckins(vc());
     expandBody=chkList.map(function(c){
       var d=ddiff(c.lastCheckin);
       var secondary=d===null?'Never contacted':Math.abs(d)+'d overdue';
-      return mbListRowHtml(r.icon,r.color,tileBg,'openCandAtCheckin('+c.id+')',c.name,secondary);
+      return mbListRowHtml(r.icon,r.color,'openCandAtCheckin('+c.id+')',c.name,secondary);
     }).join('');
   } else if(r.key==="followup"&&mbFollowupExpanded){
     var fuList=mbFollowups(vc());
     expandBody=fuList.map(function(f){
       var secondary=(f.facility||'—')+' — '+f.label+', '+f.hrs+'h overdue';
-      return mbListRowHtml(r.icon,r.color,tileBg,'openCandAtSubAlert('+f.cid+','+(f.subId||'null')+')',f.cname,secondary);
+      return mbListRowHtml(r.icon,r.color,'openCandAtSubAlert('+f.cid+','+(f.subId||'null')+')',f.cname,secondary);
     }).join('');
   }
-  return '<div id="mb-row-'+r.key+'" class="row-hover" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">'
-    +'<div style="flex-shrink:0;width:32px;height:32px;border-radius:9px;background:'+tileBg+';color:'+r.color+';display:flex;align-items:center;justify-content:center">'+ico(r.icon,17)+'</div>'
+  return '<div id="mb-row-'+r.key+'" class="row-hover" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border)">'
+    +'<div class="hd-icon" style="color:'+r.color+'">'+ico(r.icon,14)+'</div>'
     +'<div style="flex:1;min-width:0">'
     +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(r.title)+'</div>'
-    +(r.detail?'<div style="font-size:10px;color:var(--t2);margin-top:2px">'+esc(r.detail)+'</div>':'')
+    +(r.detail?'<div style="font-size:10px;color:var(--t3);margin-top:2px">'+esc(r.detail)+'</div>':'')
     +'</div>'
     +'<span class="badge '+r.badge+'" style="flex-shrink:0">'+r.count+'</span>'
     +'<button class="btn btn-g btn-xs" onclick="event.stopPropagation();'+r.onclick+'">'+esc(r.actionLabel)+'</button>'
@@ -1901,7 +1918,7 @@ function mbBreakdownHtml(){
     return{id:id,name:u.name.split(" ")[0],count:cnt};
   }).filter(Boolean);
   if(!rows.length)return"";
-  return '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;border-top:1px solid var(--border)">'
+  return '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-top:1px solid var(--border)">'
     +'<span style="font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;align-self:center;margin-right:2px">By consultant</span>'
     +rows.map(function(r){
       return '<button class="toggle-pill" onclick="setVC('+r.id+')" style="display:flex;align-items:center;gap:5px">'+esc(r.name)
@@ -1912,23 +1929,22 @@ function mbBreakdownHtml(){
 function renderMorningBrief(cands){
   var b=mbBuildPriorities(cands);
   if(mbCollapsed){
-    return '<div class="card" style="margin-bottom:22px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="mbExpandBrief()">'
-      +'<div style="display:flex;align-items:center;gap:10px">'
-      +'<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--brand-l);flex-shrink:0">'+ico(I.clock,15,'var(--brand)')+'</span>'
+    return '<div class="card" style="margin-bottom:14px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="mbExpandBrief()">'
+      +'<div style="display:flex;align-items:center;gap:9px">'
+      +'<span class="hd-icon" style="color:var(--brand)">'+ico(I.clock,14)+'</span>'
       +'<span style="font-size:12px;font-weight:500;color:var(--t1)">Morning brief'+(b.workload?' — '+b.workload+' action'+(b.workload!==1?'s':'')+' today':' — all clear')+'</span></div>'
       +'<button class="btn-ghost" style="font-size:11px" onclick="event.stopPropagation();mbExpandBrief()">Expand '+ico(I.chevron,11)+'</button>'
       +'</div>';
   }
-  return '<div class="card" style="margin-bottom:22px;overflow:hidden">'
+  return '<div class="card" style="margin-bottom:14px;overflow:hidden">'
     +'<div class="card-hd"><div class="card-title">'+ico(I.clock,13,'var(--brand)')+' Today’s priorities</div>'
     +'<button class="btn-ghost" style="font-size:11px" onclick="mbCollapseBrief()">Collapse</button></div>'
     +(b.rows.length
       ?b.rows.map(mbRowHtml).join('')
       :'<div style="padding:20px 16px;text-align:center;color:var(--t3);font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px">'+ico(I.chk,16)+' Nothing urgent — great day to prospect.</div>')
-    +'<div style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;background:var(--brand-grad)">'
-    +'<div style="position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);top:-60px;right:-30px;pointer-events:none"></div>'
-    +'<span style="position:relative;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:#fff">'+ico(I.clock,15,'#fff')+b.workload+' action'+(b.workload!==1?'s':'')+' today</span>'
-    +(b.rows.length?'<button class="btn btn-sm" style="position:relative;background:#fff;color:var(--brand);box-shadow:none" onclick="mbStartDay()">Start my day</button>':'')
+    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-top:1px solid var(--border)">'
+    +'<span style="display:flex;align-items:center;gap:7px;font-size:11px;font-weight:500;color:var(--t2)">'+ico(I.clock,13,'var(--t3)')+b.workload+' action'+(b.workload!==1?'s':'')+' today</span>'
+    +(b.rows.length?'<button class="btn btn-p btn-sm" onclick="mbStartDay()">Start my day</button>':'')
     +'</div>'
     +mbBreakdownHtml()
     +'</div>';
@@ -1955,31 +1971,30 @@ function renderHome(){
   // MORNING BRIEF (replaces the old Today/Action-required widgets)
   var briefHtml=renderMorningBrief(cands);
 
-  // HERO BAND — greeting + headline numbers (same stats as before, just moved
-  // into the gradient band instead of separate light-grey tiles)
+  // HERO BAND — reskin trial: flat greeting text (no card, no gradient) plus
+  // a row of flat hairline-border stat tiles. Same stats, same navKind ->
+  // homeTileNav() wiring as before, just no gradient fill/heavy shadow and
+  // no decorative icon chip on the tile itself.
   var placed=cands.filter(function(c){return c.phase==="On Assignment"||c.phase==="Extension/Exit";}).length;
   var totalSubs=cands.reduce(function(a,c){return a+c.submissions.length;},0);
   var activeContracts=cands.reduce(function(a,c){return a+c.contracts.filter(function(k){return k.status==="Active";}).length;},0);
   var compAlerts=autos.filter(function(a){return a.level==="red";}).length;
-  function heroStat(icon,label,val,navKind){
-    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="homeTileNav(\''+navKind+'\')"':'';
-    return'<div'+clickAttrs+' style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
-    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:30px;font-weight:500;color:#fff;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.1)">'+val+'</div>'
+  function heroStat(label,val,navKind){
+    var clickAttrs=navKind?' class="hd-stat hd-clickable" onclick="homeTileNav(\''+navKind+'\')"':' class="hd-stat"';
+    return'<div'+clickAttrs+'>'
+    +'<div class="hd-stat-label">'+label+'</div>'
+    +'<div class="hd-stat-val">'+val+'</div>'
     +'</div>';}
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:28px 32px;margin-bottom:22px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.05);bottom:-80px;right:180px;pointer-events:none"></div>'
-    +'<div style="position:relative">'
-    +'<div style="font-size:20px;font-weight:500;color:#fff;margin-bottom:4px">Welcome, '+esc(firstName)+'</div>'
-    +'<div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:22px">'+dateStr+' — '+ROLES[CU.role]+'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.person,'Placements',placed,'placements')
-    +heroStat(I.mail,'Submissions',totalSubs,'submissions')
-    +heroStat(I.doc,'Active contracts',activeContracts,'contracts')
-    +heroStat(I.warn,'Compliance alerts',compAlerts,'alerts')
-    +'</div></div></div>';
+  var heroHtml='<div class="hd-greet">'
+    +'<div class="hd-greet-name">Welcome, '+esc(firstName)+'</div>'
+    +'<div class="hd-greet-sub">'+dateStr+' — '+ROLES[CU.role]+'</div>'
+    +'</div>'
+    +'<div class="hd-stats">'
+    +heroStat('Placements',placed,'placements')
+    +heroStat('Submissions',totalSubs,'submissions')
+    +heroStat('Active contracts',activeContracts,'contracts')
+    +heroStat('Compliance alerts',compAlerts,'alerts')
+    +'</div>';
 
   // OTHER REMINDERS — chase-list items not yet folded into a Morning Brief
   // priority (interview prep, extension talk, start-date confirmation).
@@ -1987,20 +2002,19 @@ function renderHome(){
   // so they're excluded here to avoid showing the same item twice.
   var chase=buildChaseList().filter(function(a){return a.label.indexOf('Call ')!==0&&a.label.indexOf('Check in:')!==0;});
   var chaseHtml=chase.length
-    ?'<div class="card" style="margin-bottom:22px">'
-      +'<div class="card-hd"><div class="card-title" style="color:var(--warn)"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--warn-l)">'+ico(I.warn,13,'var(--warn)')+'</span> Other reminders</div>'
+    ?'<div class="card" style="margin-bottom:14px">'
+      +'<div class="card-hd"><div class="card-title"><span class="hd-icon" style="color:var(--warn)">'+ico(I.warn,13)+'</span> Other reminders</div>'
       +'<button class="btn-ghost" onclick="nav(\'alerts\')" style="font-size:11px">See all &rsaquo;</button>'
       +'</div>'
       +chase.slice(0,5).map(function(a){
-        var tileBg=a.color.indexOf('var(--')===0?a.color.slice(0,-1)+'-l)':'rgba(212,144,10,.15)';
-        return '<div class="dim-hover" onclick="openCandPage('+a.cid+')" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">'
-          +'<div style="flex-shrink:0;width:32px;height:32px;border-radius:9px;background:'+tileBg+';color:'+a.color+';display:flex;align-items:center;justify-content:center">'+ico(a.icon,17)+'</div>'
+        return '<div class="dim-hover" onclick="openCandPage('+a.cid+')" style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border)">'
+          +'<div class="hd-icon" style="color:'+a.color+'">'+ico(a.icon,14)+'</div>'
           +'<div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(a.label)+'</div>'
-          +'<div style="font-size:10px;color:var(--t2);margin-top:4px">'+esc(a.detail)+'</div></div>'
+          +'<div style="font-size:10px;color:var(--t3);margin-top:4px">'+esc(a.detail)+'</div></div>'
           +(a.action?'<button class="btn btn-g btn-xs" onclick="event.stopPropagation();'+a.action+';renderHome()">'+a.actionLabel+'</button>':'')
           +'</div>';
       }).join('')
-      +(chase.length>5?'<div style="font-size:10px;color:var(--t2);padding:10px 16px">+' +(chase.length-5)+' more</div>':'')
+      +(chase.length>5?'<div style="font-size:10px;color:var(--t3);padding:8px 14px">+' +(chase.length-5)+' more</div>':'')
       +'</div>'
     :'';
 
@@ -2034,8 +2048,8 @@ function renderHome(){
   var winsCard='<div class="card" style="flex:1">'
     +'<div class="card-hd"><div class="card-title">Recent wins</div></div>'
     +(wins.length
-      ?wins.slice(0,6).map(function(w){var tileBg=w.color.indexOf('var(--')===0?w.color.slice(0,-1)+'-l)':'rgba(38,33,92,.1)';return'<div class="row-hover" onclick="openCandPage('+w.cid+')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">'
-        +'<span style="flex-shrink:0;width:30px;height:30px;border-radius:9px;background:'+tileBg+';color:'+w.color+';display:flex;align-items:center;justify-content:center">'+ico(w.icon,16)+'</span>'
+      ?wins.slice(0,6).map(function(w){return'<div class="row-hover" onclick="openCandPage('+w.cid+')" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border)">'
+        +'<span class="hd-icon" style="color:'+w.color+'">'+ico(w.icon,14)+'</span>'
         +'<div><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(w.name)+'</div>'
         +'<div style="font-size:10px;color:var(--t3);margin-top:4px">'+w.detail+'</div></div>'
         +'</div>';}).join('')
@@ -2047,12 +2061,12 @@ function renderHome(){
   if(roles&&roles.length){
     var topRoles=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';}).slice(0,5);
     if(topRoles.length){
-      jbHtml='<div class="card" style="margin-top:22px">'
+      jbHtml='<div class="card" style="margin-top:14px">'
         +'<div class="card-hd"><div class="card-title">Open roles — matched to your candidates</div><button class="btn-ghost" onclick="nav(\'jobboard\')">Open job board &rsaquo;</button></div>'
-        +'<div style="padding:4px 0">'
+        +'<div style="padding:2px 0">'
         +topRoles.map(function(r){
           var fac=facilities.find(function(f){return f.id===r.facilityId;})||{};
-          return '<div class="row-hover" onclick="nav(\'jobboard\')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">'
+          return '<div class="row-hover" onclick="nav(\'jobboard\')" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border)">'
             +'<div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(fac.name||r.facilityId)+' <span style="font-weight:400;color:var(--t3)">— '+esc(r.ward||'')+'</span></div>'
             +'<div style="font-size:10px;color:var(--t3);margin-top:4px">'+esc(r.state||'')+' · '+esc(r.nurseType||'')+' · '+(r.startDate?fmt(r.startDate):'TBC')+'</div></div>'
             +roleMatchPillHtml(cands,r)
@@ -2062,10 +2076,12 @@ function renderHome(){
     }
   }
 
-  document.getElementById("page").innerHTML=heroHtml+briefHtml+chaseHtml
-    +'<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">'
+  document.getElementById("page").innerHTML='<div class="hd-v2">'
+    +heroHtml+briefHtml+chaseHtml
+    +'<div style="display:grid;grid-template-columns:3fr 2fr;gap:14px;align-items:start">'
     +candCard+winsCard
-    +'</div>'+jbHtml;
+    +'</div>'+jbHtml
+    +'</div>';
 }
 function setVC(id){VCon=id;updateBadges();renderPage();}
 

@@ -2816,6 +2816,13 @@ function renderContracts(){
   document.getElementById("page").innerHTML=heroHtml+(cards||'<div class="card"><div class="empty-st">No contracts</div></div>');
 }
 
+// Substring match against a facility's name OR any of its aliases. q must
+// already be lowercased by the caller. Shared by the Facilities page search
+// and the global quick search so alias support doesn't drift between them.
+function facAliasMatch(f,q){
+  if(f.name.toLowerCase().indexOf(q)>=0)return true;
+  return (f.aliases||[]).some(function(a){return String(a||'').toLowerCase().indexOf(q)>=0;});
+}
 function renderFacilities(){
   facilities.forEach(function(f){
     f.activeContracts=candidates.reduce(function(a,c){return a+c.contracts.filter(function(k){return k.facilityId===f.id&&k.status==="Active";}).length;},0);
@@ -2857,7 +2864,7 @@ function renderFacilities(){
     if(facType!=="All"&&f.type!==facType)return false;
     if(facQ){
       var q=facQ.toLowerCase();
-      var hit=f.name.toLowerCase().indexOf(q)>=0
+      var hit=facAliasMatch(f,q)
         ||(f.region||"").toLowerCase().indexOf(q)>=0
         ||(f.wards||[]).some(function(w){return w.name.toLowerCase().indexOf(q)>=0;});
       if(!hit)return false;
@@ -3337,7 +3344,7 @@ function doSearch(q){
   if(byLoc.length){html+='<div class="sr-sec">By Location</div>';html+=byLoc.slice(0,4).map(function(c){return'<div class="sr-item" onclick="closeSearch();openCandPage('+c.id+')"><div class="sr-icon" style="background:var(--accent-l);color:var(--accent)">'+I.plane+'</div><div><div class="sr-title">'+esc(c.name)+'</div><div class="sr-sub">'+hl(c.travelLocations.join(", "))+'</div></div></div>';}).join("");}
   var bySkill=cands.filter(function(c){return c.clinicalSkills.some(function(s){return s.toLowerCase().indexOf(ql)>=0;})||(c.tags&&c.tags.some(function(t){return t.toLowerCase().indexOf(ql)>=0;}));}).filter(function(c){return byName.indexOf(c)<0&&byLoc.indexOf(c)<0;});
   if(bySkill.length){html+='<div class="sr-sec">By Skill / Tag</div>';html+=bySkill.slice(0,4).map(function(c){return'<div class="sr-item" onclick="closeSearch();openCandPage('+c.id+')"><div class="sr-icon" style="background:var(--teal-l);color:var(--teal)">'+I.person+'</div><div><div class="sr-title">'+esc(c.name)+'</div><div class="sr-sub">'+hl(c.clinicalSkills.concat(c.tags||[]).join(", "))+'</div></div></div>';}).join("");}
-  var byFac=facilities.filter(function(f){return f.name.toLowerCase().indexOf(ql)>=0||f.state.toLowerCase().indexOf(ql)>=0||(f.wards||[]).some(function(w){return w.name.toLowerCase().indexOf(ql)>=0;});});
+  var byFac=facilities.filter(function(f){return facAliasMatch(f,ql)||f.state.toLowerCase().indexOf(ql)>=0||(f.wards||[]).some(function(w){return w.name.toLowerCase().indexOf(ql)>=0;});});
   if(byFac.length){html+='<div class="sr-sec">Facilities</div>';html+=byFac.slice(0,3).map(function(f){return'<div class="sr-item" onclick="closeSearch();nav(&apos;facilities&apos;)"><div class="sr-icon" style="background:var(--ok-l);color:var(--ok)">'+I.hosp+'</div><div><div class="sr-title">'+hl(f.name)+'</div><div class="sr-sub">'+f.state+' — '+hl((f.wards||[]).map(function(w){return w.name;}).join(", "))+'</div></div></div>';}).join("");}
   var bySub=cands.filter(function(c){return c.submissions.some(function(s){return (s.facility||"").toLowerCase().indexOf(ql)>=0;});}).filter(function(c){return byName.indexOf(c)<0;});
   if(bySub.length){html+='<div class="sr-sec">Submissions</div>';html+=bySub.slice(0,3).map(function(c){var s=c.submissions.find(function(s){return (s.facility||"").toLowerCase().indexOf(ql)>=0;});return'<div class="sr-item" onclick="closeSearch();openCandAtSubs('+c.id+')"><div class="sr-icon" style="background:#f0f1f5;color:var(--t2)">'+I.doc+'</div><div><div class="sr-title">'+esc(c.name)+'</div><div class="sr-sub">'+hl(s.facility)+" — "+esc(s.ward)+" — "+esc(s.status)+'</div></div></div>';}).join("");}
@@ -5028,7 +5035,7 @@ function renderFacChecklist(f,isAdminOps){
 function resolveFacilityRequirements(f){
   var stateRows=complianceRequirements.filter(function(r){return r.level==='state'&&r.state===f.state;});
   var hhsRows=complianceRequirements.filter(function(r){return r.level==='health_service'&&f.healthAuthority&&r.scope_name===f.healthAuthority;});
-  var facRows=complianceRequirements.filter(function(r){return r.level==='facility'&&(r.facility_id===f.id||(r.scope_name&&r.scope_name===f.name));});
+  var facRows=complianceRequirements.filter(function(r){return r.level==='facility'&&(r.facility_id===f.id||(r.scope_name&&(r.scope_name===f.name||(f.aliases||[]).indexOf(r.scope_name)>=0)));});
   var wardRows=complianceRequirements.filter(function(r){return r.level==='ward'&&f.healthAuthority&&r.scope_name===f.healthAuthority;});
   return {state:stateRows,healthService:hhsRows,facility:facRows,ward:wardRows};
 }
@@ -8045,6 +8052,7 @@ async function syncRoleToDb(role){
 }
 function mapFacility(f,wards){
   return{id:f.id,name:f.name,state:f.state||'',region:f.region||'',type:f.type||'Public',
+    aliases:f.aliases||[],
     beds:f.beds||0,contactName:f.contact_name||'',contactEmail:f.contact_email||'',
     contactPhone:f.contact_phone||'',notes:f.notes||'',
     address:f.address||'',addressSuburb:f.address_suburb||'',addressPostcode:f.address_postcode||'',

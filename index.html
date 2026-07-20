@@ -5515,6 +5515,8 @@ function renderJobBoard(){
     if(roleFilt.nurseType!=='All'&&r.nurseType!==roleFilt.nurseType)return false;
     return true;
   });
+  var sel=selectedRoleId?roles.find(function(r){return r.id===selectedRoleId;}):null;
+  if(sel&&filtered.indexOf(sel)<0){roleFilt={state:'All',ward:'All',nurseType:'All',status:'All'};filtered=roles.slice();}
   document.getElementById("tb-s").textContent=filtered.length+' role'+(filtered.length!==1?'s':'')+' shown';
 
   // ── HERO (summary strip) — real aggregates from the full `roles` list
@@ -5550,11 +5552,10 @@ function renderJobBoard(){
     +'<select onchange="roleFilt.nurseType=this.value;renderPage()">'+ntypes.map(function(s){return'<option '+(roleFilt.nurseType===s?'selected':'')+'>'+s+'</option>';}).join('')+'</select>'
     +(roleFilt.status!=='All'||roleFilt.state!=='All'||roleFilt.ward!=='All'||roleFilt.nurseType!=='All'?'<button class="btn btn-g btn-sm" onclick="roleFilt={state:\'All\',ward:\'All\',nurseType:\'All\',status:\'All\'};renderPage()">Clear</button>':'')
     +'</div>';
-  if(!filtered.length){
+  if(!filtered.length&&!sel){
     h+='<div class="empty-st" style="margin-top:12px;padding:32px">'+I.doc+'<b>No roles found</b><p>Try adjusting your filters, or add a new open role.</p>'+(canManage?'<button class="btn btn-p btn-sm" onclick="openRoleModal(null)">Add first role</button>':'')+'</div>';
     document.getElementById("page").innerHTML=h;return;
   }
-  var sel=selectedRoleId?roles.find(function(r){return r.id===selectedRoleId;}):null;
   var listHtml='<div class="jb-list">';
   filtered.forEach(function(role){
     var fac=facilities.find(function(f){return f.id===role.facilityId;});

@@ -1,0 +1,25 @@
+COMPLIANCE TRACK 2, TAS LOAD -- EXCLUDED ROWS (audit list)
+======================================================================
+
+EXCLUDED (5 rows, not in the load file at all):
+----------------------------------------------------------------------
+source_row=244  region=Pool  label='Fundamentals of Safeguarding Children - https://dhhs.sproutlabs.com.au/login/index.php (instructions saved in TAS > Tasmania Health (Public) > 01 Safeguarding Children Instructions)'
+  reason: excluded per user decision (Pool: Paeds/NICU/MHHITH) -- not attributed to any live facility
+
+source_row=245  region=Pool  label='TAS WWVP Clearance (4-6 processing time). Not suitable for nurses travelling direct from NZ.'
+  reason: excluded per user decision (Pool: Paeds/NICU/MHHITH) -- not attributed to any live facility
+
+source_row=246  region=Pool  label='Fundamentals of Safeguarding Children - https://dhhs.sproutlabs.com.au/login/index.php (instructions saved in TAS > Tasmania Health (Public) > 01 Safeguarding Children Instructions)'
+  reason: excluded per user decision (Pool: Paeds/NICU/MHHITH) -- not attributed to any live facility
+
+source_row=247  region=Pool  label='TAS WWVP *Need to confirm nurse can start with receipt or needs full clearance'
+  reason: excluded per user decision (Pool: Paeds/NICU/MHHITH) -- not attributed to any live facility
+
+source_row=254  region=All Other Clinical Areas  label='Fundamentals of Safeguarding Children - https://dhhs.sproutlabs.com.au/login/index.php (instructions saved in TAS > Tasmania Health (Public) > 01 Safeguarding Children Instructions)'
+  reason: ambiguous statewide catch-all, not ruled on this pass -- excluded pending a decision, not guessed
+
+
+No QLD-style junk found (facility-name-only rows, bare section headers,
+garbled multi-site role_qualifiers) -- every TAS source row is a genuine
+checkmarked requirement. All exclusions above are scope decisions, not
+parser garbage.

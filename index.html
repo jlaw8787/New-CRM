@@ -4958,7 +4958,8 @@ function renderFacRoles(f,isAdminOps){
   return facRoles.map(function(r){
     var pill=roleMatchPillHtml(candidates,r);
     var sc=r.status==='Open'?'var(--ok)':r.status==='Likely'?'var(--warn)':'var(--t3)';
-    return '<div style="background:var(--bg);border-radius:10px;padding:12px 16px;margin-bottom:8px;border-left:3px solid '+sc+'">'
+    var clickable=r.status==='Open'||r.status==='Likely';
+    return '<div'+(clickable?' class="row-hover" onclick="selectedRoleId='+r.id+';nav(\'jobboard\')" style="border-radius:10px;padding:12px 16px;margin-bottom:8px;border-left:3px solid '+sc+'"':' style="background:var(--bg);border-radius:10px;padding:12px 16px;margin-bottom:8px;border-left:3px solid '+sc+'"')+'>'
       +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
       +'<div><div style="font-size:13px;font-weight:500;color:var(--t1)">'+esc(r.ward)+'</div>'
       +'<div style="font-size:11px;color:var(--t2);margin-top:4px">'+esc(r.nurseType)+(r.positionsAvailable?' &middot; '+r.positionsAvailable+' pos':'')+'</div>'
@@ -4966,7 +4967,7 @@ function renderFacRoles(f,isAdminOps){
       +'</div>'
       +'<div style="display:flex;align-items:center;gap:5px">'
       +'<span class="badge '+(r.status==='Open'?'b-gn':'b-am')+'" style="font-size:9px">'+esc(r.status)+'</span>'
-      +(isAdminOps?'<button class="btn btn-g btn-xs" onclick="openRoleModal('+r.id+')">Edit</button>':'')
+      +(isAdminOps?'<button class="btn btn-g btn-xs" onclick="event.stopPropagation();openRoleModal('+r.id+')">Edit</button>':'')
       +'</div></div>'
       +'<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">'
       +(pill||'<span style="font-size:10px;color:var(--t3)">No candidate matches yet</span>')

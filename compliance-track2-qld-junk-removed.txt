@@ -1,0 +1,44 @@
+COMPLIANCE TRACK 2, QLD LOAD -- JUNK REMOVED / FLAGGED (audit list)
+======================================================================
+
+DROPPED (11 rows, not in the load file at all):
+----------------------------------------------------------------------
+source_row=201  region=DARLING DOWNS HHS  label='Mt Lofty Heights Nursing Home'
+  reason: facility/site name, not a document (Mt Lofty Heights Nursing Home)
+
+source_row=202  region=DARLING DOWNS HHS  label='The Oaks Nursing Home'
+  reason: facility/site name, not a document (The Oaks Nursing Home)
+
+source_row=203  region=DARLING DOWNS HHS  label='Karingal Nursing Home'
+  reason: facility/site name, not a document (Karingal Nursing Home)
+
+source_row=204  region=DARLING DOWNS HHS  label='Dr EAF McDonald Nursing Home'
+  reason: facility/site name, not a document (Dr EAF McDonald Nursing Home)
+
+source_row=205  region=DARLING DOWNS HHS  label='Forest View Residential Care Unit'
+  reason: facility/site name, not a document (Forest View Residential Care Unit)
+
+source_row=206  region=DARLING DOWNS HHS  label='Milton House Residential Aged Care'
+  reason: facility/site name, not a document (Milton House Residential Aged Care)
+
+source_row=207  region=DARLING DOWNS HHS  label='Wondai'
+  reason: town name, not a document (Wondai)
+
+source_row=208  region=DARLING DOWNS HHS  label='Inglewood'
+  reason: town name, not a document (Inglewood)
+
+source_row=209  region=DARLING DOWNS HHS  label='Millmerran'
+  reason: town name, not a document (Millmerran)
+
+source_row=420  region=NORTH WEST HHS  label='* Mandatory competencies:'
+  reason: bare section header leaked in as a row ("* Mandatory competencies:")
+
+source_row=432  region=NORTH WEST HHS  label='Julia Creek'
+  reason: town name, not a document (Julia Creek)
+
+
+FLAGGED BUT KEPT (1 rows, in the load file with a warning comment):
+----------------------------------------------------------------------
+source_row=491  region=SOUTH WEST HHS  role_qualifier='Roma - Westhaven Aged Care, Dirranbandi, Waroona Nursing Home (Charleville), Mitchell Only'  label='NDIS Clearance - not required for Medical Practice'
+  reason: role_qualifier is a garbled multi-site list, not a clean "X Only" restriction ("Roma - Westhaven Aged Care, Dirranbandi, Waroona Nursing Home (Charleville), Mitchell Only") -- kept, requirement itself (NDIS Clearance) is real, but needs a human call on the qualifier.
+

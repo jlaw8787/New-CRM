@@ -1,0 +1,49 @@
+COMPLIANCE TRACK 2 PARSER - STAGE 1 SUMMARY
+============================================================
+
+Total requirement rows parsed: 1762
+
+Per state:
+  ACT     16 rows     0 with role_qualifier
+  NSW    149 rows     8 with role_qualifier
+  NT     229 rows    47 with role_qualifier
+  QLD    281 rows    43 with role_qualifier
+  SA     450 rows    14 with role_qualifier
+  TAS    138 rows    12 with role_qualifier
+  VIC    405 rows    42 with role_qualifier
+  WA      94 rows     5 with role_qualifier
+
+Total with role_qualifier: 171
+ACT "Checklist Item" type rows flagged: 16
+Rows with no active section (delivery=None): 0
+
+WA timing-label rows encountered (not mapped to delivery, see script header comment):
+  row 3: 'DOCUMENTS REQUIRED TO QUEUE ON SHIFTMATCH'
+  row 43: 'PRIOR TO SUBMISSION'
+  row 65: 'PRIOR TO COMMENCEMENT   |   Last updated: 29 Aug 2025'
+
+Unsure / needs-review cases: 19
+------------------------------------------------------------
+  [ 14] requirement row with no region/facility established yet
+  [  5] non-bullet row after active qualifier header, scope unclear
+
+Full unsure list:
+  NT row 322: non-bullet row after active qualifier header, scope unclear -- '*Only need to provide documents for first contract in the region or updated competencies. NT will accept the dates on the AEC for any return contracts or extensions if they have previously sighted the evidence' ambient_qualifier='PHC Only'
+  QLD row 431: non-bullet row after active qualifier header, scope unclear -- 'Julia Creek and McKinlay -  8 or 10 hour shift break agreement' ambient_qualifier='Yellagundgimarra Only'
+  SA row 620: non-bullet row after active qualifier header, scope unclear -- 'Placement Declaration (only provided to facility upon request)' ambient_qualifier='Jamestown, Port Pirie Only'
+  TAS row 170: non-bullet row after active qualifier header, scope unclear -- 'Maternity Only (AKA North West Maternity Service) - TAS WWVP Clearance. Not suitable for nurses arriving direct from NZ.' ambient_qualifier='Maternity Only (AKA North West Maternity Service)'
+  VIC row 530: non-bullet row after active qualifier header, scope unclear -- 'VIC WWCC Application Number - must finalise within 5 days of arrival to VIC (instructions saved in VIC > 01 Working with Children Check)' ambient_qualifier='Maternity Only'
+  WA row 5: requirement row with no region/facility established yet -- 'CV'
+  WA row 6: requirement row with no region/facility established yet -- 'AHPRA'
+  WA row 7: requirement row with no region/facility established yet -- 'Certified CRC from the last 12 months'
+  WA row 8: requirement row with no region/facility established yet -- 'NW64 Form - Pre-Engagement Integrity Check Consent Form'
+  WA row 10: requirement row with no region/facility established yet -- '• Neonatal Resus (T&P) (1 year)'
+  WA row 11: requirement row with no region/facility established yet -- '• OFSEP (1 year)'
+  WA row 12: requirement row with no region/facility established yet -- 'Paediatrics Specific - PARROT - https://360.articulate.com/review/content/96cbd20b-4285-4bcd-97b2-6e558650b92c/review'
+  WA row 13: requirement row with no region/facility established yet -- 'Mental Health Specific - WA Mental Health Act Module - https://mha2014.elearn.net.au/'
+  WA row 14: requirement row with no region/facility established yet -- 'Child Health Specific - Child Health Post Grad'
+  WA row 15: requirement row with no region/facility established yet -- 'Neonatal RN Specific - Neonatal Resus (T&P) (1 Year)'
+  WA row 16: requirement row with no region/facility established yet -- 'Immuniser Specific - Immunisation Certificate'
+  WA row 18: requirement row with no region/facility established yet -- '• Certified WA WWCC'
+  WA row 19: requirement row with no region/facility established yet -- '• MRSA Results - Nose and Throat (N/A if the nurse has worked in WA for >12 months)'
+  WA row 20: requirement row with no region/facility established yet -- "If working casually - Statements of Service for all casual roles (N/A if nurse is clearly top level and hasn't worked casually within the last 2 years)"

@@ -1,0 +1,85 @@
+-- Compliance Track 2, stage 2: QLD facility-level rows with NO live facility
+-- match (by name or alias) as of this run. Kept here, commented out, for
+-- when these facilities get added to the live table. Do NOT run as-is.
+-- 66 rows.
+
+-- Distinct unmatched facility names (source spreadsheet, title-cased):
+--   Charleville Community Mental Health  (9 rows)
+--   Eventide RACF - Charters Towers  (8 rows)
+--   Home Hill  (9 rows)
+--   Lotus Glen  (4 rows)
+--   Maryborough Correctional Facility  (4 rows)
+--   Norfolk Island  (13 rows)
+--   Redcliffe Hospital  (10 rows)
+--   Tarcoola Aged Care  (3 rows)
+--   Tropical Public Health Service  (6 rows)
+
+-- INSERT INTO compliance_requirements
+--   (state, level, scope_name, facility_id, ward, role_qualifier, item_key, item_label, timing, delivery, required, exception_note, confirmed, source_last_updated, created_by)
+-- VALUES
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, 'cv', 'CV', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, 'ahpra_registration', 'AHPRA registration', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, 'crc', 'CRC', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, '2_x_jp_certified_id_documents_1_must_have_a_photo', '2 x JP? Certified ID documents (1 must have a photo)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, 'hep_b_serology', 'Hep B (Serology)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, 'varicella_serology_or_2_doses', 'Varicella (Serology or 2 Doses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, 'mmr_serology_or_2_doses', 'MMR (Serology or 2 Doses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, 'dtpa', 'dTpa', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Charleville Community Mental Health', NULL, NULL, NULL, 'annual_flu_during_flu_season', 'Annual Flu during flu season', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Eventide RACF - Charters Towers', NULL, NULL, NULL, 'ndis_clearance', 'NDIS Clearance', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Eventide RACF - Charters Towers', NULL, NULL, NULL, 'ahpra', 'AHPRA', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Eventide RACF - Charters Towers', NULL, NULL, NULL, 'hep_b_serology', 'Hep B (Serology)', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Eventide RACF - Charters Towers', NULL, NULL, NULL, 'mmr_serology_or_doses', 'MMR (Serology or Doses)', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Eventide RACF - Charters Towers', NULL, NULL, NULL, 'varicella_serology_or_doses', 'Varicella (Serology or Doses)', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Eventide RACF - Charters Towers', NULL, NULL, NULL, 'pertussis_or_dtpa', 'Pertussis or dTpa', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Eventide RACF - Charters Towers', NULL, NULL, NULL, 'annual_flu', 'Annual Flu', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Eventide RACF - Charters Towers', NULL, NULL, NULL, 'covid_x_3', 'COVID x 3', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'ahpra', 'AHPRA', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'mmr_doses_or_serology', 'MMR (Doses or Serology)', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'hep_b_serology', 'Hep B (Serology)', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'varicella_doses_or_serology', 'Varicella (Doses or Serology)', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'pertussis_or_dtpa', 'Pertussis or dTpa', 'on_submission', 'zip', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'antt', 'ANTT', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'bls', 'BLS', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'hh', 'HH', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Home Hill', NULL, NULL, NULL, 'mm', 'MM', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Lotus Glen', NULL, NULL, NULL, 'jp_certified_colour_photo_id_passport_or_drivers_licence', 'JP Certified Colour Photo ID (Passport or Drivers Licence)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Lotus Glen', NULL, NULL, NULL, 'criminal_history_disclosure_consent_form_qcs_chc', 'Criminal History Disclosure Consent Form  (QCS CHC)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Lotus Glen', NULL, NULL, NULL, 'form_27a_professional_approved_form', 'Form 27a (Professional Approved Form)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Lotus Glen', NULL, NULL, NULL, 'nz_police_vetting_form_for_nz_nurses', 'NZ Police Vetting Form (for NZ nurses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Maryborough Correctional Facility', NULL, NULL, NULL, 'criminal_history_disclosure_and_consent_form', 'Criminal History Disclosure and Consent Form', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Maryborough Correctional Facility', NULL, NULL, NULL, 'form_27a', 'Form 27A', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Maryborough Correctional Facility', NULL, NULL, NULL, 'qcs_nz_chc_form_only_need_to_complete_if_lived_in_nz_for_12mths_or_greater_after_the_age_of_16years', 'QCS NZ CHC Form (only need to complete if lived in NZ for 12mths or greater after the age of 16years)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Maryborough Correctional Facility', NULL, NULL, NULL, 'coloured_drivers_licence_passport_as_recorded_on_form', 'Coloured Drivers Licence/Passport as recorded on form', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'pre_appointment_health_questionnaire', 'Pre-Appointment Health Questionnaire', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'signed_code_of_conduct', 'Signed code of conduct', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'crc_only_send_details_to_facility_provider_reference_number_issue_date', 'CRC - only send details to facility (Provider, Reference Number, Issue Date)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'hep_b_serology', 'Hep B (Serology)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'mmr_serology_or_doses', 'MMR (Serology or Doses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'varicella_serology_or_dose', 'Varicella (Serology or Dose)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'pertussis_or_dtpa', 'Pertussis or dTpa', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'hh_ipc_and_all_other_competencies_we_have_on_file', 'HH, IPC and all other competencies we have on file', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'ahpra_certificate', 'AHPRA Certificate', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'indemnity_insurance_saved_in_compliance_files_in_teams', 'Indemnity Insurance (Saved in Compliance Files in Teams)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'annual_flu', 'Annual Flu', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'certified_qualifications', 'Certified Qualifications', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Norfolk Island', NULL, NULL, NULL, 'certified_photo_id_drivers_licence_or_passport', 'Certified Photo ID (Drivers Licence or Passport)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'documents_need_to_be_on_file_and_only_sent_if_requested', 'Documents need to be on file and only sent if requested', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'employee_screening_consent_form', 'Employee Screening Consent Form', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, '3_x_certified_id', '3 x Certified ID', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'tb_risk_assessment', 'TB Risk Assessment', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'vpd_form', 'VPD Form', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'hep_b_serology_or_3_doses', 'Hep B (serology or 3 doses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'mmr_serology_or_2_doses', 'MMR (serology or 2 doses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'dtpa', 'dTpa', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'varicella_serology_or_2_doses', 'Varicella (serology or 2 doses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Redcliffe Hospital', NULL, NULL, NULL, 'ahpra', 'AHPRA', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tarcoola Aged Care', NULL, NULL, NULL, 'ahpra', 'AHPRA', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tarcoola Aged Care', NULL, NULL, NULL, 'crc', 'CRC', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tarcoola Aged Care', NULL, NULL, NULL, 'ndis', 'NDIS', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tropical Public Health Service', NULL, NULL, NULL, 'hep_b_serology', 'Hep B (Serology)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tropical Public Health Service', NULL, NULL, NULL, 'mmr_serology_or_doses', 'MMR (Serology or Doses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tropical Public Health Service', NULL, NULL, NULL, 'varicella_serology_or_doses', 'Varicella (Serology or Doses)', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tropical Public Health Service', NULL, NULL, NULL, 'dtpa', 'dTpa', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tropical Public Health Service', NULL, NULL, NULL, 'ahpra', 'AHPRA', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser'),
+--   ('QLD', 'facility', 'Tropical Public Health Service', NULL, NULL, NULL, '2_x_certified_ids', '2 x Certified IDs', 'before_commencing', 'individual', true, NULL, false, NULL, 'Compliance Track 2 Parser');

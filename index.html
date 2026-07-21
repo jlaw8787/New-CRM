@@ -1376,6 +1376,10 @@ var CU=null,VCon=null,curPage="home",phF="All",srchQ="",pTab="Activity",MTab="Pr
 // picker open; the range itself only takes effect once at least one date is set.
 var candGridFilt={areas:[],states:[],availFrom:'',availTo:''};
 var candGridAvailOpen=false;
+// Inline states_open editor (Slice 3, pattern-proving cell). cgStatesDraft is a
+// scratch buffer so checkbox clicks don't write to Supabase one at a time --
+// only cgSaveStatesEditor() commits, on close/click-away/Done.
+var cgEditingStatesId=null,cgStatesDraft=[];
 var jbNewCount=0,jobMatchFilt=null;
 var mbCollapsed=false,mbAvailExpanded=false,mbRolesExpanded=false,mbCompExpanded=false,mbCheckinExpanded=false,mbFollowupExpanded=false;
 var subFiltStatus=localStorage.getItem('hca_sf_st')||'All';
@@ -2157,6 +2161,57 @@ function candGridStatePills(c){
     return'<span onclick="event.stopPropagation();cgToggleState(&apos;'+jsAttrEsc(s)+'&apos;)" style="cursor:pointer;display:inline-flex;align-items:center;padding:1px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:var(--bg);color:var(--t2)'+ring+'">'+esc(s)+'</span>';
   }).join(' ');
 }
+// ── Inline states_open editor (Slice 3, one cell only) ──────────────────
+function cgOpenStatesEditor(id){
+  var c=candidates.find(function(x){return x.id===id;});if(!c)return;
+  cgEditingStatesId=id;
+  cgStatesDraft=(c.statesOpen||[]).slice();
+  renderCandidates();
+}
+function cgToggleStatesDraft(code){
+  var i=cgStatesDraft.indexOf(code);
+  if(i>=0)cgStatesDraft.splice(i,1);else cgStatesDraft.push(code);
+  renderCandidates();
+}
+function cgSaveStatesEditor(id){
+  // Re-look-up the candidate fresh here rather than trusting a reference
+  // captured when the editor opened -- avoids a stale object clobbering a
+  // value another part of the app wrote to this candidate in the meantime.
+  var c=candidates.find(function(x){return x.id===id;});
+  cgEditingStatesId=null;
+  if(!c){renderCandidates();return;}
+  var prev=(c.statesOpen||[]).slice();
+  var next=cgStatesDraft.slice();
+  var changed=prev.length!==next.length||prev.some(function(s){return next.indexOf(s)<0;})||next.some(function(s){return prev.indexOf(s)<0;});
+  if(!changed){renderCandidates();return;}
+  c.statesOpen=next; // optimistic
+  renderCandidates();
+  syncCandidateToDb(c).catch(function(err){
+    c.statesOpen=prev; // rollback
+    showToast('Save failed — reverted','err');
+    console.error('[DB] states_open save',err);
+    renderCandidates();
+  });
+}
+function candGridStatesCellHtml(c){
+  var isEditing=cgEditingStatesId===c.id;
+  var hasStates=c.statesOpen&&c.statesOpen.length;
+  var display=hasStates
+    ?'<div class="pills-cell" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">'+candGridStatePills(c)
+      +'<span onclick="event.stopPropagation();cgOpenStatesEditor('+c.id+')" title="Edit states open to" style="cursor:pointer;color:var(--t3);flex-shrink:0;display:inline-flex">'+ico(I.pencil,11)+'</span></div>'
+    :'<span onclick="event.stopPropagation();cgOpenStatesEditor('+c.id+')" style="cursor:pointer;color:var(--t3);border:1px dashed var(--border);border-radius:20px;padding:2px 9px;font-size:10px;white-space:nowrap">+ Add states</span>';
+  if(!isEditing)return'<div style="position:relative">'+display+'</div>';
+  var checks=['QLD','WA','SA','TAS','NT','NSW','VIC','ACT'].map(function(code){
+    var on=cgStatesDraft.indexOf(code)>=0;
+    return'<label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:2px 0;white-space:nowrap"><input type="checkbox" '+(on?'checked':'')+' onchange="cgToggleStatesDraft(&apos;'+code+'&apos;)"> '+code+'</label>';
+  }).join('');
+  return'<div style="position:relative">'+display
+    +'<div onmousedown="event.stopPropagation();cgSaveStatesEditor('+c.id+')" style="position:fixed;inset:0;z-index:40"></div>'
+    +'<div onclick="event.stopPropagation()" style="position:absolute;top:100%;left:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);padding:8px 12px;z-index:41;min-width:110px">'
+    +checks
+    +'<button class="btn btn-p btn-sm" style="margin-top:6px;width:100%" onclick="event.stopPropagation();cgSaveStatesEditor('+c.id+')">Done</button>'
+    +'</div></div>';
+}
 function candGridAvailHtml(c){
   if(c.availableFrom&&c.availableTo)return'<span style="font-size:11px;color:var(--t2)">'+fmt(c.availableFrom)+' &ndash; '+fmt(c.availableTo)+'</span>';
   if(c.availableFrom)return'<span style="font-size:11px;color:var(--t2)">from '+fmt(c.availableFrom)+' <span style="color:var(--t4)">&middot; ongoing</span></span>';
@@ -2347,7 +2402,7 @@ function renderCandGridTable(filtered,cands){
       +'<span style="width:24px;height:24px;border-radius:50%;background:var(--brand-l);color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+esc(candGridInitials(c.name))+'</span>'
       +'<span class="cp">'+esc(c.name||'')+'</span></div></td>'
       +'<td><div class="pills-cell" style="display:flex;flex-wrap:wrap;gap:4px">'+candGridAreaPills(c)+'</div></td>'
-      +'<td><div class="pills-cell" style="display:flex;flex-wrap:wrap;gap:4px">'+candGridStatePills(c)+'</div></td>'
+      +'<td>'+candGridStatesCellHtml(c)+'</td>'
       +'<td>'+candGridAvailHtml(c)+'</td>'
       +'<td style="font-size:12px;font-weight:700;color:'+candGridCompColor(sc)+'">'+sc+'%</td>'
       +'<td><span class="badge '+bClass(c.phase)+'" style="font-size:9px">'+esc(c.phase||'')+'</span></td>'

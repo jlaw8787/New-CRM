@@ -113,6 +113,38 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .mgmt-tile-click{cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease,transform .12s ease}
 .mgmt-tile-click:hover{box-shadow:0 4px 10px rgba(38,33,92,.08),0 20px 36px -22px rgba(38,33,92,.45);border-color:var(--brand);transform:translateY(-1px)}
 
+/* KPI CHIP — shared metric-tile colour system (style pass, Dashboard/Contracts/
+   Job Board/Facilities/Mgmt). Flat tint, not a gradient. Coloured by MEANING,
+   reusing the app's existing semantic tokens (same hues already used for
+   badges/alerts elsewhere) rather than a second palette:
+   teal=--ok (good/count), blue=--accent (submissions/pipeline/totals),
+   purple=--brand-mid (contracts), amber=--warn (expiring/warnings),
+   red=--danger (compliance/at-risk). kpi-neutral is the untouched original
+   translucent-glass look, used where a tile has no clear semantic bucket. */
+.kpi-chip{border-radius:14px;padding:14px 16px}
+.kpi-chip .kpi-ico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.kpi-chip .kpi-label{font-size:11px;font-weight:400;margin-bottom:2px}
+.kpi-chip .kpi-val{font-size:26px;font-weight:500;line-height:1}
+.kpi-chip .kpi-sub{font-size:11px;margin-top:4px}
+.kpi-neutral{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15)}
+.kpi-neutral .kpi-ico{background:rgba(255,255,255,.18)}
+.kpi-neutral .kpi-label{color:#CECBF6}
+.kpi-neutral .kpi-val{color:#fff}
+.kpi-teal{background:var(--ok-l)}.kpi-teal .kpi-ico{background:var(--ok);color:#fff}.kpi-teal .kpi-val,.kpi-teal .kpi-label{color:var(--ok)}
+.kpi-blue{background:var(--accent-l)}.kpi-blue .kpi-ico{background:var(--accent);color:#fff}.kpi-blue .kpi-val,.kpi-blue .kpi-label{color:var(--accent)}
+.kpi-purple{background:var(--brand-l)}.kpi-purple .kpi-ico{background:var(--brand-mid);color:#fff}.kpi-purple .kpi-val,.kpi-purple .kpi-label{color:var(--brand-mid)}
+.kpi-amber{background:var(--warn-l)}.kpi-amber .kpi-ico{background:var(--warn);color:#fff}.kpi-amber .kpi-val,.kpi-amber .kpi-label{color:var(--warn)}
+.kpi-red{background:var(--danger-l)}.kpi-red .kpi-ico{background:var(--danger);color:#fff}.kpi-red .kpi-val,.kpi-red .kpi-label{color:var(--danger)}
+/* On white/plain-background pages (Mgmt Dashboard) the label needs a darker
+   neutral than the hero-band's pale lilac, since #CECBF6 fails contrast on
+   var(--surface). Hued tiles already set their own label colour above. */
+.kpi-chip.kpi-onlight .kpi-label{color:var(--t3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.kpi-chip.kpi-onlight .kpi-val{font-size:28px;font-weight:800}
+.kpi-chip.kpi-onlight .kpi-sub{color:var(--t3)}
+.kpi-onlight.kpi-neutral{background:var(--surface);border:1px solid var(--border)}
+.kpi-onlight.kpi-neutral .kpi-ico{background:var(--bg)}
+.kpi-onlight.kpi-neutral .kpi-val{color:var(--t1)}
+
 /* CARDS */
 .card{background:var(--surface);border-radius:16px;border:0.5px solid var(--border);box-shadow:var(--shadow-card)}
 .card>.tbl:first-child th:first-child{border-top-left-radius:15px}
@@ -1766,6 +1798,26 @@ var I={
   case:_svg('<rect x="3" y="7.5" width="18" height="12" rx="1.5"/><path d="M8.25 7.5V6a1.5 1.5 0 011.5-1.5h4.5A1.5 1.5 0 0115.75 6v1.5"/><path d="M3 12.75h18"/>')
 };
 function ico(svg,px,color){var st='width:'+(px||14)+'px;height:'+(px||14)+'px'+(color?';stroke:'+color:'')+';flex-shrink:0;vertical-align:middle';return svg.replace('<svg ','<svg style="'+st+'" ');}
+// Shared metric-tile renderer (style pass) -- one definition used by
+// Dashboard/Contracts/Job Board/Facilities/Mgmt so recolouring happens in one
+// place instead of five near-duplicate local heroStat()/sc() functions.
+// opts: {icon, label, val, sub, hue, onclick, onLight}
+// hue is one of 'teal'|'blue'|'purple'|'amber'|'red', or omitted for the
+// original neutral translucent-glass look (used where a tile has no clear
+// semantic bucket, e.g. Facilities' Public/Private split).
+// onLight=true is for tiles sitting directly on the plain page background
+// (Mgmt Dashboard) rather than inside the purple gradient hero band.
+function kpiChip(opts){
+  var hue=opts.hue;
+  var cls='kpi-chip '+(hue?'kpi-'+hue:'kpi-neutral')+(opts.onLight?' kpi-onlight':'');
+  var iconColor=hue?'#fff':(opts.onLight?'var(--t2)':'#fff');
+  return '<div class="'+cls+(opts.onclick?' mgmt-tile-click':'')+'"'+(opts.onclick?' onclick="'+opts.onclick+'"':'')+'>'
+    +(opts.icon?'<div class="kpi-ico">'+ico(opts.icon,16,iconColor)+'</div>':'')
+    +'<div class="kpi-label">'+opts.label+'</div>'
+    +'<div class="kpi-val">'+opts.val+'</div>'
+    +(opts.sub?'<div class="kpi-sub">'+opts.sub+'</div>':'')
+    +'</div>';
+}
 function ntIcon(type){return {Note:I.pencil,Call:I.phone,Email:I.mail,Meeting:I.meet,System:I.sys}[type]||I.pencil;}
 function aiIcon(t){return {sub:I.doc,interview:I.person,checkin:I.person,contract:I.doc,extend:I.info,travel:I.plane,comp:I.warn,ahpra:I.warn,redeploy:I.person}[t]||I.warn;}
 function aiHtml(a){var cls={red:"ai-r",amber:"ai-a",blue:"ai-b"}[a.level]||"ai-a";var ic={red:"var(--danger)",amber:"#d4900a",blue:"var(--accent)"}[a.level]||"#d4900a";var q=String.fromCharCode(39);var h='<div class="ai '+cls+'" onclick="openCandPage('+a.cid+')" style="cursor:pointer">';h+='<div style="color:'+ic+';flex-shrink:0">'+aiIcon(a.type)+'</div>';h+='<div style="flex:1"><div class="ai-title">'+esc(a.title)+'</div><div class="ai-desc">'+esc(a.desc)+'</div></div>';if(a.afn)h+='<button class="ai-act" onclick="event.stopPropagation();'+a.afn+'">'+esc(a.action)+'</button>';h+="</div>";return h;}
@@ -2010,13 +2062,6 @@ function renderHome(){
   var totalSubs=cands.reduce(function(a,c){return a+c.submissions.length;},0);
   var activeContracts=cands.reduce(function(a,c){return a+c.contracts.filter(function(k){return k.status==="Active";}).length;},0);
   var compAlerts=autos.filter(function(a){return a.level==="red";}).length;
-  function heroStat(icon,label,val,navKind){
-    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="homeTileNav(\''+navKind+'\')"':'';
-    return'<div'+clickAttrs+' style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
-    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:30px;font-weight:500;color:#fff;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.1)">'+val+'</div>'
-    +'</div>';}
   var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:28px 32px;margin-bottom:22px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
     +'<div style="position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
     +'<div style="position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.05);bottom:-80px;right:180px;pointer-events:none"></div>'
@@ -2024,10 +2069,10 @@ function renderHome(){
     +'<div style="font-size:20px;font-weight:500;color:#fff;margin-bottom:4px">Welcome, '+esc(firstName)+'</div>'
     +'<div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:22px">'+dateStr+' — '+ROLES[CU.role]+'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.person,'Placements',placed,'placements')
-    +heroStat(I.mail,'Submissions',totalSubs,'submissions')
-    +heroStat(I.doc,'Active contracts',activeContracts,'contracts')
-    +heroStat(I.warn,'Compliance alerts',compAlerts,'alerts')
+    +kpiChip({icon:I.person,label:'Placements',val:placed,hue:'teal',onclick:"homeTileNav('placements')"})
+    +kpiChip({icon:I.mail,label:'Submissions',val:totalSubs,hue:'blue',onclick:"homeTileNav('submissions')"})
+    +kpiChip({icon:I.doc,label:'Active contracts',val:activeContracts,hue:'purple',onclick:"homeTileNav('contracts')"})
+    +kpiChip({icon:I.warn,label:'Compliance alerts',val:compAlerts,hue:'red',onclick:"homeTileNav('alerts')"})
     +'</div></div></div>';
 
   // OTHER REMINDERS — chase-list items not yet folded into a Morning Brief
@@ -3090,18 +3135,13 @@ function renderContracts(){
   var expiringSoonCount=activeContracts.filter(function(k){var d=ddiff(k.endDate);return d!==null&&d>=0&&d<=21;}).length;
   var pipelineVal=activeContracts.reduce(function(sum,k){var r=parseFloat(k.rate)||0,h=parseFloat(k.hours)||0,d=ddiff(k.endDate);return d&&d>0?sum+r*h*(d/7):sum;},0);
   var fmtMon=function(n){return n>=1e6?"$"+(n/1e6).toFixed(1)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"K":"$"+Math.round(n);};
-  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
-    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
-    +'</div>';}
   var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
     +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
     +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.case,'Total contracts',all.length)
-    +heroStat(I.chk,'Active',activeContracts.length)
-    +heroStat(I.warn,'Expiring soon',expiringSoonCount)
-    +heroStat(I.sheet,'Pipeline value',fmtMon(pipelineVal))
+    +kpiChip({icon:I.case,label:'Total contracts',val:all.length,hue:'blue'})
+    +kpiChip({icon:I.chk,label:'Active',val:activeContracts.length,hue:'teal'})
+    +kpiChip({icon:I.warn,label:'Expiring soon',val:expiringSoonCount,hue:'amber'})
+    +kpiChip({icon:I.sheet,label:'Pipeline value',val:fmtMon(pipelineVal),hue:'blue'})
     +'</div></div>';
 
   var cards=all.map(function(k){
@@ -3167,20 +3207,13 @@ function renderFacilities(){
   var preferredCount=facilities.filter(function(f){return f.preferredStatus;}).length;
   var publicCount=facilities.filter(function(f){return (f.type||'Public')==='Public';}).length;
   var privateCount=facilities.filter(function(f){return f.type==='Private';}).length;
-  function heroStat(icon,label,val,navKind){
-    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="facTileNav(\''+navKind+'\')"':'';
-    return'<div'+clickAttrs+' style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
-    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
-    +'</div>';}
   var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
     +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
     +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.hosp,'Total facilities',facilities.length)
-    +heroStat(I.star,'Preferred',preferredCount)
-    +heroStat(I.doc,'Public',publicCount,'public')
-    +heroStat(I.case,'Private',privateCount,'private')
+    +kpiChip({icon:I.hosp,label:'Total facilities',val:facilities.length,hue:'blue'})
+    +kpiChip({icon:I.star,label:'Preferred',val:preferredCount,hue:'teal'})
+    +kpiChip({icon:I.doc,label:'Public',val:publicCount,onclick:"facTileNav('public')"})
+    +kpiChip({icon:I.case,label:'Private',val:privateCount,onclick:"facTileNav('private')"})
     +'</div></div>';
 
   var filtered=facilities.filter(function(f){
@@ -4029,25 +4062,18 @@ function renderMgmtDash(){
     return d&&d>0?t+r*h*(d/7):t;
   },0);},0);
   var fmtMon=function(n){return n>=1e6?"$"+(n/1e6).toFixed(1)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"K":"$"+Math.round(n);};
-  function sc(lbl,val,sub,col,urg,navKind){
-    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="mgmtTileNav(\''+navKind+'\')"':'';
-    return '<div'+clickAttrs+' style="background:var(--surface);border:1px solid var(--border);border-top:3px solid '+col+';border-radius:8px;padding:16px">'
-      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:4px">'+lbl+'</div>'
-      +'<div style="font-size:28px;font-weight:800;color:'+(urg?'var(--danger)':col)+';line-height:1">'+val+'</div>'
-      +'<div style="font-size:11px;color:var(--t3);margin-top:4px">'+sub+'</div></div>';
-  }
   var topRow='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">'
-    +sc("Total Subs",total,"all time","var(--accent)",false,'subs-all')
-    +sc("No Outcome",noOutPct+"%",noOutN+" of "+total+" subs",noOutPct>=50?"var(--danger)":"#d4900a",noOutPct>=50)
-    +sc("Overdue F/U",overdue.length,"need chasing now","var(--danger)",overdue.length>0,'subs-all')
-    +sc("Stale 7d+",stale.length,"no update in 7+ days","var(--danger)",stale.length>0,'subs-all')
+    +kpiChip({label:'Total Subs',val:total,sub:'all time',hue:'blue',onLight:true,onclick:"mgmtTileNav('subs-all')"})
+    +kpiChip({label:'No Outcome',val:noOutPct+'%',sub:noOutN+' of '+total+' subs',hue:noOutPct>=50?'red':'amber',onLight:true})
+    +kpiChip({label:'Overdue F/U',val:overdue.length,sub:'need chasing now',hue:'red',onLight:true,onclick:"mgmtTileNav('subs-all')"})
+    +kpiChip({label:'Stale 7d+',val:stale.length,sub:'no update in 7+ days',hue:'red',onLight:true,onclick:"mgmtTileNav('subs-all')"})
     +'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">'
-    +sc("Placed",placed.length,"on assignment","var(--ok)",false,'candidates-placed')
-    +sc("Active Contracts",activeCon,"running now","var(--ok)",false,'contracts')
-    +sc("Accepted Rate",convRate+"%","of subs with outcome","#3b1a6e",false,'subs-accepted')
-    +sc("In Pipeline",inPipe.length,"submitted/under review","var(--accent)",false,'subs-all')
-    +sc("Pipeline Value",fmtMon(pipelineVal),"active contract rev. remaining","#1a6e3b",false,'contracts')
+    +kpiChip({label:'Placed',val:placed.length,sub:'on assignment',hue:'teal',onLight:true,onclick:"mgmtTileNav('candidates-placed')"})
+    +kpiChip({label:'Active Contracts',val:activeCon,sub:'running now',hue:'purple',onLight:true,onclick:"mgmtTileNav('contracts')"})
+    +kpiChip({label:'Accepted Rate',val:convRate+'%',sub:'of subs with outcome',hue:'teal',onLight:true,onclick:"mgmtTileNav('subs-accepted')"})
+    +kpiChip({label:'In Pipeline',val:inPipe.length,sub:'submitted/under review',hue:'blue',onLight:true,onclick:"mgmtTileNav('subs-all')"})
+    +kpiChip({label:'Pipeline Value',val:fmtMon(pipelineVal),sub:'active contract rev. remaining',hue:'blue',onLight:true,onclick:"mgmtTileNav('contracts')"})
     +'</div>';
   var rows=cons.map(function(u){
     var mc=allC.filter(function(c){return c.consultantId===u.id;});
@@ -6101,20 +6127,13 @@ function renderJobBoard(){
   var likelyRoles=roles.filter(function(r){return r.status==='Likely';});
   var totalPositions=openRoles.reduce(function(s,r){return s+(r.positionsAvailable||1);},0);
   var facilitiesRepped=new Set(openRoles.concat(likelyRoles).map(function(r){return r.facilityId;})).size;
-  function heroStat(icon,label,val,navKind){
-    var clickAttrs=navKind?' class="mgmt-tile-click" onclick="jobTileNav(\''+navKind+'\')"':'';
-    return'<div'+clickAttrs+' style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
-    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
-    +'</div>';}
   var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
     +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
     +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.doc,'Open roles',openRoles.length,'open')
-    +heroStat(I.person,'Total positions',totalPositions,'open')
-    +heroStat(I.clock,'Likely',likelyRoles.length,'likely')
-    +heroStat(I.hosp,'Facilities',facilitiesRepped)
+    +kpiChip({icon:I.doc,label:'Open roles',val:openRoles.length,hue:'teal',onclick:"jobTileNav('open')"})
+    +kpiChip({icon:I.person,label:'Total positions',val:totalPositions,hue:'blue',onclick:"jobTileNav('open')"})
+    +kpiChip({icon:I.clock,label:'Likely',val:likelyRoles.length,hue:'amber',onclick:"jobTileNav('likely')"})
+    +kpiChip({icon:I.hosp,label:'Facilities',val:facilitiesRepped})
     +'</div></div>';
 
   var h=heroHtml+'<div class="jb-filter-bar">'

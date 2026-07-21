@@ -290,6 +290,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .cp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
 .cp-cell{font-size:11px}
 .cp-lbl{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:2px}
+.cp-row:hover{background:var(--bg)}
 .cp-val{color:var(--t1);line-height:1.5}
 .cp-full{grid-column:span 2}
 /* Candidate page — layout & left column cards */
@@ -6124,7 +6125,7 @@ var sfSpiel='',sfSavedSpiel='',sfNotes='',sfTo='',sfSubject='';
 var sfStartDate='',sfEndDate='';
 var sfCheckSnap={},sfSentConfirmed=false,sfSaveToCand=true,sfEmailOpened=false;
 var sfSelectedDocIds=[];
-var sfReqSatisfiedBy={},sfReqAttachOpen={};
+var sfReqSatisfiedBy={},sfReqAttachOpen={},sfPackCollapseOpen={};
 
 // ── FACILITY FULL PAGE STATE ───────────────────────────────────────────────
 var curFacId=null,facEditing=null,facEditData=null;
@@ -7870,7 +7871,7 @@ function openSubFlow(candId,roleId){
   sfNotes='';sfCheckSnap={};sfSentConfirmed=false;sfSaveToCand=true;sfEmailOpened=false;
   sfStartDate=role?(role.startDate||''):'';sfEndDate=role?(role.endDate||''):'';
   sfSelectedDocIds=(c.documents||[]).filter(function(d){return !d.complianceItemId&&d.category==='CV'&&d.isCurrent!==false;}).map(function(d){return d.id;});
-  sfReqSatisfiedBy={};sfReqAttachOpen={};
+  sfReqSatisfiedBy={};sfReqAttachOpen={};sfPackCollapseOpen={};
   sfTo=(fac&&(fac.submissionEmail||fac.contactEmail))||'';
   sfSubject='Captain Contract Submission — '+c.name+' — '+c.classification+(fac?' — '+fac.name:'');
   document.getElementById('sf-ov').style.display='flex';
@@ -8232,8 +8233,37 @@ function sfPackRowHtml(r,m,c){
     +(isOpen?sfReqAttachPanelHtml(r.id,c):'')
     +'</div>';
 }
+// Facility checklists (facility_checklists table) predate compliance_requirements
+// and carry no timing/exception_note/cascade level -- just item_key/item_label/
+// required, scoped to one facility. Folded in here (facility level, dedupe by
+// item_key falling back to item_label against the WHOLE resolved pack) so there
+// is exactly one matched list and one score instead of two parallel ones.
+function sfMergeChecklistIntoResolved(resolved,fac){
+  var CL_ID_OFFSET=100000000; // keeps synthetic ids out of compliance_requirements' id space -- these ids are render-only keys (matchOf/sfReqSatisfiedBy/sfReqAttachOpen), never written back to any table
+  var seen={};
+  resolved.state.concat(resolved.healthService,resolved.facility,resolved.ward).forEach(function(r){
+    var k=(r.item_key||'').toLowerCase().trim();
+    if(k)seen[k]=true;
+    var lbl=(r.item_label||'').toLowerCase().trim();
+    if(lbl)seen['label:'+lbl]=true;
+  });
+  var clItems=facilityChecklists.filter(function(ci){return ci.facility_id===fac.id;});
+  clItems.forEach(function(ci){
+    var k=(ci.item_key||'').toLowerCase().trim();
+    var lbl=(ci.item_label||'').toLowerCase().trim();
+    var dupe=k?seen[k]:(lbl&&seen['label:'+lbl]);
+    if(dupe)return;
+    if(k)seen[k]=true;else if(lbl)seen['label:'+lbl]=true;
+    resolved.facility.push({
+      id:CL_ID_OFFSET+ci.id,state:fac.state,level:'facility',scope_name:fac.name,facility_id:fac.id,ward:null,
+      item_key:ci.item_key||null,item_label:ci.item_label||ci.item_key||'',
+      timing:'on_submission',required:ci.required!==false,exception_note:null
+    });
+  });
+  return resolved;
+}
 function sfCompliancePackHtml(c,fac){
-  var resolved=resolveFacilityRequirements(fac);
+  var resolved=sfMergeChecklistIntoResolved(resolveFacilityRequirements(fac),fac);
   var allReqs=resolved.state.concat(resolved.healthService,resolved.facility,resolved.ward);
   if(!allReqs.length)return'';
   var matchOf={};
@@ -8271,43 +8301,14 @@ function sfStep3Html(c,role,fac){
       +sfDocAttachHtml(c);
   }
   var packHtml=sfCompliancePackHtml(c,fac);
-  var items=facilityChecklists.filter(function(ci){return ci.facility_id===fac.id;});
-  if(!items.length){
-    return packHtml+'<div style="background:var(--bg);border-radius:12px;padding:24px">'
-      +'<div style="font-size:13px;font-weight:500;color:var(--t2);margin-bottom:8px">No checklist configured for this facility.</div>'
+  if(!packHtml){
+    return '<div style="background:var(--bg);border-radius:12px;padding:24px">'
+      +'<div style="font-size:13px;font-weight:500;color:var(--t2);margin-bottom:8px">No compliance requirements configured for this facility.</div>'
       +'<div style="font-size:11px;color:var(--t3)">Set one up on the Facility page. You can still proceed with this submission.</div>'
       +'</div>'
       +sfDocAttachHtml(c);
   }
-  var compItems=(c.compliance&&c.compliance.items)||{};
-  var reqItems=items.filter(function(ci){return ci.required;});
-  var ready=0;
-  var rows=items.map(function(ci){
-    var key=ci.item_key||ci.item_label||'';
-    var matched=compItems[key];
-    var verified=matched&&matched.status==='Verified';
-    var hasDoc=!!(matched&&matched.docUrl);
-    var status=(verified&&hasDoc)?'ok':matched?'warn':'miss';
-    if(ci.required&&status==='ok')ready++;
-    var statusIcon=status==='ok'?I.chk:status==='warn'?I.warn:I.cross;
-    var col=status==='ok'?'var(--ok)':status==='warn'?'var(--warn)':'var(--danger)';
-    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
-      +'<span style="color:'+col+';flex-shrink:0;width:20px;display:flex;justify-content:center">'+ico(statusIcon,15)+'</span>'
-      +'<span style="flex:1;font-size:12px;color:var(--t1)">'+esc(ci.item_label||key)+'</span>'
-      +(ci.required?'<span style="font-size:9px;font-weight:500;color:var(--danger);flex-shrink:0">REQ</span>':'<span style="font-size:9px;color:var(--t3);flex-shrink:0">opt</span>')
-      +(status==='ok'?'<span style="color:var(--ok);display:inline-flex">'+ico(I.doc,13)+'</span>':'')
-      +'</div>';
-  }).join('');
-  var pct=reqItems.length>0?Math.round(ready/reqItems.length*100):100;
-  var allGood=pct===100;
-  var summary='<div style="display:flex;align-items:center;gap:14px;background:'+(allGood?'var(--ok-l)':'var(--warn-l)')+';border-radius:12px;padding:16px 16px;margin-bottom:16px">'
-    +'<div style="font-size:28px;font-weight:500;color:'+(allGood?'var(--ok)':'var(--warn)')+'">'+pct+'%</div>'
-    +'<div><div style="font-size:13px;font-weight:500;color:var(--t1)">'+ready+' of '+reqItems.length+' required items ready</div>'
-    +(allGood
-      ?'<div style="font-size:11px;color:var(--ok)">All required compliance documents are on file.</div>'
-      :'<div style="font-size:11px;color:var(--warn)">Missing items will be noted in the submission record.</div>')
-    +'</div></div>';
-  return packHtml+'<div class="cp-lbl" style="margin-bottom:8px">Facility submission checklist</div>'+summary+rows+sfDocAttachHtml(c);
+  return packHtml+sfDocAttachHtml(c);
 }
 
 function sfStep4Html(c,role,fac){

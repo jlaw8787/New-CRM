@@ -1380,6 +1380,13 @@ var candGridAvailOpen=false;
 // scratch buffer so checkbox clicks don't write to Supabase one at a time --
 // only cgSaveStatesEditor() commits, on close/click-away/Done.
 var cgEditingStatesId=null,cgStatesDraft=[];
+// Availability editor reads its two date inputs directly from the DOM at save
+// time (no draft buffer, no oninput re-render) -- same technique the existing
+// "Next Action" inline cell already uses, since re-rendering per keystroke
+// would tear down and recreate the <input>, losing focus/cursor mid-type.
+var cgEditingAvailId=null;
+// Primary-specialty editor saves immediately on radio select (no Done step).
+var cgEditingPrimaryId=null;
 var jbNewCount=0,jobMatchFilt=null;
 var mbCollapsed=false,mbAvailExpanded=false,mbRolesExpanded=false,mbCompExpanded=false,mbCheckinExpanded=false,mbFollowupExpanded=false;
 var subFiltStatus=localStorage.getItem('hca_sf_st')||'All';
@@ -2152,6 +2159,53 @@ function candGridAreaPills(c){
   if(!skills.length)return'<span style="color:var(--t3)">&mdash;</span>';
   return skills.map(function(s){return caPillHtml(s,s===c.primarySkill,candGridFilt.areas.indexOf(s)>=0);}).join(' ');
 }
+// ── Inline primary-specialty editor (Slice 3, third cell) ────────────────
+// Lives in the same cell as the clinical-area pills, since the primary skill
+// IS the solid pill -- editing it and re-rendering is what flips which pill
+// is solid vs outlined, there's no separate display to keep in sync.
+function cgOpenPrimaryEditor(id){
+  var c=candidates.find(function(x){return x.id===id;});if(!c)return;
+  cgEditingPrimaryId=id;
+  renderCandidates();
+}
+function cgSavePrimarySkill(id,value){
+  var c=candidates.find(function(x){return x.id===id;});
+  cgEditingPrimaryId=null;
+  if(!c){renderCandidates();return;}
+  var prev=c.primarySkill||null;
+  var next=value||null;
+  if(prev===next){renderCandidates();return;}
+  c.primarySkill=next; // optimistic -- next render's candGridAreaPills() picks this up automatically
+  renderCandidates();
+  syncCandidateToDb(c).catch(function(err){
+    c.primarySkill=prev; // rollback
+    showToast('Save failed — reverted','err');
+    console.error('[DB] primary_skill save',err);
+    renderCandidates();
+  });
+}
+function candGridAreaCellHtml(c){
+  var isEditing=cgEditingPrimaryId===c.id;
+  var hasSkills=c.clinicalSkills&&c.clinicalSkills.length;
+  var editTrigger='<span onclick="event.stopPropagation();cgOpenPrimaryEditor('+c.id+')" title="Edit primary specialty" style="cursor:pointer;color:var(--t3);flex-shrink:0;display:inline-flex">'+ico(I.pencil,11)+'</span>';
+  var display='<div class="pills-cell" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">'+candGridAreaPills(c)+editTrigger+'</div>';
+  if(!isEditing)return'<div style="position:relative">'+display+'</div>';
+  var body;
+  if(hasSkills){
+    var opts=c.clinicalSkills.filter(Boolean).map(function(s){
+      return'<label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:3px 0;white-space:nowrap"><input type="radio" name="cg-primary-'+c.id+'" '+(c.primarySkill===s?'checked':'')+' onchange="cgSavePrimarySkill('+c.id+',&apos;'+jsAttrEsc(s)+'&apos;)"> '+esc(s)+'</label>';
+    }).join('');
+    var noneOpt='<label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:3px 0"><input type="radio" name="cg-primary-'+c.id+'" '+(!c.primarySkill?'checked':'')+' onchange="cgSavePrimarySkill('+c.id+',null)"> <em style="color:var(--t3)">None</em></label>';
+    body=opts+noneOpt;
+  } else {
+    body='<div style="font-size:11px;color:var(--t3);max-width:160px">Add clinical skills first, then set a primary.</div>';
+  }
+  return'<div style="position:relative">'+display
+    +'<div onmousedown="event.stopPropagation();cgEditingPrimaryId=null;renderCandidates()" style="position:fixed;inset:0;z-index:40"></div>'
+    +'<div onclick="event.stopPropagation()" style="position:absolute;top:100%;left:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);padding:8px 12px;z-index:41;min-width:150px">'
+    +body
+    +'</div></div>';
+}
 function candGridStatePills(c){
   var states=(c.statesOpen||[]).filter(Boolean);
   if(!states.length)return'<span style="color:var(--t4)">&mdash;</span>';
@@ -2216,6 +2270,51 @@ function candGridAvailHtml(c){
   if(c.availableFrom&&c.availableTo)return'<span style="font-size:11px;color:var(--t2)">'+fmt(c.availableFrom)+' &ndash; '+fmt(c.availableTo)+'</span>';
   if(c.availableFrom)return'<span style="font-size:11px;color:var(--t2)">from '+fmt(c.availableFrom)+' <span style="color:var(--t4)">&middot; ongoing</span></span>';
   return'<span style="color:var(--t4)">&mdash;</span>';
+}
+// ── Inline availability editor (Slice 3, second cell) ────────────────────
+function cgOpenAvailEditor(id){
+  var c=candidates.find(function(x){return x.id===id;});if(!c)return;
+  cgEditingAvailId=id;
+  renderCandidates();
+}
+function cgSaveAvailEditor(id){
+  var fromEl=document.getElementById('cg-avail-from-'+id);
+  var toEl=document.getElementById('cg-avail-to-'+id);
+  var nextFrom=fromEl?fromEl.value:'';
+  var nextTo=toEl?toEl.value:'';
+  // Re-look-up fresh, same as the states editor -- don't trust a reference
+  // captured when the popover opened.
+  var c=candidates.find(function(x){return x.id===id;});
+  cgEditingAvailId=null;
+  if(!c){renderCandidates();return;}
+  var prevFrom=c.availableFrom||'',prevTo=c.availableTo||'';
+  if(prevFrom===nextFrom&&prevTo===nextTo){renderCandidates();return;}
+  c.availableFrom=nextFrom;c.availableTo=nextTo; // optimistic; blank availableTo = open-ended, never invalid
+  renderCandidates();
+  syncCandidateToDb(c).catch(function(err){
+    c.availableFrom=prevFrom;c.availableTo=prevTo; // rollback
+    showToast('Save failed — reverted','err');
+    console.error('[DB] availability save',err);
+    renderCandidates();
+  });
+}
+function candGridAvailCellHtml(c){
+  var isEditing=cgEditingAvailId===c.id;
+  var hasAvail=!!c.availableFrom;
+  var display=hasAvail
+    ?'<span style="display:inline-flex;align-items:center;gap:4px">'+candGridAvailHtml(c)
+      +'<span onclick="event.stopPropagation();cgOpenAvailEditor('+c.id+')" title="Edit availability" style="cursor:pointer;color:var(--t3);flex-shrink:0;display:inline-flex">'+ico(I.pencil,11)+'</span></span>'
+    :'<span onclick="event.stopPropagation();cgOpenAvailEditor('+c.id+')" style="cursor:pointer;color:var(--t3);border:1px dashed var(--border);border-radius:20px;padding:2px 9px;font-size:10px;white-space:nowrap">+ Set availability</span>';
+  if(!isEditing)return'<div style="position:relative">'+display+'</div>';
+  return'<div style="position:relative">'+display
+    +'<div onmousedown="event.stopPropagation();cgSaveAvailEditor('+c.id+')" style="position:fixed;inset:0;z-index:40"></div>'
+    +'<div onclick="event.stopPropagation()" style="position:absolute;top:100%;left:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);padding:10px 12px;z-index:41;min-width:190px">'
+    +'<div style="font-size:9px;color:var(--t3);margin-bottom:2px">Available from</div>'
+    +'<input type="date" id="cg-avail-from-'+c.id+'" value="'+(c.availableFrom||'')+'" style="font-size:11px;padding:4px 6px;width:100%;margin-bottom:6px;box-sizing:border-box">'
+    +'<div style="font-size:9px;color:var(--t3);margin-bottom:2px">Available to (leave blank for open-ended)</div>'
+    +'<input type="date" id="cg-avail-to-'+c.id+'" value="'+(c.availableTo||'')+'" style="font-size:11px;padding:4px 6px;width:100%;margin-bottom:6px;box-sizing:border-box">'
+    +'<button class="btn btn-p btn-sm" style="width:100%" onclick="event.stopPropagation();cgSaveAvailEditor('+c.id+')">Done</button>'
+    +'</div></div>';
 }
 function candGridCompColor(sc){return sc>=85?'var(--ok)':sc>=60?'var(--warn)':'var(--danger)';}
 function candGridInitials(name){
@@ -2401,9 +2500,9 @@ function renderCandGridTable(filtered,cands){
       +'<td><div style="display:flex;align-items:center;gap:8px">'
       +'<span style="width:24px;height:24px;border-radius:50%;background:var(--brand-l);color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+esc(candGridInitials(c.name))+'</span>'
       +'<span class="cp">'+esc(c.name||'')+'</span></div></td>'
-      +'<td><div class="pills-cell" style="display:flex;flex-wrap:wrap;gap:4px">'+candGridAreaPills(c)+'</div></td>'
+      +'<td>'+candGridAreaCellHtml(c)+'</td>'
       +'<td>'+candGridStatesCellHtml(c)+'</td>'
-      +'<td>'+candGridAvailHtml(c)+'</td>'
+      +'<td>'+candGridAvailCellHtml(c)+'</td>'
       +'<td style="font-size:12px;font-weight:700;color:'+candGridCompColor(sc)+'">'+sc+'%</td>'
       +'<td><span class="badge '+bClass(c.phase)+'" style="font-size:9px">'+esc(c.phase||'')+'</span></td>'
       +'</tr>';

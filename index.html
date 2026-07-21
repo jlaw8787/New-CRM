@@ -135,6 +135,13 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .kpi-purple{background:var(--brand-l)}.kpi-purple .kpi-ico{background:var(--brand-mid);color:#fff}.kpi-purple .kpi-val,.kpi-purple .kpi-label{color:var(--brand-mid)}
 .kpi-amber{background:var(--warn-l)}.kpi-amber .kpi-ico{background:var(--warn);color:#fff}.kpi-amber .kpi-val,.kpi-amber .kpi-label{color:var(--warn)}
 .kpi-red{background:var(--danger-l)}.kpi-red .kpi-ico{background:var(--danger);color:#fff}.kpi-red .kpi-val,.kpi-red .kpi-label{color:var(--danger)}
+/* kpi-active: ring for a tile that IS the currently-applied filter (Contracts
+   tiles-as-filters). Same ring idiom as the candidate grid's "on" pills. */
+.kpi-teal.kpi-active{box-shadow:0 0 0 2px var(--ok)}
+.kpi-blue.kpi-active{box-shadow:0 0 0 2px var(--accent)}
+.kpi-purple.kpi-active{box-shadow:0 0 0 2px var(--brand-mid)}
+.kpi-amber.kpi-active{box-shadow:0 0 0 2px var(--warn)}
+.kpi-red.kpi-active{box-shadow:0 0 0 2px var(--danger)}
 /* On white/plain-background pages (Mgmt Dashboard) the label needs a darker
    neutral than the hero-band's pale lilac, since #CECBF6 fails contrast on
    var(--surface). Hued tiles already set their own label colour above. */
@@ -1809,7 +1816,7 @@ function ico(svg,px,color){var st='width:'+(px||14)+'px;height:'+(px||14)+'px'+(
 // (Mgmt Dashboard) rather than inside the purple gradient hero band.
 function kpiChip(opts){
   var hue=opts.hue;
-  var cls='kpi-chip '+(hue?'kpi-'+hue:'kpi-neutral')+(opts.onLight?' kpi-onlight':'');
+  var cls='kpi-chip '+(hue?'kpi-'+hue:'kpi-neutral')+(opts.onLight?' kpi-onlight':'')+(opts.active?' kpi-active':'');
   var iconColor=hue?'#fff':(opts.onLight?'var(--t2)':'#fff');
   return '<div class="'+cls+(opts.onclick?' mgmt-tile-click':'')+'"'+(opts.onclick?' onclick="'+opts.onclick+'"':'')+'>'
     +(opts.icon?'<div class="kpi-ico">'+ico(opts.icon,16,iconColor)+'</div>':'')
@@ -3122,6 +3129,72 @@ function renderTravel(){
 }
 function toggleTravelPast(key){travelPastOpen[key]=!travelPastOpen[key];renderTravel();}
 
+// ── Contracts filter model (unified) ────────────────────────────────────────
+// One object holds every active filter -- status (also driven by the Active
+// tile), expiring-window (also driven by the Expiring soon tile), facility,
+// ward, state, consultant. AND across dimensions, OR within a dimension.
+// There was no pre-existing expiringOnly/consultant filter to fold in --
+// Contracts had zero filter state before this -- so this is the unified
+// model built fresh, not a merge of prior separate pieces.
+var ctFilt={statuses:[],facilities:[],wards:[],states:[],consultants:[],expiringOnly:false};
+var ctStateFilterOpen=false;
+function ctHasActiveFilters(){return ctFilt.statuses.length>0||ctFilt.facilities.length>0||ctFilt.wards.length>0||ctFilt.states.length>0||ctFilt.consultants.length>0||ctFilt.expiringOnly;}
+function ctClearAll(){ctFilt={statuses:[],facilities:[],wards:[],states:[],consultants:[],expiringOnly:false};ctStateFilterOpen=false;renderContracts();}
+// Drill-down toggles (OR within each array) -- these are additive, used by
+// clicking an existing badge on a card.
+function ctToggleStatus(s){var i=ctFilt.statuses.indexOf(s);if(i>=0)ctFilt.statuses.splice(i,1);else ctFilt.statuses.push(s);renderContracts();}
+function ctToggleFacility(id){var i=ctFilt.facilities.indexOf(id);if(i>=0)ctFilt.facilities.splice(i,1);else ctFilt.facilities.push(id);renderContracts();}
+function ctToggleWard(w){var i=ctFilt.wards.indexOf(w);if(i>=0)ctFilt.wards.splice(i,1);else ctFilt.wards.push(w);renderContracts();}
+function ctToggleState(s){var i=ctFilt.states.indexOf(s);if(i>=0)ctFilt.states.splice(i,1);else ctFilt.states.push(s);renderContracts();}
+function ctToggleConsultant(id){var i=ctFilt.consultants.indexOf(id);if(i>=0)ctFilt.consultants.splice(i,1);else ctFilt.consultants.push(id);renderContracts();}
+function ctToggleStateFilterOpen(){ctStateFilterOpen=!ctStateFilterOpen;renderContracts();}
+// Tile presets -- these SET the status filter to exactly one value (or clear
+// it), unlike the additive badge toggles above. Clicking a tile that's
+// already the active preset clears it (toggle), per spec.
+function ctTileTotal(){ctFilt.statuses=[];ctFilt.expiringOnly=false;renderContracts();}
+function ctTileActive(){
+  ctFilt.statuses=(ctFilt.statuses.length===1&&ctFilt.statuses[0]==='Active')?[]:['Active'];
+  renderContracts();
+}
+function ctTileExpiring(){ctFilt.expiringOnly=!ctFilt.expiringOnly;renderContracts();}
+function contractsFilterList(list){
+  if(!ctHasActiveFilters())return list;
+  return list.filter(function(k){
+    var statusOk=!ctFilt.statuses.length||ctFilt.statuses.indexOf(k.status)>=0;
+    var facOk=!ctFilt.facilities.length||ctFilt.facilities.indexOf(k.facilityId)>=0;
+    var wardOk=!ctFilt.wards.length||ctFilt.wards.indexOf(k.ward)>=0;
+    var consOk=!ctFilt.consultants.length||ctFilt.consultants.indexOf(k.cConsId)>=0;
+    var stateOk=true;
+    if(ctFilt.states.length){
+      var fac=facilities.find(function(f){return f.id===k.facilityId;});
+      stateOk=!!fac&&ctFilt.states.indexOf(fac.state)>=0;
+    }
+    var expOk=true;
+    if(ctFilt.expiringOnly){
+      var d=ddiff(k.endDate);
+      expOk=k.status==='Active'&&d!==null&&d>=0&&d<=21;
+    }
+    return statusOk&&facOk&&wardOk&&consOk&&stateOk&&expOk;
+  });
+}
+function contractsChipsHtml(){
+  var chips=[];
+  ctFilt.statuses.forEach(function(s){chips.push({label:'Status: '+s,onclick:'ctToggleStatus(&apos;'+jsAttrEsc(s)+'&apos;)'});});
+  ctFilt.facilities.forEach(function(id){var f=facilities.find(function(x){return x.id===id;});chips.push({label:'Facility: '+esc(f?f.name:('#'+id)),onclick:'ctToggleFacility('+id+')'});});
+  ctFilt.wards.forEach(function(w){chips.push({label:'Ward: '+w,onclick:'ctToggleWard(&apos;'+jsAttrEsc(w)+'&apos;)'});});
+  ctFilt.states.forEach(function(s){chips.push({label:'State: '+s,onclick:'ctToggleState(&apos;'+jsAttrEsc(s)+'&apos;)'});});
+  ctFilt.consultants.forEach(function(id){var u=uById(id);chips.push({label:'Consultant: '+esc(u?u.name:('#'+id)),onclick:'ctToggleConsultant('+id+')'});});
+  if(ctFilt.expiringOnly)chips.push({label:'Expiring soon',onclick:'ctTileExpiring()'});
+  if(!chips.length)return'';
+  return'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px">'
+    +chips.map(function(ch){
+      return'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;background:var(--brand-l);color:var(--brand)">'+ch.label
+        +'<span onclick="'+ch.onclick+'" style="cursor:pointer;font-weight:700;line-height:1">&times;</span></span>';
+    }).join('')
+    +'<button class="btn btn-g btn-sm" onclick="ctClearAll()">Clear all &times;</button>'
+    +'</div>';
+}
+
 function renderContracts(){
   var all=vc().reduce(function(a,c){return a.concat(c.contracts.map(function(k){return Object.assign({},k,{cid:c.id,cn:c.name,cc:c.classification,cConsId:c.consultantId});}));}, []);
   document.getElementById("tb-h").textContent="Contracts";
@@ -3130,21 +3203,50 @@ function renderContracts(){
 
   // ── HERO (summary strip) — real aggregates from `all`; pipeline-value uses
   // the same rate*hours*(days-remaining/7) formula already used on the
-  // Management Dashboard. No fabricated data.
+  // Management Dashboard. No fabricated data. Counts are always computed from
+  // the FULL unfiltered `all` list, not the filtered view -- a tile's own
+  // number should never shrink just because its own filter is applied.
   var activeContracts=all.filter(function(k){return k.status==="Active";});
   var expiringSoonCount=activeContracts.filter(function(k){var d=ddiff(k.endDate);return d!==null&&d>=0&&d<=21;}).length;
   var pipelineVal=activeContracts.reduce(function(sum,k){var r=parseFloat(k.rate)||0,h=parseFloat(k.hours)||0,d=ddiff(k.endDate);return d&&d>0?sum+r*h*(d/7):sum;},0);
   var fmtMon=function(n){return n>=1e6?"$"+(n/1e6).toFixed(1)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"K":"$"+Math.round(n);};
+  var isActivePreset=ctFilt.statuses.length===1&&ctFilt.statuses[0]==='Active';
   var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
     +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
     +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +kpiChip({icon:I.case,label:'Total contracts',val:all.length,hue:'blue'})
-    +kpiChip({icon:I.chk,label:'Active',val:activeContracts.length,hue:'teal'})
-    +kpiChip({icon:I.warn,label:'Expiring soon',val:expiringSoonCount,hue:'amber'})
+    +kpiChip({icon:I.case,label:'Total contracts',val:all.length,hue:'blue',onclick:'ctTileTotal()'})
+    +kpiChip({icon:I.chk,label:'Active',val:activeContracts.length,hue:'teal',onclick:'ctTileActive()',active:isActivePreset})
+    +kpiChip({icon:I.warn,label:'Expiring soon',val:expiringSoonCount,hue:'amber',onclick:'ctTileExpiring()',active:ctFilt.expiringOnly})
     +kpiChip({icon:I.sheet,label:'Pipeline value',val:fmtMon(pipelineVal),hue:'blue'})
     +'</div></div>';
 
-  var cards=all.map(function(k){
+  // ── DRILL-DOWN FILTER BAR — same UX as the candidate grid: removable chips,
+  // Clear all, live "Showing X of Y". Click an existing facility/ward/status
+  // badge or the consultant name on a card to filter by it (OR within that
+  // dimension); state has no existing cell on the card so it gets its own
+  // small add-filter popover, same interaction as the grid's availability filter.
+  var ctFiltered=contractsFilterList(all);
+  var availableStates=Array.from(new Set(all.map(function(k){var f=facilities.find(function(x){return x.id===k.facilityId;});return f?f.state:null;}).filter(Boolean))).sort();
+  var stateChecks=availableStates.map(function(s){
+    var on=ctFilt.states.indexOf(s)>=0;
+    return'<label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:2px 0;white-space:nowrap"><input type="checkbox" '+(on?'checked':'')+' onchange="ctToggleState(&apos;'+jsAttrEsc(s)+'&apos;)"> '+esc(s)+'</label>';
+  }).join('');
+  var filterBarHtml='<div class="card" style="margin-bottom:16px;padding:12px 15px">'
+    +contractsChipsHtml()
+    +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    +'<div style="font-size:10px;color:var(--t3)">Click a facility, ward, status, or consultant on a contract to filter by it. Click again to remove.</div>'
+    +'<div style="display:flex;align-items:center;gap:10px;position:relative">'
+    +(ctStateFilterOpen
+      ?'<div onclick="event.stopPropagation()" style="position:absolute;top:100%;right:120px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);padding:8px 12px;z-index:41;min-width:110px">'
+        +(stateChecks||'<div style="font-size:11px;color:var(--t3)">No states available</div>')
+        +'<button class="btn btn-g btn-sm" style="margin-top:6px;width:100%" onclick="ctToggleStateFilterOpen()">Done</button>'
+        +'</div>'
+      :'')
+    +'<span class="chip-add" style="cursor:pointer;border:1px dashed var(--border);color:var(--t3);border-radius:20px;padding:4px 10px;font-size:11px" onclick="ctToggleStateFilterOpen()">'+(ctFilt.states.length?'Edit state filter':'+ Add state filter')+'</span>'
+    +'<span style="font-size:11px;color:var(--t3)">Showing '+ctFiltered.length+' of '+all.length+'</span>'
+    +'</div></div></div>';
+
+  var cards=ctFiltered.map(function(k){
     var d=ddiff(k.endDate);
     var isDanger=d!==null&&d<=14&&d>=0;
     var isWarn=d!==null&&d<=21&&d>14;
@@ -3152,19 +3254,28 @@ function renderContracts(){
     var rateClean=cleanRate(k.rate);
     var totalW=k.startDate&&k.endDate?Math.max(1,Math.round((new Date(k.endDate)-new Date(k.startDate))/(7*86400000))):0;
     var elapsed=k.status==="Active"&&k.startDate&&totalW?Math.min(100,Math.max(0,Math.round((Date.now()-new Date(k.startDate).getTime())/(7*86400000*totalW)*100))):0;
+    // Click-to-filter ring state for this row's badges/consultant -- same
+    // "on" idiom as the candidate grid's pills, scoped to this row only.
+    var facOn=k.facilityId&&ctFilt.facilities.indexOf(k.facilityId)>=0;
+    var wardOn=k.ward&&ctFilt.wards.indexOf(k.ward)>=0;
+    var statusOn=ctFilt.statuses.indexOf(k.status)>=0;
+    var consOn=k.cConsId&&ctFilt.consultants.indexOf(k.cConsId)>=0;
+    var ring=';box-shadow:0 0 0 2px currentColor';
     return'<div class="card clickable" style="margin-bottom:12px;padding:16px;border-left:3px solid '+col+'" onclick="openCandPage('+k.cid+')">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
       +'<div><div style="font-size:13px;font-weight:500">'+esc(k.cn)+'</div>'
-      +'<div style="font-size:10px;color:var(--t3)">'+esc(k.cc)+(k.cConsId?" — "+((uById(k.cConsId)||{name:""}).name):"")+'</div>'
+      +'<div style="font-size:10px;color:var(--t3)">'+esc(k.cc)
+      +(k.cConsId?" — "+'<span onclick="event.stopPropagation();ctToggleConsultant('+k.cConsId+')" style="cursor:pointer'+(consOn?';color:var(--brand);font-weight:700':'')+'">'+esc((uById(k.cConsId)||{name:""}).name)+'</span>':"")
+      +'</div>'
       +(isDanger?'<div style="font-size:10px;font-weight:500;color:var(--danger);margin-top:4px">Expires in '+d+' day'+(d===1?"":"s")+'</div>':isWarn?'<div style="font-size:10px;font-weight:500;color:var(--warn);margin-top:4px">Expires in '+d+' days</div>':"")
       +'</div>'
-      +'<span class="badge '+bClass(k.status)+'">'+k.status+'</span>'
+      +'<span class="badge '+bClass(k.status)+'" onclick="event.stopPropagation();ctToggleStatus(&apos;'+jsAttrEsc(k.status)+'&apos;)" style="cursor:pointer'+(statusOn?ring:'')+'">'+k.status+'</span>'
       +'<button class="btn btn-g btn-xs" style="margin-left:6px" onclick="event.stopPropagation();openContractEditModal('+k.id+')">Edit</button>'
       +'<button class="btn btn-g btn-xs" style="margin-left:6px" onclick="event.stopPropagation();openManagePlacement('+k.id+')">Manage placement</button>'
       +'</div>'
       +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">'
-      +'<span class="badge b-pu">'+esc(k.facility)+'</span>'
-      +'<span class="badge b-tl">'+esc(k.ward)+'</span>'
+      +(k.facilityId?'<span class="badge b-pu" onclick="event.stopPropagation();ctToggleFacility('+k.facilityId+')" style="cursor:pointer'+(facOn?ring:'')+'">'+esc(k.facility)+'</span>':'<span class="badge b-pu">'+esc(k.facility)+'</span>')
+      +(k.ward?'<span class="badge b-tl" onclick="event.stopPropagation();ctToggleWard(&apos;'+jsAttrEsc(k.ward)+'&apos;)" style="cursor:pointer'+(wardOn?ring:'')+'">'+esc(k.ward)+'</span>':'<span class="badge b-tl">'+esc(k.ward)+'</span>')
       +(rateClean!==""?'<span class="badge b-gr">$'+rateClean+'/hr &middot; '+(k.hours||"?")+'h/wk</span>':"")
       +(k.healthRegion?'<span class="badge b-gr">'+esc(k.healthRegion)+'</span>':"")
       +'</div>'
@@ -3177,7 +3288,7 @@ function renderContracts(){
       +'</div></div>';
   }).join("");
 
-  document.getElementById("page").innerHTML=heroHtml+(cards||'<div class="card"><div class="empty-st">No contracts</div></div>');
+  document.getElementById("page").innerHTML=heroHtml+filterBarHtml+(cards||'<div class="card"><div class="empty-st">'+(all.length?'No contracts match'+(ctHasActiveFilters()?' — <span style="cursor:pointer;color:var(--brand);text-decoration:underline" onclick="ctClearAll()">clear filters</span>':''):'No contracts')+'</div></div>');
 }
 
 // Substring match against a facility's name OR any of its aliases. q must

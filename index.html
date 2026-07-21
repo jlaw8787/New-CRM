@@ -8262,6 +8262,23 @@ function sfMergeChecklistIntoResolved(resolved,fac){
   });
   return resolved;
 }
+var SF_RING_R=34,SF_RING_C=2*Math.PI*34;
+function sfReadinessRingHtml(pct,ringColor,verdictLabel){
+  var offset=SF_RING_C*(1-pct/100);
+  return '<div style="display:flex;align-items:center;gap:16px;background:var(--bg);border-radius:12px;padding:16px;margin-bottom:12px">'
+    +'<div style="position:relative;width:80px;height:80px;flex-shrink:0">'
+    +'<svg width="80" height="80" viewBox="0 0 80 80">'
+    +'<circle cx="40" cy="40" r="'+SF_RING_R+'" fill="none" stroke="var(--border)" stroke-width="8"/>'
+    +'<circle cx="40" cy="40" r="'+SF_RING_R+'" fill="none" stroke="'+ringColor+'" stroke-width="8" stroke-linecap="round" '
+    +'stroke-dasharray="'+SF_RING_C.toFixed(2)+'" stroke-dashoffset="'+offset.toFixed(2)+'" transform="rotate(-90 40 40)" '
+    +'style="transition:stroke-dashoffset .5s ease,stroke .3s ease"/>'
+    +'</svg>'
+    +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:var(--t1)">'+pct+'%</div>'
+    +'</div>'
+    +'<div><div style="font-size:15px;font-weight:600;color:'+ringColor+'">'+verdictLabel+'</div>'
+    +'<div style="font-size:11px;color:var(--t3);margin-top:2px">This flags gaps. It never blocks submission.</div>'
+    +'</div></div>';
+}
 function sfCompliancePackHtml(c,fac){
   var resolved=sfMergeChecklistIntoResolved(resolveFacilityRequirements(fac),fac);
   var allReqs=resolved.state.concat(resolved.healthService,resolved.facility,resolved.ward);
@@ -8279,12 +8296,11 @@ function sfCompliancePackHtml(c,fac){
     return '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:8px 12px 4px">'+esc(label)+'</div>'
       +rows.map(function(r){return sfPackRowHtml(r,matchOf[r.id],c);}).join('');
   }
-  var summary='<div style="display:flex;align-items:center;gap:14px;background:'+(allGood?'var(--ok-l)':'var(--warn-l)')+';border-radius:12px;padding:16px 16px;margin-bottom:12px">'
-    +'<div style="font-size:28px;font-weight:500;color:'+(allGood?'var(--ok)':'var(--warn)')+'">'+pct+'%</div>'
-    +'<div><div style="font-size:13px;font-weight:500;color:var(--t1)">'+metCount+' of '+totalCount+' requirements satisfied</div>'
-    +'<div style="font-size:11px;color:var(--t3)">Heads-up only &mdash; this does not block submission.</div>'
-    +'</div></div>';
-  return '<div class="cp-lbl" style="margin-bottom:8px">Compliance pack &mdash; '+esc(fac.name)+'</div>'
+  var needCount=totalCount-metCount;
+  var ringColor=allGood?'var(--ok)':'var(--warn)';
+  var verdictLabel=allGood?'Ready to submit':(needCount+' item'+(needCount===1?'':'s')+' need attention before start');
+  var summary=sfReadinessRingHtml(pct,ringColor,verdictLabel);
+  return '<div class="cp-lbl" style="margin-bottom:8px">Compliance pack for '+esc(fac.name)+'</div>'
     +summary
     +'<div style="background:var(--bg);border-radius:12px;padding:4px 0;overflow:hidden;margin-bottom:16px">'
     +grp(stateLabel+' (all facilities)',resolved.state)

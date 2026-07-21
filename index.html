@@ -3442,20 +3442,74 @@ function aiDraftSubmissionEmail(){
     +'\n\nHappy to answer any questions — let me know next steps.\n\nKind regards,\n'+(CU&&CU.name?CU.name:'');
   aiAppendBotMsg('Draft submission email for <b>'+esc(c.name)+'</b>'+(facName?' &rarr; <b>'+esc(facName)+'</b>':'')+':',aiDraftBoxHtml('Subject: '+subject+'\n\n'+body));
 }
+// ── AI assistant — expanded scripted library (additive) ─────────────────────
+// Shared helpers used by the new scenarios below. Every one of these reads
+// live app state (candidates/facilities/complianceRequirements/getAutos/vc())
+// and is written to degrade to a plain sentence on missing data, never throw
+// or print "undefined" -- aiTypingThen()'s try/catch is the last-resort net,
+// these guards are the first line so responses read like a person wrote them.
+function aiZinger(chance){return Math.random()<(chance!=null?chance:1/3);}
+function aiAvailabilityText(c){
+  if(c.availableFrom&&c.availableTo)return'from '+fmt(c.availableFrom)+' to '+fmt(c.availableTo);
+  if(c.availableFrom)return'from '+fmt(c.availableFrom)+', ongoing';
+  return'not set';
+}
+function aiMissingComplianceItems(c){
+  if(!c||!c.compliance)return[];
+  return getCmpItems(c).filter(function(i){return i.req&&!compItemDone(c.compliance.items[i.key]);}).map(function(i){return i.label;});
+}
+// Soonest-expiring item within `days` (default 60, matching getAutos' own comp/ahpra
+// window) among items the candidate actually has an expiry recorded for. Optionally
+// restricted to a set of item_keys (used by the facility cross-check, so only items
+// that facility actually cares about are considered).
+function aiSoonestExpiry(c,days,onlyKeys){
+  if(!c||!c.compliance)return null;
+  var items=getCmpItems(c).filter(function(i){return !onlyKeys||onlyKeys[i.key];}).map(function(i){
+    var it=c.compliance.items&&c.compliance.items[i.key];
+    if(!it||!it.expiry)return null;
+    var d=ddiff(it.expiry);
+    return d===null?null:{label:i.label,expiry:it.expiry,d:d};
+  }).filter(function(x){return x&&x.d>=0&&x.d<=(days||60);});
+  items.sort(function(a,b){return a.d-b.d;});
+  return items[0]||null;
+}
+function aiFindFacilityInText(q){
+  var ql=(q||'').toLowerCase();
+  var matches=(facilities||[]).filter(function(f){
+    if(f.name&&ql.indexOf(f.name.toLowerCase())>=0)return true;
+    return(f.aliases||[]).some(function(a){return a&&ql.indexOf(String(a).toLowerCase())>=0;});
+  });
+  matches.sort(function(a,b){return (b.name||'').length-(a.name||'').length;});
+  return matches[0]||null;
+}
+function aiFindCandidateInText(q){
+  var ql=(q||'').toLowerCase();
+  var matches=(candidates||[]).filter(function(c){return c.name&&ql.indexOf(c.name.toLowerCase())>=0;});
+  matches.sort(function(a,b){return (b.name||'').length-(a.name||'').length;});
+  return matches[0]||null;
+}
+function aiFacilityRequirementRows(f){
+  var r=resolveFacilityRequirements(f);
+  return[].concat(r.state||[],r.healthService||[],r.facility||[],r.ward||[]);
+}
+
 function aiSummariseCandidate(){
   var c=aiCurrentCandidate();
   if(!c){aiAppendBotMsg("Open a candidate's profile and ask me again, or tell me who you'd like summarised.");return;}
   var pct=cmpScore(c);
-  var activeContract=(c.contracts||[]).find(function(k){return k.status==='Active';});
-  var lastSub=aiLatestSubmission(c);
+  var flex=(c.clinicalSkills||[]).filter(function(s){return s&&s!==c.primarySkill;});
+  var statesTxt=(c.statesOpen&&c.statesOpen.length)?c.statesOpen.join(', '):'not set';
+  var missing=aiMissingComplianceItems(c);
+  var openSub=(c.submissions||[]).find(function(s){return s.status==='Promoting'||s.status==='Submitted';});
   var bits=[];
-  bits.push(c.name+' — '+(c.classification||'')+(c.nurseType&&c.nurseType!==c.classification?' ('+c.nurseType+')':''));
-  bits.push('Phase: '+(c.phase||'—')+(c.hot?' · Flagged Hot':''));
-  bits.push('Compliance: '+pct+'% complete');
-  if(activeContract)bits.push('On assignment: '+(activeContract.facility||'')+' ('+(activeContract.ward||'')+'), ends '+fmt(activeContract.endDate));
-  else if(lastSub)bits.push('Last submission: '+(lastSub.facility||'')+' — '+(lastSub.status||''));
-  if(c.nextAction)bits.push('Next action: '+c.nextAction+(c.nextActionDue?' (due '+fmt(c.nextActionDue)+')':''));
-  aiAppendBotMsg('Here\'s a quick summary of <b>'+esc(c.name)+'</b>:',aiDraftBoxHtml(bits.join('\n')));
+  bits.push(c.name+' is a '+(c.classification||'nurse')+(c.state?' based in '+c.state:'')+', currently '+(c.phase||'—')+'.');
+  bits.push('Primary area '+(c.primarySkill||'not set')+(flex.length?', also does '+flex.join(', '):'')+'.');
+  bits.push('Open to '+statesTxt+'.');
+  bits.push('Available '+aiAvailabilityText(c)+'.');
+  bits.push('Compliance sits at '+pct+'% — '+(missing.length?'missing '+missing.slice(0,4).join(', ')+(missing.length>4?' + '+(missing.length-4)+' more':''):'all clear')+'.');
+  bits.push(openSub?('Currently out to '+(openSub.facility||'a facility')+'.'):'Not currently submitted.');
+  if(pct===100&&aiZinger())bits.push('Fully compliant, references and all. Rare as hen\'s teeth.');
+  aiAppendBotMsg('Here\'s a quick summary of <b>'+esc(c.name)+'</b>:',aiDraftBoxHtml(bits.join(' ')));
 }
 function aiWhatsOnToday(){
   if(!CU){aiAppendBotMsg("Once you're logged in I can pull your real priorities for the day.");return;}
@@ -3468,6 +3522,166 @@ function aiWhatsOnToday(){
   if(reds.length){lines.push(reds.length+' urgent item'+(reds.length!==1?'s':'')+' today:');reds.slice(0,3).forEach(function(a){lines.push('- '+a.title);});}
   if(ambers.length){lines.push((lines.length?'':'')+ambers.length+' more worth a look this week:');ambers.slice(0,3).forEach(function(a){lines.push('- '+a.title);});}
   aiAppendBotMsg('Here\'s what\'s on today, '+esc(first)+':',aiDraftBoxHtml(lines.join('\n')));
+}
+
+// ── NEW: candidate scenarios ─────────────────────────────────────────────
+function aiIsCandidateReady(){
+  var c=aiCurrentCandidate();
+  if(!c){aiAppendBotMsg("Open a candidate's profile and ask me again — I'll check their compliance.");return;}
+  var pct=cmpScore(c);
+  var missing=aiMissingComplianceItems(c);
+  var bits=[c.name+' is at '+pct+'% compliance.'];
+  if(pct===100){
+    bits.push('All clear — ready to submit.');
+    if(aiZinger())bits.push('Fully compliant, references and all. Rare as hen\'s teeth.');
+  } else {
+    bits.push('Still outstanding: '+(missing.length?missing.slice(0,5).join(', ')+(missing.length>5?' + '+(missing.length-5)+' more':''):'a few items')+'. Sort those before submitting.');
+    if(pct<60&&aiZinger())bits.push(pct+'% compliant. That\'s not a submission, that\'s a project.');
+  }
+  var soon=aiSoonestExpiry(c,60);
+  if(soon)bits.push('Heads up — '+soon.label+' expires '+fmt(soon.expiry)+', worth renewing before a placement locks in.');
+  aiAppendBotMsg(bits.join(' '));
+}
+function aiCandidateHistory(){
+  var c=aiCurrentCandidate();
+  if(!c){aiAppendBotMsg("Open a candidate's profile and ask me again, and I'll pull their history.");return;}
+  var placements=(c.contracts||[]).length;
+  var lastContract=(c.contracts||[]).slice().sort(function(a,b){return(b.startDate||'')<(a.startDate||'')?-1:1;})[0];
+  var lastActivity=(c.activity||[]).slice().sort(function(a,b){return(b.ts||'')<(a.ts||'')?-1:1;})[0];
+  var bits=[c.name+' has done '+placements+' placement'+(placements!==1?'s':'')+(lastContract?', most recently '+(lastContract.facility||'a facility')+(lastContract.ward?' ('+lastContract.ward+')':''):'')+'.'];
+  bits.push('Last activity: '+(lastActivity?(lastActivity.content||lastActivity.type||'logged')+' — '+fmtTS(lastActivity.ts):'none logged yet')+'.');
+  if(c.hot)bits.push('Flagged as a hot candidate.');
+  aiAppendBotMsg(bits.join(' '));
+}
+function aiFindNurseFor(query){
+  var q=(query||'').toLowerCase();
+  var pool=vc();
+  var scored=pool.map(function(c){
+    var skillHits=(c.clinicalSkills||[]).filter(function(s){return s&&q.indexOf(s.toLowerCase())>=0;}).length;
+    var stateHits=(c.statesOpen||[]).filter(function(s){return s&&q.indexOf(s.toLowerCase())>=0;}).length;
+    return{c:c,score:skillHits*2+stateHits};
+  }).filter(function(x){return x.score>0;});
+  if(!scored.length){aiAppendBotMsg('I couldn\'t match a clinical area or state in that — try naming one directly, like "find me an ICU nurse for QLD".');return;}
+  scored.sort(function(a,b){return b.score-a.score||cmpScore(b.c)-cmpScore(a.c);});
+  var top=scored.slice(0,3).map(function(x){return x.c.name+' ('+cmpScore(x.c)+'% compliant, '+aiAvailabilityText(x.c)+')';});
+  var bits=['I can see '+scored.length+' match'+(scored.length!==1?'es':'')+' for that. Top of the list: '+top.join('; ')+'.'];
+  bits.push('Want me to open the grid filtered to these?');
+  if(scored.length>=8&&aiZinger())bits.push('Spoilt for choice on this one.');
+  aiAppendBotMsg(bits.join(' '));
+}
+
+// ── NEW: compliance / facility scenarios (Track 2 showcase) ─────────────
+function aiFacilityRequirementsResponse(query){
+  var f=aiFindFacilityInText(query);
+  if(!f){aiAppendBotMsg('I couldn\'t spot a facility name in that — try naming one directly, e.g. "what does Royal Hobart Hospital require".');return;}
+  var rows=aiFacilityRequirementRows(f);
+  if(!rows.length){aiAppendBotMsg(esc(f.name)+' ('+(f.healthAuthority||f.state||'—')+') — no compliance pack loaded for '+(f.state||'this state')+' yet.');return;}
+  var onSub=rows.filter(function(r){return r.timing==='on_submission';});
+  var before=rows.filter(function(r){return r.timing!=='on_submission';});
+  var label=function(r){return r.item_label||r.item_key||'item';};
+  var bits=[f.name+' ('+(f.healthAuthority||f.state||'—')+') requires '+rows.length+' item'+(rows.length!==1?'s':'')+'.'];
+  if(onSub.length)bits.push('On submission: '+onSub.slice(0,5).map(label).join(', ')+(onSub.length>5?' + '+(onSub.length-5)+' more':'')+'.');
+  if(before.length)bits.push('Before commencing: '+before.slice(0,5).map(label).join(', ')+(before.length>5?' + '+(before.length-5)+' more':'')+'.');
+  aiAppendBotMsg(bits.join(' '));
+}
+function aiCandidateCompliantForFacility(query){
+  var c=aiFindCandidateInText(query)||aiCurrentCandidate();
+  var f=aiFindFacilityInText(query);
+  if(!c||!f){aiAppendBotMsg('Name both a candidate and a facility and I\'ll cross-check them — e.g. "is Marco Thompson compliant for Royal Hobart Hospital".');return;}
+  var rows=aiFacilityRequirementRows(f);
+  if(!rows.length){aiAppendBotMsg('No compliance pack loaded for '+(f.state||'that state')+' yet, so I can\'t check '+esc(c.name)+' against '+esc(f.name)+'.');return;}
+  var met=0,missing=[],onlyKeys={};
+  rows.forEach(function(r){
+    if(r.item_key)onlyKeys[r.item_key]=true;
+    var done=r.item_key&&compItemDone(c.compliance&&c.compliance.items&&c.compliance.items[r.item_key]);
+    if(done)met++;else missing.push(r.item_label||r.item_key||'item');
+  });
+  var bits=['For '+f.name+', '+c.name+' has '+met+' of '+rows.length+' requirements met.'];
+  if(missing.length)bits.push('Missing: '+missing.slice(0,6).join(', ')+(missing.length>6?' + '+(missing.length-6)+' more':'')+'.');
+  var soon=aiSoonestExpiry(c,60,onlyKeys);
+  if(soon)bits.push('And '+soon.label+' expires '+fmt(soon.expiry)+' — that would fall mid-placement.');
+  if(!missing.length&&aiZinger())bits.push('Fully compliant, references and all. Rare as hen\'s teeth.');
+  aiAppendBotMsg(bits.join(' '));
+}
+function aiWhatsExpiring(){
+  var alerts=getAutos(vc()).filter(function(a){return a.type==='comp'||a.type==='ahpra'||a.type==='contract_comp';});
+  if(!alerts.length){aiAppendBotMsg('Nothing expiring or overdue right now — you\'re clear on that front.');return;}
+  var order={red:0,amber:1,blue:2};
+  alerts.sort(function(a,b){return(order[a.level]!=null?order[a.level]:9)-(order[b.level]!=null?order[b.level]:9);});
+  var top=alerts[0];
+  var topCand=candidates.find(function(c){return c.id===top.cid;});
+  var duringContract=alerts.filter(function(a){return a.type==='contract_comp';}).length;
+  var bits=[alerts.length+' compliance item'+(alerts.length!==1?'s':'')+' expiring or overdue right now.'];
+  bits.push('Most urgent: '+(top.itemName||'an item')+' for '+(topCand?topCand.name:'a candidate')+' — '+(top.desc||'').split(' — ').slice(-1)[0]+'.');
+  if(duringContract){
+    bits.push(duringContract+' of those fall during an active contract — that\'s the audit risk pile.');
+    if(aiZinger())bits.push('That cert expires mid-placement. The kind of thing that\'s fine until it very much isn\'t.');
+  }
+  aiAppendBotMsg(bits.join(' '));
+}
+var AI_AU_STATES=['NT','QLD','WA','SA','NSW','VIC','TAS','ACT'];
+function aiComplianceCoverage(){
+  var loaded=Array.from(new Set((complianceRequirements||[]).map(function(r){return r.state;}).filter(Boolean)));
+  var remaining=AI_AU_STATES.filter(function(s){return loaded.indexOf(s)<0;});
+  var resolvingCount=(facilities||[]).filter(function(f){var rows=aiFacilityRequirementRows(f);return rows.length>0;}).length;
+  var bits=['Compliance packs are live for '+(loaded.length?loaded.join(', '):'no states yet')+'.'];
+  if(remaining.length)bits.push(remaining.join(', ')+' still to load.');
+  bits.push(resolvingCount+' facilit'+(resolvingCount!==1?'ies':'y')+' resolving requirements right now.');
+  aiAppendBotMsg(bits.join(' '));
+}
+
+// ── NEW: manager / exec scenarios ────────────────────────────────────────
+function aiHowsTeamDoing(){
+  var allC=candidates||[];
+  var OUTCOME=['Accepted','Withdrawn','Declined'];
+  var allS=allC.reduce(function(a,c){return a.concat(c.submissions||[]);},[]);
+  var withOut=allS.filter(function(s){return OUTCOME.indexOf(s.status)>=0;});
+  var accepted=allS.filter(function(s){return s.status==='Accepted';});
+  var acceptRate=withOut.length?Math.round(accepted.length/withOut.length*100):0;
+  var placed=allC.filter(function(c){return c.phase==='On Assignment'||c.phase==='Extension/Exit';}).length;
+  var pipelineVal=allC.reduce(function(sum,c){return sum+(c.contracts||[]).reduce(function(t,k){if(k.status!=='Active')return t;var r=parseFloat(k.rate)||0,h=parseFloat(k.hours)||0,d=ddiff(k.endDate);return d&&d>0?t+r*h*(d/7):t;},0);},0);
+  var cons=(users||[]).filter(function(u){return u.role==='consultant';});
+  var byCons=cons.map(function(u){return{u:u,placed:allC.filter(function(c){return c.consultantId===u.id&&(c.phase==='On Assignment'||c.phase==='Extension/Exit');}).length};});
+  byCons.sort(function(a,b){return b.placed-a.placed;});
+  var avgPlaced=byCons.length?byCons.reduce(function(s,x){return s+x.placed;},0)/byCons.length:0;
+  var under=byCons.filter(function(x){return avgPlaced>0&&x.placed<avgPlaced*0.5;});
+  var fmtMon=function(n){return n>=1e6?'$'+(n/1e6).toFixed(1)+'M':n>=1e3?'$'+(n/1e3).toFixed(0)+'K':'$'+Math.round(n);};
+  var bits=[allS.length+' submissions this period, '+acceptRate+'% accepted, '+placed+' placed.'];
+  bits.push('Pipeline value sitting around '+fmtMon(pipelineVal)+'.');
+  if(byCons[0]&&byCons[0].placed>0)bits.push(byCons[0].u.name+' leading on placements.');
+  if(under.length)bits.push('Worth a look: '+under.map(function(x){return x.u.name;}).join(', ')+' trending under team average.');
+  aiAppendBotMsg(bits.join(' '));
+}
+function aiWhereAreRisks(){
+  var alerts=getAutos(vc());
+  var expSoon=alerts.filter(function(a){return a.type==='contract';});
+  var contractComp=alerts.filter(function(a){return a.type==='contract_comp';});
+  var checkins=alerts.filter(function(a){return a.type==='checkin';});
+  var fmtMon=function(n){return n>=1e6?'$'+(n/1e6).toFixed(1)+'M':n>=1e3?'$'+(n/1e3).toFixed(0)+'K':'$'+Math.round(n);};
+  var atRiskValue=expSoon.reduce(function(sum,a){
+    var c=candidates.find(function(x){return x.id===a.cid;});
+    var k=c&&(c.contracts||[]).find(function(k){return('contract:'+k.id)===a.id;});
+    if(!k)return sum;
+    var r=parseFloat(k.rate)||0,h=parseFloat(k.hours)||0,d=ddiff(k.endDate);
+    return sum+(d&&d>0?r*h*(d/7):0);
+  },0);
+  var bits=['Three things I\'d watch: '+expSoon.length+' contract'+(expSoon.length!==1?'s':'')+' expiring with no extension talk yet ('+fmtMon(atRiskValue)+' at risk), '+contractComp.length+' compliance item'+(contractComp.length!==1?'s':'')+' expiring during live placements, and '+checkins.length+' candidate'+(checkins.length!==1?'s':'')+' overdue for check-in.'];
+  bits.push('Want the list on any of those?');
+  aiAppendBotMsg(bits.join(' '));
+}
+function aiPipelineForecast(){
+  var allC=candidates||[];
+  var active=[];allC.forEach(function(c){(c.contracts||[]).forEach(function(k){if(k.status==='Active')active.push(k);});});
+  var fmtMon=function(n){return n>=1e6?'$'+(n/1e6).toFixed(1)+'M':n>=1e3?'$'+(n/1e3).toFixed(0)+'K':'$'+Math.round(n);};
+  var totalVal=active.reduce(function(sum,k){var r=parseFloat(k.rate)||0,h=parseFloat(k.hours)||0,d=ddiff(k.endDate);return sum+(d&&d>0?r*h*(d/7):0);},0);
+  var inSub=allC.reduce(function(a,c){return a+(c.submissions||[]).filter(function(s){return s.status==='Submitted'||s.status==='Promoting';}).length;},0);
+  var next90=active.reduce(function(sum,k){var r=parseFloat(k.rate)||0,h=parseFloat(k.hours)||0,d=ddiff(k.endDate);var capped=d?Math.min(d,90):0;return sum+(capped>0?r*h*(capped/7):0);},0);
+  var upForExt=getAutos(vc()).filter(function(a){return a.type==='extend';}).length;
+  var bits=[active.length+' active contract'+(active.length!==1?'s':'')+' worth '+fmtMon(totalVal)+', plus '+inSub+' in submission.'];
+  bits.push('Next 90 days looks like '+fmtMon(next90)+'.');
+  bits.push(upForExt+' up for extension — that\'s the low-hanging renewal money.');
+  if(aiZinger())bits.push('That\'s the number that keeps the lights on.');
+  aiAppendBotMsg(bits.join(' '));
 }
 
 function aiChipClick(kind){
@@ -3483,9 +3697,33 @@ function aiChipClick(kind){
 function aiRespondToText(text){
   var q=text.toLowerCase();
   var first=CU&&CU.name?CU.name.split(' ')[0]:'';
-  if(/^(hi|hey|hello|yo)\b/.test(q)){aiAppendBotMsg('Hey'+(first?' '+esc(first):'')+'! What can I help with — a follow-up draft, a candidate summary, or today\'s priorities?');return;}
-  if(/thank/.test(q)){aiAppendBotMsg("Anytime! I'm still just a preview for now, but happy to help however I can.");return;}
-  if(/help|what can you do|what do you do/.test(q)){aiAppendBotMsg('Right now I can draft a follow-up, summarise a candidate you\'re viewing, prep a submission email, or give you a rundown of what\'s on today. Try one of the chips below, or just ask.');return;}
+  // greeting/thanks/help — existing, enriched with live counts + occasional zinger
+  if(/^(hi|hey|hello|yo|morning)\b/.test(q)){
+    var boardCount=CU?getAutos(vc()).filter(function(a){return !snzOk(a.id||'');}).length:0;
+    aiAppendBotMsg('Morning'+(first?' '+esc(first):'')+'. '+boardCount+' thing'+(boardCount!==1?'s':'')+' on the board today. Where do you want to start?');
+    return;
+  }
+  if(/thank/.test(q)){aiAppendBotMsg('Anytime!'+(aiZinger()?' Beats doing it in a spreadsheet.':' I\'m still just a preview for now, but happy to help however I can.'));return;}
+  if(/help|what can you do|what do you do/.test(q)){
+    var helpMsg='I can summarise any candidate, draft your follow-ups and submission emails, tell you who\'s compliant for a facility, flag what\'s expiring, and pull the numbers for a review. Open a candidate or name a facility and I\'ll show you.';
+    if(aiZinger())helpMsg+=' Mostly I stop you drowning in tabs.';
+    aiAppendBotMsg(helpMsg);return;
+  }
+  // compliance / facility (Track 2 showcase) — "compliant for a facility" must be
+  // checked before the plain "is this candidate ready" trigger below, since both
+  // share the words "ready"/"compliant".
+  if(/(what does|requirements? for|what.?s needed for)/.test(q)&&aiFindFacilityInText(q)){aiFacilityRequirementsResponse(q);return;}
+  if(/(compliant for|ready for|good to go for|can .* go to)/.test(q)){aiCandidateCompliantForFacility(q);return;}
+  if(/\b(ready|compliant|can i submit|good to go)\b/.test(q)){aiIsCandidateReady();return;}
+  if(/history|story|background|what have they done/.test(q)){aiCandidateHistory();return;}
+  if(/find me a|who can do|need a nurse for|anyone for/.test(q)){aiFindNurseFor(q);return;}
+  if(/expiring|what.?s due|renewals?/.test(q)){aiWhatsExpiring();return;}
+  if(/coverage|which states|what.?s loaded|compliance packs/.test(q)){aiComplianceCoverage();return;}
+  // manager / exec
+  if(/\b(team|performance|how are we|numbers)\b/.test(q)){aiHowsTeamDoing();return;}
+  if(/risks?|worry about|problems|attention/.test(q)){aiWhereAreRisks();return;}
+  if(/pipeline|forecast|revenue|\bvalue\b/.test(q)){aiPipelineForecast();return;}
+  // existing candidate scenarios — unchanged
   if(/follow.?up/.test(q)){aiDraftFollowup();return;}
   if(/submi(t|ssion)/.test(q)&&/(email|draft|write|send)/.test(q)){aiDraftSubmissionEmail();return;}
   if(/summar/.test(q)){aiSummariseCandidate();return;}

@@ -1084,6 +1084,12 @@ function dateDiffStr(d){if(!d)return null;var todayStr=new Date().toISOString().
 function fmt(d){return d?new Date(d).toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"}):"—";}
 function fmtTS(d){if(!d)return"";var dt=new Date(d);return dt.toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"})+" at "+dt.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"});}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+// For raw values embedded as single-quoted JS string arguments inside an inline
+// onclick="...(&apos;VALUE&apos;)" attribute. &apos;/&#39; both decode to the same
+// literal ' -- HTML-entity-escaping an apostrophe does NOT protect it, since decoding
+// happens once for the whole attribute. A backslash-escaped \' survives that decode
+// (backslash isn't an HTML entity) and is valid JS inside the single-quoted string.
+function jsAttrEsc(s){return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'");}
 function uById(id){return users.find(function(u){return u.id===id;});}
 
 function compItemDone(it){return !!(it&&(it.status==='Verified'||it.status==='Received'));}
@@ -1365,6 +1371,11 @@ function getAutos(cands){
 
 // LOGIN / STATE
 var CU=null,VCon=null,curPage="home",phF="All",srchQ="",pTab="Activity",MTab="Profile",facSort="name",facState="All",facType="All",facQ="",candView="list";
+// Grid filters (Slice 2 step B) -- areas/states are OR within themselves, combined
+// with AND across areas/states/availability. availOpen toggles the inline date-range
+// picker open; the range itself only takes effect once at least one date is set.
+var candGridFilt={areas:[],states:[],availFrom:'',availTo:''};
+var candGridAvailOpen=false;
 var jbNewCount=0,jobMatchFilt=null;
 var mbCollapsed=false,mbAvailExpanded=false,mbRolesExpanded=false,mbCompExpanded=false,mbCheckinExpanded=false,mbFollowupExpanded=false;
 var subFiltStatus=localStorage.getItem('hca_sf_st')||'All';
@@ -2121,16 +2132,30 @@ var CA_ALIASES={
   'icu':'ICU','icu/ccu':'ICU','ccu':'ICU','critical care':'ICU','icu/ccu rn':'ICU'
 };
 function caColorFor(area){var canon=CA_ALIASES[(area||'').toLowerCase().trim()];return canon?CA_COLORS[canon]:CA_NEUTRAL;}
-function caPillHtml(area,solid){
+// solid = filled pill (this is the candidate's primary area for that row); on = this
+// exact value is currently an active filter, drawn with a ring regardless of solid/outline
+// so "selected" reads the same whether the pill started solid or outlined.
+function caPillHtml(area,solid,on){
   var col=caColorFor(area);
+  var ring=on?';box-shadow:0 0 0 2px '+col.solid+',0 0 0 4px '+col.bg:'';
+  var argEsc=jsAttrEsc(area);
   return solid
-    ?'<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:'+col.bg+';color:'+col.solid+'">'+esc(area)+'</span>'
-    :'<span style="display:inline-flex;align-items:center;padding:1px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:transparent;border:1px solid '+col.solid+';color:'+col.solid+'">'+esc(area)+'</span>';
+    ?'<span onclick="event.stopPropagation();cgToggleArea(&apos;'+argEsc+'&apos;)" style="cursor:pointer;display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:'+col.bg+';color:'+col.solid+ring+'">'+esc(area)+'</span>'
+    :'<span onclick="event.stopPropagation();cgToggleArea(&apos;'+argEsc+'&apos;)" style="cursor:pointer;display:inline-flex;align-items:center;padding:1px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:transparent;border:1px solid '+col.solid+';color:'+col.solid+ring+'">'+esc(area)+'</span>';
 }
 function candGridAreaPills(c){
   var skills=(c.clinicalSkills||[]).filter(Boolean);
   if(!skills.length)return'<span style="color:var(--t3)">&mdash;</span>';
-  return skills.map(function(s){return caPillHtml(s,s===c.primarySkill);}).join(' ');
+  return skills.map(function(s){return caPillHtml(s,s===c.primarySkill,candGridFilt.areas.indexOf(s)>=0);}).join(' ');
+}
+function candGridStatePills(c){
+  var states=(c.statesOpen||[]).filter(Boolean);
+  if(!states.length)return'<span style="color:var(--t4)">&mdash;</span>';
+  return states.map(function(s){
+    var on=candGridFilt.states.indexOf(s)>=0;
+    var ring=on?';box-shadow:0 0 0 2px var(--brand),0 0 0 4px var(--brand-l)':'';
+    return'<span onclick="event.stopPropagation();cgToggleState(&apos;'+jsAttrEsc(s)+'&apos;)" style="cursor:pointer;display:inline-flex;align-items:center;padding:1px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:var(--bg);color:var(--t2)'+ring+'">'+esc(s)+'</span>';
+  }).join(' ');
 }
 function candGridAvailHtml(c){
   if(c.availableFrom&&c.availableTo)return'<span style="font-size:11px;color:var(--t2)">'+fmt(c.availableFrom)+' &ndash; '+fmt(c.availableTo)+'</span>';
@@ -2144,6 +2169,55 @@ function candGridInitials(name){
   return(parts[0][0]+(parts.length>1?parts[parts.length-1][0]:'')).toUpperCase();
 }
 function setCandView(v){candView=v;renderCandidates();}
+
+// ── CANDIDATE GRID — filters (Slice 2 step B) ──────────────────────────────
+// AND across areas/states/availability, OR within areas and within states.
+function cgToggleArea(a){var i=candGridFilt.areas.indexOf(a);if(i>=0)candGridFilt.areas.splice(i,1);else candGridFilt.areas.push(a);renderCandidates();}
+function cgToggleState(s){var i=candGridFilt.states.indexOf(s);if(i>=0)candGridFilt.states.splice(i,1);else candGridFilt.states.push(s);renderCandidates();}
+function cgSetAvailFrom(v){candGridFilt.availFrom=v;renderCandidates();}
+function cgSetAvailTo(v){candGridFilt.availTo=v;renderCandidates();}
+function cgClearAvail(){candGridFilt.availFrom='';candGridFilt.availTo='';candGridAvailOpen=false;renderCandidates();}
+function cgToggleAvailOpen(){candGridAvailOpen=!candGridAvailOpen;renderCandidates();}
+function cgClearAll(){candGridFilt={areas:[],states:[],availFrom:'',availTo:''};candGridAvailOpen=false;renderCandidates();}
+function cgHasActiveFilters(){return candGridFilt.areas.length>0||candGridFilt.states.length>0||!!candGridFilt.availFrom||!!candGridFilt.availTo;}
+function candGridFilterList(list){
+  if(!cgHasActiveFilters())return list;
+  return list.filter(function(c){
+    var areaOk=!candGridFilt.areas.length||(c.clinicalSkills||[]).some(function(s){return candGridFilt.areas.indexOf(s)>=0;});
+    var stateOk=!candGridFilt.states.length||(c.statesOpen||[]).some(function(s){return candGridFilt.states.indexOf(s)>=0;});
+    var availOk=true;
+    if(candGridFilt.availFrom||candGridFilt.availTo){
+      if(!c.availableFrom)availOk=false;
+      else{
+        var cFrom=new Date(c.availableFrom);
+        var cTo=c.availableTo?new Date(c.availableTo):null; // null = open-ended, treated as no upper bound
+        var fFrom=candGridFilt.availFrom?new Date(candGridFilt.availFrom):null;
+        var fTo=candGridFilt.availTo?new Date(candGridFilt.availTo):null;
+        var startsInTime=!fTo||cFrom<=fTo;
+        var endsInTime=!fFrom||!cTo||cTo>=fFrom;
+        availOk=startsInTime&&endsInTime;
+      }
+    }
+    return areaOk&&stateOk&&availOk;
+  });
+}
+function candGridChipsHtml(){
+  var chips=[];
+  candGridFilt.areas.forEach(function(a){chips.push({label:'Clinical area: '+a,onclick:'cgToggleArea(&apos;'+jsAttrEsc(a)+'&apos;)'});});
+  candGridFilt.states.forEach(function(s){chips.push({label:'State: '+s,onclick:'cgToggleState(&apos;'+jsAttrEsc(s)+'&apos;)'});});
+  if(candGridFilt.availFrom||candGridFilt.availTo){
+    var lbl='Available: '+(candGridFilt.availFrom?fmt(candGridFilt.availFrom):'any')+' &ndash; '+(candGridFilt.availTo?fmt(candGridFilt.availTo):'ongoing');
+    chips.push({label:lbl,onclick:'cgClearAvail()'});
+  }
+  if(!chips.length)return'';
+  return'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px">'
+    +chips.map(function(ch){
+      return'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;background:var(--brand-l);color:var(--brand)">'+esc(ch.label)
+        +'<span onclick="'+ch.onclick+'" style="cursor:pointer;font-weight:700;line-height:1">&times;</span></span>';
+    }).join('')
+    +'<button class="btn btn-g btn-sm" onclick="cgClearAll()">Clear all &times;</button>'
+    +'</div>';
+}
 
 function renderCandidates(){
   var cands=vc();
@@ -2261,24 +2335,40 @@ function renderCandidates(){
     +'</table></div>');
 }
 function renderCandGridTable(filtered,cands){
-  var rows=filtered.map(function(c){
+  var gridList=candGridFilterList(filtered);
+  var rows=gridList.map(function(c){
     var sc=cmpScore(c);
     return'<tr onclick="openCandPage('+c.id+')" style="cursor:pointer">'
       +'<td><div style="display:flex;align-items:center;gap:8px">'
       +'<span style="width:24px;height:24px;border-radius:50%;background:var(--brand-l);color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+esc(candGridInitials(c.name))+'</span>'
       +'<span class="cp">'+esc(c.name||'')+'</span></div></td>'
       +'<td><div class="pills-cell" style="display:flex;flex-wrap:wrap;gap:4px">'+candGridAreaPills(c)+'</div></td>'
-      +'<td style="font-size:11px;color:var(--t3)">'+(c.statesOpen&&c.statesOpen.length?esc(c.statesOpen.join(', ')):'<span style="color:var(--t4)">&mdash;</span>')+'</td>'
+      +'<td><div class="pills-cell" style="display:flex;flex-wrap:wrap;gap:4px">'+candGridStatePills(c)+'</div></td>'
       +'<td>'+candGridAvailHtml(c)+'</td>'
       +'<td style="font-size:12px;font-weight:700;color:'+candGridCompColor(sc)+'">'+sc+'%</td>'
       +'<td><span class="badge '+bClass(c.phase)+'" style="font-size:9px">'+esc(c.phase||'')+'</span></td>'
       +'</tr>';
   }).join("");
   return'<div class="card" style="box-shadow:0 1px 3px rgba(0,0,0,.06)">'
+    +'<div style="padding:12px 15px;border-bottom:1px solid var(--border)">'
+    +candGridChipsHtml()
+    +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    +'<div style="font-size:10px;color:var(--t3)">Click a clinical area or state pill to filter by it. Click again to remove.</div>'
+    +'<div style="display:flex;align-items:center;gap:10px">'
+    +(candGridAvailOpen
+      ?'<div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">'
+        +'<input type="date" value="'+(candGridFilt.availFrom||'')+'" oninput="cgSetAvailFrom(this.value)" style="font-size:11px;padding:4px 6px">'
+        +'<span style="font-size:10px;color:var(--t3)">to</span>'
+        +'<input type="date" value="'+(candGridFilt.availTo||'')+'" oninput="cgSetAvailTo(this.value)" style="font-size:11px;padding:4px 6px">'
+        +'<button class="btn btn-g btn-sm" onclick="candGridAvailOpen=false;renderCandidates()">Done</button>'
+        +'</div>'
+      :'<span class="chip-add" style="cursor:pointer;border:1px dashed var(--border);color:var(--t3);border-radius:20px;padding:4px 10px;font-size:11px" onclick="cgToggleAvailOpen()">'+(candGridFilt.availFrom||candGridFilt.availTo?'Edit availability filter':'+ Add availability filter')+'</span>')
+    +'<span style="font-size:11px;color:var(--t3)">Showing '+gridList.length+' of '+filtered.length+'</span>'
+    +'</div></div></div>'
     +'<table class="tbl" style="table-layout:auto"><thead><tr>'
     +'<th>Name</th><th>Clinical Areas</th><th>States</th><th>Available</th><th>Compliance</th><th>Status</th>'
     +'</tr></thead>'
-    +'<tbody>'+(rows||'<tr><td colspan="6"><div class="empty-st">'+I.person+'<b>'+(cands.length?'No candidates match':'No candidates yet')+'</b><p>'+(cands.length?'Try adjusting your filters or search.':'Add your first candidate to get started.')+'</p></div></td></tr>')+'</tbody>'
+    +'<tbody>'+(rows||'<tr><td colspan="6"><div class="empty-st">'+I.person+'<b>'+(cands.length?'No candidates match':'No candidates yet')+'</b><p>'+(cands.length?'Try adjusting your filters or search.':'Add your first candidate to get started.')+'</p>'+(cgHasActiveFilters()?'<button class="btn btn-g btn-sm" onclick="cgClearAll()">Clear filters</button>':'')+'</div></td></tr>')+'</tbody>'
     +'</table></div>';
 }
 function setPF(p){phF=p;renderCandidates();}

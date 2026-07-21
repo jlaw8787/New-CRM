@@ -3040,7 +3040,7 @@ var EC=null,ECid=null;
 // CANDIDATE MODAL
 var MTab="Profile";
 function openCandModal(){if(!EC)return;document.getElementById("modal").style.maxWidth="960px";document.getElementById("m-ttl").textContent=EC.name||"New Candidate";document.getElementById("mo").style.display="flex";document.getElementById("m-info").innerHTML="";renderMTabs();renderMBody();document.getElementById("m-foot").innerHTML='<button class="btn btn-d btn-sm" onclick="delCand()">Delete</button><div style="display:flex;gap:7px"><button class="btn btn-g" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="saveCand()">Save</button></div>';}
-function openNewCand(){var nc={id:uid(),name:"",classification:"RN",clinicalSkills:[],phase:"New Lead",priority:"med",consultantId:CU.role==="consultant"?CU.id:(users.find(function(u){return u.role==="consultant";})&&users.find(function(u){return u.role==="consultant";}).id||1),adminId:null,hot:false,phone:"",email:"",state:"QLD",availableFrom:"",lastCheckin:"",regions:[],preferences:"",travelLocations:[],travelNotes:"",tags:[],nurseType:"RN",yearsExperience:null,ahpraNumber:"",ahpraExpiry:"",dateOfBirth:"",address:"",emergencyContactName:"",emergencyContactPhone:"",source:"",preferredBlockLength:null,minRate:null,hasCar:false,accommodationRequired:false,partnerAccommodation:false,doNotContact:false,doNotContactReason:"",spiel:"",preferredName:"",gender:"",addressSuburb:"",addressPostcode:"",nearestAirport:"",emergencyContactRelationship:"",currentEmployer:"",homeEmploymentType:"",maxBlockLength:null,startNoticeDays:null,excludedStates:[],excludedFacilities:"",preferredAccommodationType:"",willingToDrive:false,partnerFamilyDetails:"",certifications:[],emrSystems:[],yearsTravelNursing:null,previousAgencies:"",highestQualification:"",specialisationNotes:"",paymentType:"PAYG",abnNumber:"",stateIncrements:{},blacklistedFacilities:"",adminNotes:"",activity:[],compliance:{items:{}},submissions:[],travel:{flights:[],accommodation:[],carHire:[],expenses:[]},contracts:[]};EC=nc;ECid=null;MTab="Profile";openCandModal();}
+function openNewCand(){var nc={id:uid(),name:"",classification:"RN",clinicalSkills:[],primarySkill:null,phase:"New Lead",priority:"med",consultantId:CU.role==="consultant"?CU.id:(users.find(function(u){return u.role==="consultant";})&&users.find(function(u){return u.role==="consultant";}).id||1),adminId:null,hot:false,phone:"",email:"",state:"QLD",availableFrom:"",availableTo:"",lastCheckin:"",regions:[],statesOpen:[],preferences:"",travelLocations:[],travelNotes:"",tags:[],nurseType:"RN",yearsExperience:null,ahpraNumber:"",ahpraExpiry:"",dateOfBirth:"",address:"",emergencyContactName:"",emergencyContactPhone:"",source:"",preferredBlockLength:null,minRate:null,hasCar:false,accommodationRequired:false,partnerAccommodation:false,doNotContact:false,doNotContactReason:"",spiel:"",preferredName:"",gender:"",addressSuburb:"",addressPostcode:"",nearestAirport:"",emergencyContactRelationship:"",currentEmployer:"",homeEmploymentType:"",maxBlockLength:null,startNoticeDays:null,excludedStates:[],excludedFacilities:"",preferredAccommodationType:"",willingToDrive:false,partnerFamilyDetails:"",certifications:[],emrSystems:[],yearsTravelNursing:null,previousAgencies:"",highestQualification:"",specialisationNotes:"",paymentType:"PAYG",abnNumber:"",stateIncrements:{},blacklistedFacilities:"",adminNotes:"",activity:[],compliance:{items:{}},submissions:[],travel:{flights:[],accommodation:[],carHire:[],expenses:[]},contracts:[]};EC=nc;ECid=null;MTab="Profile";openCandModal();}
 function renderMTabs(){document.getElementById("m-tabs").innerHTML="";}
 function renderMBody(){
   var h="<div class=\"fb\"><div class=\"sh\">Personal Details</div><div class=\"fr f2\">";h+="<div class=\"fg\"><label>Full Name <span class=\"req\">*</span></label><input value=\""+esc(EC.name)+"\" oninput=\"EC.name=this.value;document.getElementById(\&apos;m-ttl\&apos;).textContent=this.value||\&apos;New Candidate\&apos;\"></div>";h+="<div class=\"fg\"><label>Classification</label><select oninput=\"EC.classification=this.value\">"+CLSF.map(function(x){return"<option"+(EC.classification===x?" selected":"")+">"+x+"</option>";}).join("")+"</select></div></div>";h+="<div class=\"fr f2\"><div class=\"fg\"><label>Phone</label><input value=\""+esc(EC.phone||"")+"\" oninput=\"EC.phone=this.value\"></div><div class=\"fg\"><label>Email</label><input value=\""+esc(EC.email||"")+"\" oninput=\"EC.email=this.value\"></div></div>";h+="<div class=\"fg\"><label>State/Base</label><select oninput=\"EC.state=this.value\">"+["NT","QLD","WA","SA","NSW","VIC","TAS","ACT"].map(function(s){return"<option"+(EC.state===s?" selected":"")+">"+s+"</option>";}).join("")+"</select></div>";h+="<div class=\"fg\"><label>Available From</label><input type=\"date\" value=\""+(EC.availableFrom||"")+"\" oninput=\"EC.availableFrom=this.value\"></div>";h+="<div class=\"fg\"><label>Tags (comma-sep)</label><input value=\""+esc((EC.tags||[]).join(", "))+"\" oninput=\"EC.tags=this.value.split(\&apos;,\&apos;).map(function(t){return t.trim();}).filter(Boolean)\"></div>";h+="<div class=\"fg\"><label>Notes / Preferences</label><textarea oninput=\"EC.preferences=this.value\">"+esc(EC.preferences||"")+"</textarea></div>";
@@ -3676,6 +3676,14 @@ function openCandAtCheckin(cid){
 function cpCell(lbl,val,full){if(val===''||val===null||val===undefined)return'';return'<div class="cp-cell'+(full?' cp-full':'')+'"><div class="cp-lbl">'+lbl+'</div><div class="cp-val">'+val+'</div></div>';}
 function cpBadges(arr,cls){return arr&&arr.length?arr.map(function(s){return'<span class="badge '+(cls||'b-tl')+'" style="font-size:9px">'+esc(s)+'</span>';}).join(' '):'<span style="color:var(--t3)">None</span>';}
 function cpBool(val,trueLabel,falseLabel){return val?'<span class="badge b-ok" style="font-size:9px">'+(trueLabel||'Yes')+'</span>':'<span style="color:var(--t3);font-size:11px">'+(falseLabel||'No')+'</span>';}
+function cpToggleStateOpen(code,on){if(!cpEditData.statesOpen)cpEditData.statesOpen=[];if(on){if(cpEditData.statesOpen.indexOf(code)<0)cpEditData.statesOpen.push(code);}else cpEditData.statesOpen=cpEditData.statesOpen.filter(function(s){return s!==code;});}
+function cpSyncPrimarySkillOptions(){
+  var sel=document.getElementById('cp-primary-skill-sel');
+  if(!sel)return;
+  var skills=cpEditData.clinicalSkills||[];
+  if(skills.indexOf(cpEditData.primarySkill)<0)cpEditData.primarySkill=null;
+  sel.innerHTML='<option value="">Not set</option>'+skills.map(function(s){return'<option'+(cpEditData.primarySkill===s?' selected':'')+'>'+esc(s)+'</option>';}).join('');
+}
 function cpKeyFact(lbl,val){return'<div><div class="key-fact-label">'+lbl+'</div><div class="key-fact-value">'+val+'</div></div>';}
 
 function cpToggle(id){cpOpen[id]=cpOpen[id]===false;var el=document.getElementById('cps-'+id);if(el)el.classList.toggle('cp-closed');}
@@ -4696,9 +4704,11 @@ function renderCandPage(){
   // ── AVAILABILITY VIEW ─────────────────────────────────────────────────────────
   var avView='<div class="cp-grid">'
     +cpCell('AVAILABLE FROM',c.availableFrom?'<strong>'+fmt(c.availableFrom)+'</strong>':'<em style="color:var(--t3)">Not set</em>')
+    +cpCell('AVAILABLE TO',c.availableTo?fmt(c.availableTo):'<em style="color:var(--t3)">Open-ended</em>')
     +cpCell('PREF. BLOCK',c.preferredBlockLength?c.preferredBlockLength+' weeks':'Flexible')
     +cpCell('MAX BLOCK',c.maxBlockLength?c.maxBlockLength+' weeks':'No limit')
     +cpCell('NOTICE REQUIRED',c.startNoticeDays?c.startNoticeDays+' days':'')
+    +cpCell('STATES OPEN TO',c.statesOpen&&c.statesOpen.length?cpBadges(c.statesOpen):'<span style="color:var(--t3)">Not set</span>',true)
     +cpCell('PREFERRED STATES',c.regions&&c.regions.length?cpBadges(c.regions):'<span style="color:var(--t3)">Flexible</span>',true)
     +(c.excludedStates&&c.excludedStates.length?cpCell('WILL NOT GO TO',cpBadges(c.excludedStates,'b-rd'),true):'')
     +cpCell('EXCL. FACILITIES',c.excludedFacilities||'',true)
@@ -4713,10 +4723,12 @@ function renderCandPage(){
     +'</div>';
   var avEdit='<div class="fr f2">'
     +'<div class="fg"><label>Available From</label><input type="date" value="'+(d.availableFrom||'')+'" oninput="cpEditData.availableFrom=this.value"></div>'
+    +'<div class="fg"><label>Available To</label><input type="date" value="'+(d.availableTo||'')+'" oninput="cpEditData.availableTo=this.value"><div style="font-size:9px;color:var(--t3);margin-top:3px">Leave blank for open-ended</div></div>'
     +'<div class="fg"><label>Notice Required (days)</label><input type="number" min="0" value="'+(d.startNoticeDays!=null?d.startNoticeDays:'')+'" oninput="cpEditData.startNoticeDays=this.value?+this.value:null"></div>'
     +'<div class="fg"><label>Preferred Block</label><select oninput="cpEditData.preferredBlockLength=this.value?+this.value:null"><option value=""'+(!(d.preferredBlockLength)?' selected':'')+'>Flexible</option>'+[4,6,8,12,13].map(function(w){return'<option value="'+w+'"'+(d.preferredBlockLength===w?' selected':'')+'>'+w+' wks</option>';}).join('')+'</select></div>'
     +'<div class="fg"><label>Max Block</label><select oninput="cpEditData.maxBlockLength=this.value?+this.value:null"><option value=""'+(!(d.maxBlockLength)?' selected':'')+'>No limit</option>'+[4,6,8,12,13,26,52].map(function(w){return'<option value="'+w+'"'+(d.maxBlockLength===w?' selected':'')+'>'+w+' wks</option>';}).join('')+'</select></div>'
     +'</div>'
+    +'<div class="fg"><label>States Open To</label><div style="display:flex;gap:12px;flex-wrap:wrap;padding:4px 0">'+['QLD','WA','SA','TAS','NT','NSW','VIC','ACT'].map(function(sc){return'<label style="font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" '+((d.statesOpen||[]).indexOf(sc)>=0?'checked':'')+' onchange="cpToggleStateOpen(&apos;'+sc+'&apos;,this.checked)"> '+sc+'</label>';}).join('')+'</div></div>'
     +'<div class="fg"><label>Preferred States / Regions</label><input value="'+esc((d.regions||[]).join(', '))+'" oninput="cpEditData.regions=this.value.split(&apos;,&apos;).map(function(s){return s.trim();}).filter(Boolean)" placeholder="NT Remote, Darwin, QLD Remote"></div>'
     +'<div class="fg"><label>States Will NOT Go To</label><input value="'+esc((d.excludedStates||[]).join(', '))+'" oninput="cpEditData.excludedStates=this.value.split(&apos;,&apos;).map(function(s){return s.trim();}).filter(Boolean)" placeholder="TAS, ACT"></div>'
     +'<div class="fg"><label>Facilities Will NOT Go To</label><input value="'+esc(d.excludedFacilities||'')+'" oninput="cpEditData.excludedFacilities=this.value"></div>'
@@ -4733,12 +4745,14 @@ function renderCandPage(){
 
   // ── CLINICAL VIEW ─────────────────────────────────────────────────────────────
   var clView='<div class="cp-grid">'
+    +cpCell('PRIMARY SPECIALTY',c.primarySkill?'<strong>'+esc(c.primarySkill)+'</strong>':'<em style="color:var(--t3)">Not set</em>')
     +'<div class="cp-cell cp-full"><div class="cp-lbl">CLINICAL SKILLS</div><div class="cp-val">'+cpBadges(c.clinicalSkills)+'</div></div>'
     +(c.certifications&&c.certifications.length?'<div class="cp-cell cp-full"><div class="cp-lbl">CERTIFICATIONS</div><div class="cp-val">'+cpBadges(c.certifications,'b-bl')+'</div></div>':'')
     +(c.emrSystems&&c.emrSystems.length?'<div class="cp-cell cp-full"><div class="cp-lbl">EMR SYSTEMS</div><div class="cp-val">'+cpBadges(c.emrSystems,'b-gy')+'</div></div>':'')
     +'</div>';
   var clEdit=''
-    +'<div class="fg"><label>Clinical Skills / Specialties</label><input value="'+esc((d.clinicalSkills||[]).join(', '))+'" oninput="cpEditData.clinicalSkills=this.value.split(&apos;,&apos;).map(function(s){return s.trim();}).filter(Boolean)" placeholder="ICU/CCU, Emergency, Theatre"></div>'
+    +'<div class="fg"><label>Clinical Skills / Specialties</label><input value="'+esc((d.clinicalSkills||[]).join(', '))+'" oninput="cpEditData.clinicalSkills=this.value.split(&apos;,&apos;).map(function(s){return s.trim();}).filter(Boolean);cpSyncPrimarySkillOptions()" placeholder="ICU/CCU, Emergency, Theatre"></div>'
+    +'<div class="fg"><label>Primary Specialty</label><select id="cp-primary-skill-sel" oninput="cpEditData.primarySkill=this.value||null"><option value="">Not set</option>'+(d.clinicalSkills||[]).map(function(s){return'<option'+(d.primarySkill===s?' selected':'')+'>'+esc(s)+'</option>';}).join('')+'</select><div style="font-size:9px;color:var(--t3);margin-top:3px">Options come from Clinical Skills above</div></div>'
     +'<div class="fg"><label>Certifications</label><input value="'+esc((d.certifications||[]).join(', '))+'" oninput="cpEditData.certifications=this.value.split(&apos;,&apos;).map(function(s){return s.trim();}).filter(Boolean)" placeholder="ALS, PALS, BLS"></div>'
     +'<div class="fg"><label>EMR Systems</label><input value="'+esc((d.emrSystems||[]).join(', '))+'" oninput="cpEditData.emrSystems=this.value.split(&apos;,&apos;).map(function(s){return s.trim();}).filter(Boolean)" placeholder="ieMR, Sunrise, eMeds, FirstNet"></div>';
 
@@ -8085,11 +8099,11 @@ function mapDocRow(d){
 function mapCandidate(row,acts,comps,subs,cons,fls,acs,cars,exps,docs){
   return{
     id:row.id,name:row.name,classification:row.classification||'RN',
-    clinicalSkills:row.clinical_skills||[],phase:row.phase||'New Lead',
+    clinicalSkills:row.clinical_skills||[],primarySkill:row.primary_skill||null,phase:row.phase||'New Lead',
     priority:row.priority||'med',consultantId:row.consultant_id,adminId:row.admin_id,
     hot:!!row.hot,phone:row.phone||'',email:row.email||'',state:row.state||'',
-    availableFrom:row.available_from||'',lastCheckin:row.last_checkin||'',
-    regions:row.regions||[],preferences:row.preferences||'',
+    availableFrom:row.available_from||'',availableTo:row.available_to||'',lastCheckin:row.last_checkin||'',
+    regions:row.regions||[],statesOpen:row.states_open||[],preferences:row.preferences||'',
     travelLocations:row.travel_locations||[],travelNotes:row.travel_notes||'',
     tags:row.tags||[],notes:row.notes||'',
     lastEditedBy:row.last_edited_by||'',lastEditedAt:row.last_edited_at||'',
@@ -8241,11 +8255,11 @@ async function syncCandidateToDb(c){
   var dbErr=function(label,r){if(r&&r.error)console.error('[DB] '+label,r.error);};
   var candPayload={
     name:c.name,classification:c.classification,
-    clinical_skills:c.clinicalSkills,phase:c.phase,priority:c.priority,
+    clinical_skills:c.clinicalSkills,primary_skill:c.primarySkill||null,phase:c.phase,priority:c.priority,
     consultant_id:c.consultantId,admin_id:c.adminId,hot:!!c.hot,
     phone:c.phone||null,email:c.email||null,state:c.state||null,
-    available_from:c.availableFrom||null,last_checkin:c.lastCheckin||null,
-    regions:c.regions,preferences:c.preferences||null,
+    available_from:c.availableFrom||null,available_to:c.availableTo||null,last_checkin:c.lastCheckin||null,
+    regions:c.regions,states_open:c.statesOpen||[],preferences:c.preferences||null,
     travel_locations:c.travelLocations,travel_notes:c.travelNotes||null,
     tags:c.tags,notes:c.notes||null,
     last_edited_by:c.lastEditedBy||null,last_edited_at:c.lastEditedAt||null,

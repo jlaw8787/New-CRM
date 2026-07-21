@@ -8279,6 +8279,53 @@ function sfReadinessRingHtml(pct,ringColor,verdictLabel){
     +'<div style="font-size:11px;color:var(--t3);margin-top:2px">This flags gaps. It never blocks submission.</div>'
     +'</div></div>';
 }
+function sfTogglePackCollapse(key){sfPackCollapseOpen[key]=!sfPackCollapseOpen[key];sfRender();}
+// A row needs attention (stays visible, sorted above the collapse) if it's
+// missing/unverified, OR it's met/provided but expiring within 30 days --
+// per Stage 4, a soon-to-lapse item is still worth surfacing even though it
+// technically satisfies the requirement today. Info rows are never counted
+// but always stay visible since they carry guidance, not a pass/fail state.
+function sfPackRowMeta(x,matchOf,c){
+  var r=x.r,m=matchOf[r.id];
+  var isInfo=reqIsInfoRow(r);
+  var satisfiedDocId=sfReqSatisfiedBy[r.id];
+  var effStatus=isInfo?'info':(satisfiedDocId?'provided':m.status);
+  var expiryDays=(m.match&&m.match.expiry)?ddiff(m.match.expiry):null;
+  var expiringSoon=(effStatus==='met'||effStatus==='provided')&&expiryDays!==null&&expiryDays<=30;
+  var attention=!isInfo&&(effStatus==='missing'||effStatus==='unverified'||expiringSoon);
+  return{x:x,visible:isInfo||attention};
+}
+function sfPackScopedRowsHtml(items,matchOf,c,scopeLabelMap){
+  var lastScope=null,html='';
+  items.forEach(function(w){
+    if(w.x.scope!==lastScope){
+      html+='<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);padding:8px 12px 2px;opacity:.8">'+esc(scopeLabelMap[w.x.scope])+'</div>';
+      lastScope=w.x.scope;
+    }
+    html+=sfPackRowHtml(w.x.r,matchOf[w.x.r.id],c);
+  });
+  return html;
+}
+function sfPackTimingSectionHtml(timingKey,titleLabel,scopedRows,matchOf,c,scopeLabelMap){
+  if(!scopedRows.length)return'';
+  var meta=scopedRows.map(function(x){return sfPackRowMeta(x,matchOf,c);});
+  var visible=meta.filter(function(w){return w.visible;});
+  var collapsed=meta.filter(function(w){return!w.visible;});
+  var openKey='pack_'+timingKey;
+  var isOpen=!!sfPackCollapseOpen[openKey];
+  var collapseHtml='';
+  if(collapsed.length){
+    collapseHtml='<div class="cp-row" style="padding:8px 12px;cursor:pointer;color:var(--t3);font-size:11px;display:flex;align-items:center;gap:6px" onclick="sfTogglePackCollapse(&apos;'+openKey+'&apos;)">'
+      +'<span style="display:inline-block;transition:transform .15s ease;transform:rotate('+(isOpen?90:0)+'deg)">&#9656;</span>'
+      +collapsed.length+' satisfied</div>'
+      +(isOpen?sfPackScopedRowsHtml(collapsed,matchOf,c,scopeLabelMap):'');
+  }
+  return '<div style="margin-bottom:4px">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--t2);padding:10px 12px 4px">'+esc(titleLabel)+'</div>'
+    +sfPackScopedRowsHtml(visible,matchOf,c,scopeLabelMap)
+    +collapseHtml
+    +'</div>';
+}
 function sfCompliancePackHtml(c,fac){
   var resolved=sfMergeChecklistIntoResolved(resolveFacilityRequirements(fac),fac);
   var allReqs=resolved.state.concat(resolved.healthService,resolved.facility,resolved.ward);
@@ -8291,11 +8338,14 @@ function sfCompliancePackHtml(c,fac){
   var pct=totalCount>0?Math.round(metCount/totalCount*100):100;
   var allGood=pct===100;
   var stateLabel=(SR[fac.state]&&SR[fac.state].label)||fac.state||'State';
-  function grp(label,rows){
-    if(!rows.length)return'';
-    return '<div style="font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);padding:8px 12px 4px">'+esc(label)+'</div>'
-      +rows.map(function(r){return sfPackRowHtml(r,matchOf[r.id],c);}).join('');
-  }
+  var scopeLabelMap={state:stateLabel+' (all facilities)',hhs:fac.healthAuthority||'Health service',facility:'This facility',ward:'Ward-specific (conditional)'};
+  var scopedRows=[];
+  resolved.state.forEach(function(r){scopedRows.push({r:r,scope:'state'});});
+  resolved.healthService.forEach(function(r){scopedRows.push({r:r,scope:'hhs'});});
+  resolved.facility.forEach(function(r){scopedRows.push({r:r,scope:'facility'});});
+  resolved.ward.forEach(function(r){scopedRows.push({r:r,scope:'ward'});});
+  var onSubmissionRows=scopedRows.filter(function(x){return x.r.timing==='on_submission';});
+  var beforeStartRows=scopedRows.filter(function(x){return x.r.timing!=='on_submission';});
   var needCount=totalCount-metCount;
   var ringColor=allGood?'var(--ok)':'var(--warn)';
   var verdictLabel=allGood?'Ready to submit':(needCount+' item'+(needCount===1?'':'s')+' need attention before start');
@@ -8303,10 +8353,8 @@ function sfCompliancePackHtml(c,fac){
   return '<div class="cp-lbl" style="margin-bottom:8px">Compliance pack for '+esc(fac.name)+'</div>'
     +summary
     +'<div style="background:var(--bg);border-radius:12px;padding:4px 0;overflow:hidden;margin-bottom:16px">'
-    +grp(stateLabel+' (all facilities)',resolved.state)
-    +grp(fac.healthAuthority||'Health service',resolved.healthService)
-    +grp('This facility',resolved.facility)
-    +grp('Ward-specific (conditional)',resolved.ward)
+    +sfPackTimingSectionHtml('on_submission','Needed to submit now',onSubmissionRows,matchOf,c,scopeLabelMap)
+    +sfPackTimingSectionHtml('before_commencing','Before start date',beforeStartRows,matchOf,c,scopeLabelMap)
     +'</div>';
 }
 

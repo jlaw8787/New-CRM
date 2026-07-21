@@ -2202,17 +2202,21 @@ function candGridFilterList(list){
   });
 }
 function candGridChipsHtml(){
+  // label is built pre-escaped (dynamic parts run through esc() here, at construction) and
+  // inserted as-is below -- it is NOT re-escaped at render time, because the availability
+  // chip's label deliberately contains a raw &ndash; entity that a second esc() pass would
+  // turn into literal "&ndash;" text (esc() escapes '&', so &ndash; becomes &amp;ndash;).
   var chips=[];
-  candGridFilt.areas.forEach(function(a){chips.push({label:'Clinical area: '+a,onclick:'cgToggleArea(&apos;'+jsAttrEsc(a)+'&apos;)'});});
-  candGridFilt.states.forEach(function(s){chips.push({label:'State: '+s,onclick:'cgToggleState(&apos;'+jsAttrEsc(s)+'&apos;)'});});
+  candGridFilt.areas.forEach(function(a){chips.push({label:'Clinical area: '+esc(a),onclick:'cgToggleArea(&apos;'+jsAttrEsc(a)+'&apos;)'});});
+  candGridFilt.states.forEach(function(s){chips.push({label:'State: '+esc(s),onclick:'cgToggleState(&apos;'+jsAttrEsc(s)+'&apos;)'});});
   if(candGridFilt.availFrom||candGridFilt.availTo){
-    var lbl='Available: '+(candGridFilt.availFrom?fmt(candGridFilt.availFrom):'any')+' &ndash; '+(candGridFilt.availTo?fmt(candGridFilt.availTo):'ongoing');
+    var lbl='Available: '+(candGridFilt.availFrom?esc(fmt(candGridFilt.availFrom)):'any')+' &ndash; '+(candGridFilt.availTo?esc(fmt(candGridFilt.availTo)):'ongoing');
     chips.push({label:lbl,onclick:'cgClearAvail()'});
   }
   if(!chips.length)return'';
   return'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px">'
     +chips.map(function(ch){
-      return'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;background:var(--brand-l);color:var(--brand)">'+esc(ch.label)
+      return'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;background:var(--brand-l);color:var(--brand)">'+ch.label
         +'<span onclick="'+ch.onclick+'" style="cursor:pointer;font-weight:700;line-height:1">&times;</span></span>';
     }).join('')
     +'<button class="btn btn-g btn-sm" onclick="cgClearAll()">Clear all &times;</button>'

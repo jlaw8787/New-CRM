@@ -1364,7 +1364,7 @@ function getAutos(cands){
 
 
 // LOGIN / STATE
-var CU=null,VCon=null,curPage="home",phF="All",srchQ="",pTab="Activity",MTab="Profile",facSort="name",facState="All",facType="All",facQ="";
+var CU=null,VCon=null,curPage="home",phF="All",srchQ="",pTab="Activity",MTab="Profile",facSort="name",facState="All",facType="All",facQ="",candView="list";
 var jbNewCount=0,jobMatchFilt=null;
 var mbCollapsed=false,mbAvailExpanded=false,mbRolesExpanded=false,mbCompExpanded=false,mbCheckinExpanded=false,mbFollowupExpanded=false;
 var subFiltStatus=localStorage.getItem('hca_sf_st')||'All';
@@ -2096,6 +2096,55 @@ function renderHome(){
 }
 function setVC(id){VCon=id;updateBadges();renderPage();}
 
+// ── CANDIDATE GRID — clinical area colour map (Slice 2 step A), defined once ──
+// Real clinicalSkills/classification data is freeform text (e.g. "ICU/CCU", "Emergency"),
+// not a fixed taxonomy, so CA_ALIASES maps known synonyms to one of the 7 named areas.
+// Anything that doesn't match an alias falls back to CA_NEUTRAL, same as the mockup's
+// "anything else = neutral" rule -- it is not guessing a category for unrecognised text.
+var CA_COLORS={
+  'ED':{solid:'#0d9488',bg:'#ccfbf1'},
+  'Medical':{solid:'#2563eb',bg:'#dbeafe'},
+  'Renal':{solid:'#d97706',bg:'#fef3c7'},
+  'Mental Health':{solid:'#7c3aed',bg:'#ede9fe'},
+  'Theatre':{solid:'#db2777',bg:'#fce7f3'},
+  'Midwifery':{solid:'#16a34a',bg:'#dcfce7'},
+  'ICU':{solid:'#e11d48',bg:'#ffe4e6'}
+};
+var CA_NEUTRAL={solid:'#6b7280',bg:'#f3f4f6'};
+var CA_ALIASES={
+  'ed':'ED','emergency':'ED','emergency department':'ED','ed rn':'ED',
+  'medical':'Medical','general medicine':'Medical',
+  'renal':'Renal','dialysis':'Renal',
+  'mental health':'Mental Health','mental health rn':'Mental Health','psych':'Mental Health','psychiatry':'Mental Health',
+  'theatre':'Theatre','theatre scrub':'Theatre','theatre scout':'Theatre','perioperative':'Theatre',
+  'midwifery':'Midwifery','maternity':'Midwifery','obstetrics':'Midwifery','midwife':'Midwifery',
+  'icu':'ICU','icu/ccu':'ICU','ccu':'ICU','critical care':'ICU','icu/ccu rn':'ICU'
+};
+function caColorFor(area){var canon=CA_ALIASES[(area||'').toLowerCase().trim()];return canon?CA_COLORS[canon]:CA_NEUTRAL;}
+function caPillHtml(area,solid){
+  var col=caColorFor(area);
+  return solid
+    ?'<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:'+col.bg+';color:'+col.solid+'">'+esc(area)+'</span>'
+    :'<span style="display:inline-flex;align-items:center;padding:1px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;background:transparent;border:1px solid '+col.solid+';color:'+col.solid+'">'+esc(area)+'</span>';
+}
+function candGridAreaPills(c){
+  var skills=(c.clinicalSkills||[]).filter(Boolean);
+  if(!skills.length)return'<span style="color:var(--t3)">&mdash;</span>';
+  return skills.map(function(s){return caPillHtml(s,s===c.primarySkill);}).join(' ');
+}
+function candGridAvailHtml(c){
+  if(c.availableFrom&&c.availableTo)return'<span style="font-size:11px;color:var(--t2)">'+fmt(c.availableFrom)+' &ndash; '+fmt(c.availableTo)+'</span>';
+  if(c.availableFrom)return'<span style="font-size:11px;color:var(--t2)">from '+fmt(c.availableFrom)+' <span style="color:var(--t4)">&middot; ongoing</span></span>';
+  return'<span style="color:var(--t4)">&mdash;</span>';
+}
+function candGridCompColor(sc){return sc>=85?'var(--ok)':sc>=60?'var(--warn)':'var(--danger)';}
+function candGridInitials(name){
+  var parts=(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length)return'?';
+  return(parts[0][0]+(parts.length>1?parts[parts.length-1][0]:'')).toUpperCase();
+}
+function setCandView(v){candView=v;renderCandidates();}
+
 function renderCandidates(){
   var cands=vc();
   var filtered=cands.filter(function(c){
@@ -2194,15 +2243,42 @@ function renderCandidates(){
     +'<div class="sw-wrap"><svg class="sw-ico" viewBox="0 0 24 24"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>'
     +'<input placeholder="Search name, email, role, tag..." value="'+esc(srchQ)+'" oninput="srchQ=this.value;renderCandidates()" style="width:260px"></div>'
     +(srchQ?'<button class="btn btn-g btn-sm" onclick="srchQ=\'\';renderCandidates()">Clear &times;</button>':"")
-    +'<span style="font-size:11px;color:var(--t3);margin-left:auto">'+filtered.length+' candidate'+(filtered.length!==1?"s":"")+'</span>'
+    +'<div style="margin-left:auto;display:flex;align-items:center;gap:10px">'
+    +'<span style="font-size:11px;color:var(--t3)">'+filtered.length+' candidate'+(filtered.length!==1?"s":"")+'</span>'
+    +'<div style="display:flex;background:var(--bg);border-radius:8px;padding:2px">'
+    +'<button class="toggle-pill'+(candView==='list'?' on':'')+'" onclick="setCandView(&apos;list&apos;)">List</button>'
+    +'<button class="toggle-pill'+(candView==='grid'?' on':'')+'" onclick="setCandView(&apos;grid&apos;)">Grid</button>'
+    +'</div></div>'
     +'</div>'
-    // Table
-    +'<div class="card" style="box-shadow:0 1px 3px rgba(0,0,0,.06)">'
+    // Table — list view (existing, unchanged) or grid view (new, Slice 2 step A)
+    +(candView==='grid'?renderCandGridTable(filtered,cands):
+    '<div class="card" style="box-shadow:0 1px 3px rgba(0,0,0,.06)">'
     +'<table class="tbl" style="table-layout:auto"><thead><tr>'
     +'<th>Candidate</th><th>Classification</th><th>Phase</th><th>Compliance</th><th>Check-in</th><th>Available</th><th>Next Action</th>'
     +(CU.role!=="consultant"?"<th>Consultant</th>":"")
     +'</tr></thead>'
     +'<tbody>'+(rows||'<tr><td colspan="'+cols+'"><div class="empty-st">'+I.person+'<b>'+(cands.length?'No candidates match':'No candidates yet')+'</b><p>'+(cands.length?'Try adjusting your filters or search.':'Add your first candidate to get started.')+'</p>'+(cands.length?'<button class="btn btn-g btn-sm" onclick="phF=\'All\';srchQ=\'\';renderCandidates()">Clear filters</button>':'<button class="btn btn-p btn-sm" onclick="openNewCand()">+ Add Candidate</button>')+'</div></td></tr>')+'</tbody>'
+    +'</table></div>');
+}
+function renderCandGridTable(filtered,cands){
+  var rows=filtered.map(function(c){
+    var sc=cmpScore(c);
+    return'<tr onclick="openCandPage('+c.id+')" style="cursor:pointer">'
+      +'<td><div style="display:flex;align-items:center;gap:8px">'
+      +'<span style="width:24px;height:24px;border-radius:50%;background:var(--brand-l);color:var(--brand);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">'+esc(candGridInitials(c.name))+'</span>'
+      +'<span class="cp">'+esc(c.name||'')+'</span></div></td>'
+      +'<td><div class="pills-cell" style="display:flex;flex-wrap:wrap;gap:4px">'+candGridAreaPills(c)+'</div></td>'
+      +'<td style="font-size:11px;color:var(--t3)">'+(c.statesOpen&&c.statesOpen.length?esc(c.statesOpen.join(', ')):'<span style="color:var(--t4)">&mdash;</span>')+'</td>'
+      +'<td>'+candGridAvailHtml(c)+'</td>'
+      +'<td style="font-size:12px;font-weight:700;color:'+candGridCompColor(sc)+'">'+sc+'%</td>'
+      +'<td><span class="badge '+bClass(c.phase)+'" style="font-size:9px">'+esc(c.phase||'')+'</span></td>'
+      +'</tr>';
+  }).join("");
+  return'<div class="card" style="box-shadow:0 1px 3px rgba(0,0,0,.06)">'
+    +'<table class="tbl" style="table-layout:auto"><thead><tr>'
+    +'<th>Name</th><th>Clinical Areas</th><th>States</th><th>Available</th><th>Compliance</th><th>Status</th>'
+    +'</tr></thead>'
+    +'<tbody>'+(rows||'<tr><td colspan="6"><div class="empty-st">'+I.person+'<b>'+(cands.length?'No candidates match':'No candidates yet')+'</b><p>'+(cands.length?'Try adjusting your filters or search.':'Add your first candidate to get started.')+'</p></div></td></tr>')+'</tbody>'
     +'</table></div>';
 }
 function setPF(p){phF=p;renderCandidates();}

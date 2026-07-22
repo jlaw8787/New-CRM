@@ -310,7 +310,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .files-pending-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
 .files-pending-row:last-of-type{border-bottom:none}
 .files-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.files-tbl th{position:sticky;top:50px;background:var(--surface);z-index:1;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:700;text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;user-select:none}
+.files-tbl th{background:var(--surface);font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:700;text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;user-select:none}
 .files-tbl th:hover{color:var(--brand)}
 .files-tbl td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
 .files-tbl tr.superseded td{opacity:.5}
@@ -4863,14 +4863,14 @@ function renderCpActivity(c){
 }
 
 // ── GENERAL FILES COMPONENT (candidate + facility) ────────────────────────────
-var FILE_CATS=['CV','Contract','Rates/Competitor','Reference','Photo','Other'];
+var FILE_CATS=['CV','Contract','Rates/Competitor','Reference','Photo','Fact Sheet','Other'];
 var filesUI={};
 function filesUIState(key){if(!filesUI[key])filesUI[key]={filter:'All',sortCol:'date',sortDir:'desc',pending:[],showSuperseded:false,editingId:null,dragOver:false};return filesUI[key];}
 function filesEntity(type,id){return type==='candidate'?candidates.find(function(x){return x.id===id;}):facilities.find(function(x){return x.id===id;});}
 function filesRerenderPage(type){if(type==='candidate')renderCandPage();else renderFacPage();}
 function filesBucketPrefix(type){return type==='candidate'?'candidates':'facilities';}
 function filesDbCol(type){return type==='candidate'?'candidate_id':'facility_id';}
-function fileCatClass(cat){return {CV:'b-bl',Contract:'b-pu','Rates/Competitor':'b-am',Reference:'b-tl',Photo:'b-gn',Other:'b-gr'}[cat]||'b-gr';}
+function fileCatClass(cat){return {CV:'b-bl',Contract:'b-pu','Rates/Competitor':'b-am',Reference:'b-tl',Photo:'b-gn','Fact Sheet':'b-or',Other:'b-gr'}[cat]||'b-gr';}
 function guessFileCategory(name){
   var n=(name||'').toLowerCase();
   if(/\.(jpe?g|png|gif|heic|webp)$/.test(n))return 'Photo';
@@ -4879,6 +4879,7 @@ function guessFileCategory(name){
   if(tokens.indexOf('contract')>=0)return 'Contract';
   if(tokens.indexOf('rate')>=0||tokens.indexOf('rates')>=0||tokens.indexOf('competitor')>=0)return 'Rates/Competitor';
   if(tokens.indexOf('ref')>=0||tokens.indexOf('reference')>=0||tokens.indexOf('references')>=0)return 'Reference';
+  if(n.indexOf('fact sheet')>=0||tokens.indexOf('snapshot')>=0||tokens.indexOf('profile')>=0)return 'Fact Sheet';
   return 'Other';
 }
 async function uploadGeneralFile(type,id,file){

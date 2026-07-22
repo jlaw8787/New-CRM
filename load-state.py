@@ -68,7 +68,45 @@ STATE_CONFIGS = {
             {'name': 'Tennant Creek Hospital', 'health_authority': 'Barkly Region'},
         ],
     },
-    # 'SA': { ... fill after reading `python load-state.py SA --check` ... },
+    'SA': {
+        'model': 'override',  # facility lists supersede region; heavy cross-overlap
+        # 4 clean LHN region lists (1 row per item in the source)
+        'region_map': {
+            'FLINDERS AND UPPER NORTH LHN': 'Flinders And Upper North LHN',
+            'EYRE AND FAR NORTH LHN': 'Eyre And Far North LHN',
+            'BAROSSA HILLS LHN': 'Barossa Hills LHN',
+            'LIMESTONE COAST LHN': 'Limestone Coast LHN',
+        },
+        # named sites resolve by title_case of the source facility text, which
+        # already equals the imported facility name, so no explicit map needed
+        'facility_map': {},
+        # HELD: broken or redundant in the parse, load separately after xlsx cleanup.
+        #   Balaklava, Riverton -> 95 rows for 31 real items (tripled)
+        #   Meningie            -> 45 rows for 24 items (doubled)
+        #   ALL SITES           -> miscategorised as facility, 89-94% duplicated everywhere
+        'hold': {'BALAKLAVA, RIVERTON', 'MENINGIE', 'ALL SITES'},
+        # 9 clean named sites. health_authority is 'SA Health' on purpose: it does
+        # NOT equal any LHN scope_name, so each site carries only its own list and
+        # never inherits an LHN (which would duplicate ~90% of items). 'SA Health'
+        # is a display placeholder, refine per-site later if wanted.
+        'import_facilities': [
+            {'name': 'Tanunda', 'region': 'Barossa', 'type': 'Public', 'health_authority': 'SA Health'},
+            {'name': 'Loxton', 'region': 'Riverland', 'type': 'Public', 'health_authority': 'SA Health'},
+            {'name': 'Mannum', 'region': 'Murraylands', 'type': 'Public', 'health_authority': 'SA Health'},
+            {'name': 'Riverland General', 'region': 'Riverland', 'type': 'Public', 'health_authority': 'SA Health'},
+            {'name': 'Kangaroo Island Health Service', 'region': 'Kangaroo Island', 'type': 'Public', 'health_authority': 'SA Health'},
+            {'name': 'Berri', 'region': 'Riverland', 'type': 'Public', 'health_authority': 'SA Health'},
+            {'name': 'Lameroo, Pinnaroo', 'region': 'Murray Mallee', 'type': 'Public', 'health_authority': 'SA Health'},
+            {'name': 'Riverland Residential', 'region': 'Riverland', 'type': 'Public', 'health_authority': 'SA Health'},
+            {'name': 'Nganampa Health Council', 'region': 'APY Lands', 'type': 'Public', 'health_authority': 'SA Health'},
+        ],
+        # both live SA facilities sit under Flinders and Upper North (per user).
+        # This overwrites Whyalla's current wrong tag ("Eyre Far North LHN").
+        'retag': [
+            {'name': 'Port Augusta Hospital', 'health_authority': 'Flinders And Upper North LHN'},
+            {'name': 'Whyalla Hospital', 'health_authority': 'Flinders And Upper North LHN'},
+        ],
+    },
     # 'WA': { ... },
 }
 
@@ -126,16 +164,22 @@ def overlap_report(state):
 
 
 def build_compliance_rows(state, cfg):
+    hold = {h.upper() for h in cfg.get('hold', set())}
     out = []
     for r in rows_for(state):
         fac = (r.get('facility') or '').strip()
+        reg = (r.get('region') or '').strip()
+        # Skip scopes deliberately held back (broken/duplicated/redundant in the
+        # source, to be cleaned and loaded separately). Match on the raw source
+        # scope text (facility if present, else region).
+        if (fac or reg).upper() in hold:
+            continue
         if fac:
             level = 'facility'
             scope = cfg['facility_map'].get(fac.upper(), title_case(fac))
         else:
             level = 'health_service'
-            scope = cfg['region_map'].get((r.get('region') or '').strip().upper(),
-                                          title_case((r.get('region') or '').strip()))
+            scope = cfg['region_map'].get(reg.upper(), title_case(reg))
         delivery = r['delivery']
         timing = 'on_submission' if delivery == 'zip' else 'before_commencing' if delivery == 'individual' else None
         required = str(r.get('required', 'True')).strip().lower() != 'false'

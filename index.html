@@ -722,6 +722,10 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
   <div id="sf-inner" style="background:var(--surface);width:100%;max-width:800px;border-radius:20px;margin:32px auto 48px;padding:32px 32px 24px;box-sizing:border-box;min-height:400px;box-shadow:0 24px 64px rgba(26,26,46,.32)"></div>
 </div>
 
+<div id="promo-ov" style="display:none;position:fixed;inset:0;background:rgba(26,26,46,.5);backdrop-filter:blur(2px);z-index:3000;overflow-y:auto" onclick="if(event.target===this)closePromoPanel()">
+  <div id="promo-inner" style="background:var(--surface);width:100%;max-width:920px;border-radius:20px;margin:32px auto 48px;padding:32px 32px 24px;box-sizing:border-box;min-height:400px;box-shadow:0 24px 64px rgba(26,26,46,.32)"></div>
+</div>
+
 <!-- GLOBAL SEARCH -->
 <div id="sr-ov" class="sr-overlay" style="display:none" onclick="if(event.target===this)closeSearch()">
   <div class="sr-box">
@@ -5102,6 +5106,206 @@ function renderFilesSection(type,id,isAdminOps){
   return dropZone+pendingHtml+filterBar+table+complianceNote;
 }
 
+// ── LOCATION PROMO (compose + send, slice 2) ────────────────────────────────
+// Slice 3 (send logging/dedupe) is not built yet. promoLogSend() below is the
+// seam for it -- called once, right after a successful copy, currently a
+// no-op. Footer policy text/version is a single constant so it can be edited
+// in one place without touching the email markup.
+var PROMO_LOGO_URL='https://jlaw8787.github.io/New-CRM/Images/platypus-logo.png';
+var PROMO_BRAND='#453A6B';
+var PROMO_POLICY_VERSION='Policy v0.1';
+var PROMO_POLICY_TEXT='This location promo is for candidate information only and is not a contractual offer. Rates, dates and details are indicative and subject to confirmation at the time of formal submission and facility sign-off.';
+
+var promoCandId=null,promoFacId=null,promoJobDates='',promoDuties='',promoRates='',promoIntro='';
+
+function openPromoPanel(candId){
+  var c=candidates.find(function(x){return x.id===candId;});
+  if(!c)return;
+  promoCandId=candId;promoFacId=null;promoJobDates='';promoDuties='';promoRates='';
+  promoIntro='Hi '+(c.preferredName||(c.name||'').split(' ')[0]||'there')+',\n\nWe have a role we think would be a great fit for you. Take a look at the details below.';
+  document.getElementById('promo-ov').style.display='flex';
+  renderPromoPanel();
+}
+function closePromoPanel(){document.getElementById('promo-ov').style.display='none';}
+
+function promoFactSheetOf(fac){
+  if(!fac)return null;
+  return (fac.documents||[]).find(function(d){return d.category==='Fact Sheet'&&d.isCurrent!==false;})||null;
+}
+
+// Facility documents are lazy-loaded per facility (same facFilesLoaded guard
+// openFacPage uses) -- picking a facility here that hasn't been visited this
+// session yet needs the same fetch, or its Fact Sheet would never appear.
+function promoPickFacility(val){
+  promoFacId=val?parseInt(val):null;
+  var fac=facilities.find(function(f){return f.id===promoFacId;});
+  if(fac&&sb&&!facFilesLoaded[fac.id]){
+    facFilesLoaded[fac.id]=true;
+    sb.from('documents').select('*').eq('facility_id',fac.id).then(function(r){
+      if(!r.error){
+        fac.documents=(r.data||[]).map(mapDocRow);
+        if(promoFacId===fac.id)renderPromoPanel();
+      }
+    });
+  }
+  renderPromoPanel();
+}
+// Text-field setters update state and refresh ONLY the preview pane (not the
+// whole panel), so typing doesn't steal focus/cursor position from the input.
+function promoSetJobDates(v){promoJobDates=v;promoUpdatePreview();}
+function promoSetDuties(v){promoDuties=v;promoUpdatePreview();}
+function promoSetRates(v){promoRates=v;promoUpdatePreview();}
+function promoSetIntro(v){promoIntro=v;promoUpdatePreview();}
+function promoUpdatePreview(){var el=document.getElementById('promo-preview');if(el)el.innerHTML=buildPromoEmailHtml();}
+
+function nl2br(s){return esc(s||'').replace(/\n/g,'<br>');}
+
+// Table-based layout with inline styles throughout -- this markup gets pasted
+// into Outlook (Word rendering engine), which ignores <style> blocks and
+// mangles flexbox/grid. Tables + inline styles is the only layout that survives.
+function buildPromoEmailHtml(){
+  var fac=facilities.find(function(f){return f.id===promoFacId;});
+  if(!fac)return '<div style="padding:40px;text-align:center;color:#9397ae;font-family:Arial,Helvetica,sans-serif;font-size:12px">Select a facility to preview the email.</div>';
+  var factSheet=promoFactSheetOf(fac);
+  var locationLine=[fac.region,fac.state].filter(Boolean).join(', ');
+  var accomText=fac.accommodationProvided?(fac.accommodationType?esc(fac.accommodationType):'Provided'):'Not provided';
+  if(fac.carRequired)accomText+=' &middot; Car required';
+  if(fac.remoteLoadingApplies)accomText+=' &middot; +'+parseFloat(fac.remoteLoadingPct||0)+'% remote loading';
+  var factSheetRow=factSheet
+    ?'<tr><td style="padding:0 32px 28px;font-family:Arial,Helvetica,sans-serif">'
+      +'<a href="'+esc(factSheet.fileUrl)+'" target="_blank" style="display:inline-block;background:'+PROMO_BRAND+';color:#ffffff;font-size:13px;font-weight:bold;text-decoration:none;padding:10px 20px;border-radius:6px">View fact sheet &mdash; '+esc(factSheet.fileName)+'</a>'
+      +'</td></tr>'
+    :'<tr><td style="padding:0 32px 28px;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9397ae">No fact sheet on file for this facility yet.</td></tr>';
+  return '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;background:#ffffff">'
+    +'<tr><td style="background-color:'+PROMO_BRAND+';padding:24px 32px">'
+      +'<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
+      +'<td style="vertical-align:middle;padding-right:14px"><img src="'+PROMO_LOGO_URL+'" width="40" alt="Captain Contract" style="display:block;border:0"></td>'
+      +'<td style="vertical-align:middle">'
+      +'<div style="color:#ffffff;font-size:19px;font-weight:bold">Captain Contract</div>'
+      +'<div style="color:#D8D3EE;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-top:2px">Location Promo</div>'
+      +'</td></tr></table>'
+    +'</td></tr>'
+    +'<tr><td style="padding:28px 32px 4px">'
+      +'<div style="font-size:18px;font-weight:bold;color:#1A1A2E">'+esc(fac.name)+'</div>'
+      +(locationLine?'<div style="font-size:13px;color:#5a5f7a;margin-top:2px">'+esc(locationLine)+'</div>':'')
+    +'</td></tr>'
+    +'<tr><td style="padding:12px 32px 20px;font-size:13px;color:#1A1A2E;line-height:1.6">'+nl2br(promoIntro)+'</td></tr>'
+    +'<tr><td style="padding:0 32px 24px">'
+      +'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e4ee;border-collapse:separate;border-radius:10px">'
+      +'<tr>'
+      +'<td style="padding:14px 18px;border-bottom:1px solid #e5e4ee;width:50%;vertical-align:top"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#9397ae">Job dates</div><div style="font-size:13px;color:#1A1A2E;margin-top:4px">'+(promoJobDates?nl2br(promoJobDates):'<span style="color:#9397ae">TBC</span>')+'</div></td>'
+      +'<td style="padding:14px 18px;border-bottom:1px solid #e5e4ee;width:50%;vertical-align:top"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#9397ae">Rates</div><div style="font-size:13px;color:#1A1A2E;margin-top:4px">'+(promoRates?nl2br(promoRates):'<span style="color:#9397ae">TBC (rate-card picker coming later)</span>')+'</div></td>'
+      +'</tr>'
+      +'<tr><td colspan="2" style="padding:14px 18px;border-bottom:1px solid #e5e4ee;vertical-align:top"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#9397ae">Duties</div><div style="font-size:13px;color:#1A1A2E;margin-top:4px">'+(promoDuties?nl2br(promoDuties):'<span style="color:#9397ae">TBC</span>')+'</div></td></tr>'
+      +'<tr><td colspan="2" style="padding:14px 18px;vertical-align:top"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#9397ae">Accommodation</div><div style="font-size:13px;color:#1A1A2E;margin-top:4px">'+accomText+'</div></td></tr>'
+      +'</table>'
+    +'</td></tr>'
+    +factSheetRow
+    +'<tr><td style="padding:20px 32px;background-color:#F7F7FB;border-top:1px solid #e5e4ee">'
+      +'<div style="font-size:10px;color:#9397ae;line-height:1.5">'+esc(PROMO_POLICY_TEXT)+'</div>'
+      +'<div style="font-size:9px;color:#c8cad1;margin-top:6px">'+esc(PROMO_POLICY_VERSION)+'</div>'
+    +'</td></tr>'
+  +'</table>';
+}
+
+function renderPromoPanel(){
+  var c=candidates.find(function(x){return x.id===promoCandId;});
+  if(!c){closePromoPanel();return;}
+  var fac=facilities.find(function(f){return f.id===promoFacId;});
+  var factSheet=promoFactSheetOf(fac);
+  var facOptions='<option value="">Select a facility&hellip;</option>'
+    +facilities.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).map(function(f){
+      return '<option value="'+f.id+'"'+(promoFacId===f.id?' selected':'')+'>'+esc(f.name)+(f.state?' ('+esc(f.state)+')':'')+'</option>';
+    }).join('');
+  var factSheetChip=fac
+    ?(factSheet
+      ?'<div style="display:flex;align-items:center;gap:8px;background:var(--ok-l);border-radius:8px;padding:8px 12px;margin-top:8px">'
+        +ico(I.doc,14,'var(--ok)')
+        +'<span style="font-size:12px;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(factSheet.fileName)+'</span>'
+        +'<span class="badge b-gn" style="flex-shrink:0">Auto-attached</span>'
+        +'</div>'
+      :'<div style="font-size:11px;color:var(--warn);background:var(--warn-l);border-radius:8px;padding:8px 12px;margin-top:8px">No Fact Sheet document found on this facility yet &mdash; upload one on the Facility page first.</div>')
+    :'';
+  document.getElementById('promo-inner').innerHTML=''
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">'
+    +'<div><div style="font-size:18px;font-weight:500;color:var(--t1)">Promote a location</div>'
+    +'<div style="font-size:12px;color:var(--t2);margin-top:4px">'+esc(c.name)+'</div></div>'
+    +'<button onclick="closePromoPanel()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--t3);line-height:1;padding:4px">&times;</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'
+    +'<div>'
+    +'<div class="fg"><label>Facility</label><select onchange="promoPickFacility(this.value)">'+facOptions+'</select>'+factSheetChip+'</div>'
+    +'<div class="fg"><label>Job dates</label><input value="'+esc(promoJobDates)+'" placeholder="e.g. Starts 4 Aug, 13 weeks" oninput="promoSetJobDates(this.value)"></div>'
+    +'<div class="fg"><label>Duties</label><textarea rows="3" placeholder="e.g. General ward RN duties, medication rounds, admissions" oninput="promoSetDuties(this.value)">'+esc(promoDuties)+'</textarea></div>'
+    +'<div class="fg"><label>Rates</label><textarea rows="2" placeholder="e.g. $65-75/hr depending on experience (TODO: rate-card picker)" oninput="promoSetRates(this.value)">'+esc(promoRates)+'</textarea></div>'
+    +'<div class="fg"><label>Intro blurb</label><textarea rows="5" oninput="promoSetIntro(this.value)">'+esc(promoIntro)+'</textarea></div>'
+    +'</div>'
+    +'<div>'
+    +'<div class="cp-lbl" style="margin-bottom:8px">Email preview</div>'
+    +'<div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--bg);max-height:520px;overflow-y:auto">'
+    +'<div id="promo-preview">'+buildPromoEmailHtml()+'</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">'
+    +'<button class="btn btn-g btn-sm" onclick="promoCopyText()">Copy text</button>'
+    +'<button class="btn btn-p btn-sm" '+(fac?'':'disabled')+' onclick="promoCopyFormatted()">Copy formatted</button>'
+    +'</div>';
+}
+
+// Slice 3 seam: send logging/dedupe hooks in here, right after a successful
+// copy. No-op today.
+function promoLogSend(fac,c){}
+
+async function promoCopyFormatted(){
+  var fac=facilities.find(function(f){return f.id===promoFacId;});
+  if(!fac){showToast('Select a facility first','err');return;}
+  var html=buildPromoEmailHtml();
+  var text=promoPlainText(fac);
+  try{
+    if(window.ClipboardItem){
+      var item=new ClipboardItem({
+        'text/html':new Blob([html],{type:'text/html'}),
+        'text/plain':new Blob([text],{type:'text/plain'})
+      });
+      await navigator.clipboard.write([item]);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+    var c=candidates.find(function(x){return x.id===promoCandId;});
+    promoLogSend(fac,c);
+    showToast('Formatted email copied — paste into Outlook');
+  }catch(e){
+    showToast('Copy failed: '+e.message,'err');console.error('[promo] copy formatted',e);
+  }
+}
+async function promoCopyText(){
+  var fac=facilities.find(function(f){return f.id===promoFacId;});
+  if(!fac){showToast('Select a facility first','err');return;}
+  try{
+    await navigator.clipboard.writeText(promoPlainText(fac));
+    showToast('Plain text copied');
+  }catch(e){
+    showToast('Copy failed: '+e.message,'err');console.error('[promo] copy text',e);
+  }
+}
+function promoPlainText(fac){
+  var factSheet=promoFactSheetOf(fac);
+  var locationLine=[fac.region,fac.state].filter(Boolean).join(', ');
+  var accom=(fac.accommodationProvided?(fac.accommodationType||'Provided'):'Not provided')+(fac.carRequired?' (car required)':'');
+  var lines=[];
+  lines.push('CAPTAIN CONTRACT — LOCATION PROMO','');
+  lines.push(fac.name+(locationLine?' ('+locationLine+')':''),'');
+  lines.push(promoIntro,'');
+  lines.push('Job dates: '+(promoJobDates||'TBC'));
+  lines.push('Duties: '+(promoDuties||'TBC'));
+  lines.push('Rates: '+(promoRates||'TBC'));
+  lines.push('Accommodation: '+accom,'');
+  if(factSheet)lines.push('Fact sheet: '+factSheet.fileUrl,'');
+  lines.push(PROMO_POLICY_TEXT,PROMO_POLICY_VERSION);
+  return lines.join('\n');
+}
+
 function buildReadinessPanel(c){
   var reqItems=getCmpItems(c).filter(function(i){return i.req;});
   var total=reqItems.length;
@@ -5193,6 +5397,7 @@ function renderCandPage(){
     +'<div style="display:flex;gap:8px;padding-bottom:2px;flex-shrink:0">'
     +(c.phone?'<a href="tel:'+esc(c.phone)+'" class="btn btn-g btn-sm">'+ico(I.phone,12)+' Call</a>':'')
     +(c.email?'<a href="mailto:'+esc(c.email)+'" class="btn btn-g btn-sm">'+ico(I.mail,12)+' Email</a>':'')
+    +'<button class="btn btn-g btn-sm" onclick="openPromoPanel('+c.id+')">'+ico(I.hosp,12)+' Promote location</button>'
     +'<button class="btn btn-p btn-sm" onclick="openSubFlow('+c.id+',null)">+ Submit</button>'
     +'</div>'
     +'</div></div></div>';

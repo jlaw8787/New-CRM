@@ -321,6 +321,29 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .cp-tab{padding:10px 14px;font-size:12px;font-weight:400;color:var(--t3);cursor:pointer;border:none;background:none;border-radius:8px 8px 0 0;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s;white-space:nowrap}
 .cp-tab:hover{color:var(--t1);background:var(--bg)}
 .cp-tab.on{color:var(--brand);font-weight:500;background:var(--brand-l);border-bottom-color:var(--brand)}
+/* CV BUILDER — Captain Contract v2 tokens, scoped under .cvb so nothing here
+   touches the app's existing --brand/--t1 style system. */
+.cvb{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start}
+.cvb-panel{position:sticky;top:16px;background:var(--panel);border-radius:11px;box-shadow:var(--sh-b);padding:14px}
+.cvb-doc-wrap{background:#F1F0F5;border-radius:11px;padding:26px 20px;display:flex;justify-content:center}
+.cvb-doc{width:100%;max-width:640px;background:#fff;border-radius:3px;box-shadow:0 1px 3px rgba(22,21,26,.09),0 14px 44px rgba(22,21,26,.11);padding:44px 48px 38px}
+.cvb-brandline{display:flex;align-items:center;gap:7px;font-size:9.5px;font-weight:650;letter-spacing:.14em;color:var(--v9);margin-bottom:24px}
+.cvb-nm{font-size:27px;font-weight:600;letter-spacing:-.03em;line-height:1.1;color:var(--ink)}
+.cvb-cls{font-size:13px;color:var(--ink2);margin-top:6px}
+.cvb-reg{font-size:11.5px;color:var(--ink3);margin-top:4px}
+.cvb-rule{height:1px;background:var(--line);margin:22px 0}
+.cvb-sec{margin-bottom:26px}
+.cvb-sec:last-child{margin-bottom:0}
+.cvb-h2{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--v9);margin-bottom:12px}
+.cvb-spiel{font-size:12.5px;line-height:1.68;color:var(--ink2)}
+.cvb-w{margin-bottom:18px}
+.cvb-w:last-child{margin-bottom:0}
+.cvb-w .l{font-size:12.5px;line-height:1.58;color:var(--ink2)}
+.cvb-w .l.d{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.cvb-w .l.f{font-weight:550;color:var(--ink)}
+.cvb-cur{display:inline-block;font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--g11);background:var(--g3);padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:2px}
+.cvb-pend{font-size:11.5px;color:var(--ink4);line-height:1.6;padding:12px 14px;border-radius:8px;background:var(--panel3);box-shadow:var(--sh-b)}
+.cvb-foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);letter-spacing:.05em;font-weight:550}
 /* FILES COMPONENT */
 .files-drop{border:2px dashed var(--border-s);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);margin-bottom:14px}
 .files-drop:hover,.files-drop.drag-on{border-color:var(--brand);background:var(--brand-pale)}
@@ -4747,6 +4770,58 @@ function buildCvModel(candidate){
     work:work
   };
 }
+var CV_SECTIONS=[
+  {key:'about',label:'About'},
+  {key:'quals',label:'Qualifications and CPD'},
+  {key:'work',label:'Work history'},
+  {key:'skills',label:'Skills checklist'},
+  {key:'refs',label:'References'}
+];
+function cvSecBody(model,key){
+  if(key==='about'){
+    if(!model.about)return '<div class="cvb-pend">No summary on file yet.</div>';
+    return '<div class="cvb-spiel">'+esc(model.about)+'</div>';
+  }
+  if(key==='quals'){
+    return '<div class="cvb-pend">Qualifications and CPD are not held in the system yet. This section will populate once that data is captured.</div>';
+  }
+  if(key==='work'){
+    if(!model.work.length)return '<div class="cvb-pend">No confirmed contracts on file yet.</div>';
+    return model.work.map(function(w){
+      var dateLine=cvMonthYear(w.startDate)+' to '+(w.current?'Present':cvMonthYear(w.endDate));
+      var facLine=w.state?esc(w.facility)+', '+esc(w.state):esc(w.facility);
+      return '<div class="cvb-w">'
+        +'<div class="l d num">'+esc(dateLine)+(w.current?'<span class="cvb-cur">CURRENT</span>':'')+'</div>'
+        +'<div class="l f">'+facLine+'</div>'
+        +(w.classification?'<div class="l">'+esc(w.classification)+'</div>':'')
+        +(w.area?'<div class="l">'+esc(w.area)+'</div>':'')
+        +'</div>';
+    }).join('');
+  }
+  if(key==='skills'){
+    return '<div class="cvb-pend">Skills checklist is not held in the system yet. The full checklist form will drive this section later.</div>';
+  }
+  if(key==='refs'){
+    return '<div class="cvb-pend">References are not held in the system yet. Written references will be pulled from uploaded files later.</div>';
+  }
+  return '';
+}
+function renderCvDoc(c){
+  var model=buildCvModel(c);
+  var body=CV_SECTIONS.map(function(s){
+    return '<div class="cvb-sec"><div class="cvb-h2">'+esc(s.label.toUpperCase())+'</div>'+cvSecBody(model,s.key)+'</div>';
+  }).join('');
+  var header='<div class="cvb-brandline"><span style="width:12px;height:12px;display:inline-flex">'+I.doc+'</span>CAPTAIN CONTRACT</div>'
+    +'<div class="cvb-nm">'+esc(model.name)+'</div>'
+    +(model.classification?'<div class="cvb-cls">'+esc(model.classification)+'</div>':'')
+    +(model.ahpra?'<div class="cvb-reg num">AHPRA '+esc(model.ahpra)+'</div>':'')
+    +'<div class="cvb-rule"></div>';
+  var foot='<div class="cvb-foot"><span>CAPTAIN CONTRACT</span><span>NO CONTACT DETAILS INCLUDED</span></div>';
+  return '<div class="cvb-doc cc-v2">'+header+body+foot+'</div>';
+}
+function renderCpCv(c){
+  return '<div class="cvb-doc-wrap">'+renderCvDoc(c)+'</div>';
+}
 function cpUpdateContractStatus(cid,kid,status){
   var c=candidates.find(function(x){return x.id===cid;});if(!c)return;
   var k=(c.contracts||[]).find(function(x){return x.id===kid;});if(!k)return;
@@ -5783,6 +5858,7 @@ function renderCandPage(){
     +'<button class="cp-tab'+(_tab==='pipeline'?' on':'')+'" onclick="setCpTab(\'pipeline\')">Pipeline</button>'
     +'<button class="cp-tab'+(_tab==='history'?' on':'')+'" onclick="setCpTab(\'history\')">Travel</button>'
     +'<button class="cp-tab'+(_tab==='files'?' on':'')+'" onclick="setCpTab(\'files\')">Files'+((c.documents||[]).filter(function(d){return !d.complianceItemId;}).length?' ('+(c.documents||[]).filter(function(d){return !d.complianceItemId;}).length+')':'')+'</button>'
+    +'<button class="cp-tab'+(_tab==='cv'?' on':'')+'" onclick="setCpTab(\'cv\')">CV</button>'
     +'</div>';
 
   var tabContent;
@@ -5806,6 +5882,8 @@ function renderCandPage(){
       +(isAdminOps?cpSec('admin','Admin & Flags',cpEditing==='admin'?adEdit:adView):'');
   } else if(_tab==='files'){
     tabContent=cpSec('files','Files',renderFilesSection('candidate',c.id,isAdminOps),'');
+  } else if(_tab==='cv'){
+    tabContent=renderCpCv(c);
   } else {
     tabContent=cpSec('overview','Overview',cpEditing==='overview'?ovEdit:ovView)
       +naOverviewHtml+keyFactsHtml+teamHtml+readinessHtml;

@@ -9125,25 +9125,47 @@ var REQ_SYNONYM_GROUPS=[
 function reqIsInfoRow(req){
   return /_note$/i.test(req.item_key||'')||/^note:/i.test((req.item_label||'').trim());
 }
-function reqItemValid(it,key){
-  if(!it||!compItemDone(it))return false;
+function reqCurrencyMonths(req){return(req&&req.currency_months)||12;}
+// Whole months between two dates, floor rounded (23 Jan to 24 Mar is 2 months,
+// not 2.03). Used only for the currency window, never for expiry (expiry stays
+// a plain day-diff via ddiff, unchanged).
+function monthsBetween(fromDate,toDate){
+  var months=(toDate.getFullYear()-fromDate.getFullYear())*12+(toDate.getMonth()-fromDate.getMonth());
+  if(toDate.getDate()<fromDate.getDate())months--;
+  return Math.max(0,months);
+}
+// Single source of truth for both "is this item satisfied" (reqItemValid) and
+// "why not, with real numbers" (the pill label in sfPackRowHtml). req is the
+// resolved compliance_requirements row, only read for its currency_months.
+function credAssess(it,key,req){
   var model=credModelOf(key);
+  if(!it||!compItemDone(it))return{model:model,done:false,valid:false};
   if(model==='expiry'){
     // Stage 2: a Type A item with no expiry recorded does not count as
     // satisfied. It is not missing (the document may well be on file) and
     // it is not expired, it needs someone to actually record the date.
-    if(!it.expiry)return false;
-    return ddiff(it.expiry)>=0;
+    if(!it.expiry)return{model:model,done:true,valid:false,reason:'no_expiry'};
+    var d=ddiff(it.expiry);
+    return{model:model,done:true,valid:d>=0,reason:d<0?'expired':null,days:d};
   }
-  // currency and none: unchanged this stage. Currency date logic lands in
-  // stage 3, none (photo_id, work_rights) is deliberately left passing.
-  return true;
+  if(model==='currency'){
+    var months=reqCurrencyMonths(req);
+    var approxDate=!it.documentDate;
+    // No document_date captured yet: fall back to when the item record was
+    // last touched, as an approximation. Still apply the window, but this is
+    // never treated as an accurate completion date, only ever labelled as
+    // unconfirmed wherever it is shown.
+    var dateStr=it.documentDate||it.lastEditedAt||'';
+    if(!dateStr)return{model:model,done:true,valid:false,reason:'no_date',months:months};
+    var docDate=new Date(dateStr);
+    var deadline=new Date(docDate);deadline.setMonth(deadline.getMonth()+months);
+    var ageMonths=monthsBetween(docDate,TODAY);
+    var valid=TODAY<=deadline;
+    return{model:model,done:true,valid:valid,reason:valid?null:'stale_currency',months:months,ageMonths:ageMonths,approxDate:approxDate,docDate:dateStr};
+  }
+  return{model:model,done:true,valid:true};
 }
-function reqInvalidReason(it,key){
-  if(!it||!compItemDone(it))return null;
-  if(credModelOf(key)==='expiry'&&!it.expiry)return'no_expiry';
-  return null;
-}
+function reqItemValid(it,key,req){return credAssess(it,key,req).valid;}
 function reqSynonymCandKeys(req){
   var hay=((req.item_key||'')+' '+(req.item_label||'')).toLowerCase();
   var found=[];
@@ -9168,22 +9190,25 @@ function reqMatchCandidate(req,c){
   // Tier 1: exact item_key match
   var exact=compItems[req.item_key];
   if(exact){
-    if(reqItemValid(exact,req.item_key))return{status:'met',match:exact};
-    return{status:'unverified',match:exact,reason:reqInvalidReason(exact,req.item_key)};
+    var ca=credAssess(exact,req.item_key,req);
+    return{status:ca.valid?'met':'unverified',match:exact,matchedKey:req.item_key,cred:ca};
   }
   // Tier 2: curated synonym group — checks ALL relevant candidate keys for the
   // concept (e.g. immunisations -> hep_b + covid + flu); MET only if every
   // matched item found is itself valid.
   var synKeys=reqSynonymCandKeys(req).filter(function(k){return compItems[k];});
   if(synKeys.length){
-    var invalidKey=null;
+    var invalidKey=null,invalidCred=null;
     var allValid=synKeys.every(function(k){
-      var ok=reqItemValid(compItems[k],k);
-      if(!ok&&!invalidKey)invalidKey=k;
-      return ok;
+      var ca2=credAssess(compItems[k],k,req);
+      if(!ca2.valid&&!invalidKey){invalidKey=k;invalidCred=ca2;}
+      return ca2.valid;
     });
-    if(allValid)return{status:'met',match:compItems[synKeys[0]]};
-    return{status:'unverified',match:compItems[invalidKey],reason:reqInvalidReason(compItems[invalidKey],invalidKey)};
+    if(allValid){
+      var metCred=credAssess(compItems[synKeys[0]],synKeys[0],req);
+      return{status:'met',match:compItems[synKeys[0]],matchedKey:synKeys[0],cred:metCred};
+    }
+    return{status:'unverified',match:compItems[invalidKey],matchedKey:invalidKey,cred:invalidCred};
   }
   // Tier 3: generic fallback — key substring or label word overlap. Can only
   // ever land on UNVERIFIED, never MET.
@@ -9193,8 +9218,8 @@ function reqMatchCandidate(req,c){
     if(req.item_key&&(k.indexOf(req.item_key)>=0||req.item_key.indexOf(k)>=0))return true;
     return reqWordsOverlap(reqWords,reqNormWords(compItems[k].itemLabel||k));
   });
-  if(fuzzyKey)return{status:'unverified',match:compItems[fuzzyKey]};
-  return{status:'missing',match:null};
+  if(fuzzyKey)return{status:'unverified',match:compItems[fuzzyKey],matchedKey:fuzzyKey};
+  return{status:'missing',match:null,matchedKey:null};
 }
 function sfReqAttachPanelHtml(reqId,c){
   var docs=c.documents||[];
@@ -9220,13 +9245,23 @@ function sfPackRowHtml(r,m,c){
   // A no_expiry reason gets its own specific label instead of the generic
   // "Check manually" -- it is not that we can't verify it, it is that the
   // date was never recorded, and that is a more precise thing to say.
+  var cred=m.cred;
   var pillLabel=pill.label;
-  if(effStatus==='unverified'&&m.reason==='no_expiry')pillLabel='No expiry recorded';
+  if(effStatus==='unverified'&&cred){
+    if(cred.reason==='no_expiry')pillLabel='No expiry recorded';
+    else if(cred.reason==='no_date')pillLabel='No date recorded';
+    else if(cred.reason==='stale_currency'){
+      pillLabel=esc(r.item_label||'Item')+' is '+cred.ageMonths+' month'+(cred.ageMonths===1?'':'s')+' old, needs to be within '+cred.months+' month'+(cred.months===1?'':'s')
+        +(cred.approxDate?' (date not confirmed)':'');
+    }
+  }
   var isOpen=!!sfReqAttachOpen[r.id];
   var providedDoc=satisfiedDocId?(c.documents||[]).find(function(d){return d.id===satisfiedDocId;}):null;
   // Expiry pill only applies to rows the candidate has actually satisfied --
   // a missing/unverified row already carries its own status chip, so this is
-  // extra urgency layered on top of "met"/"provided" specifically.
+  // extra urgency layered on top of "met"/"provided" specifically. Type B
+  // (currency) items never have an expiry date, so this simply never fires
+  // for them, the window pill below covers that case instead.
   var expiryDays=(m.match&&m.match.expiry)?ddiff(m.match.expiry):null;
   var expiryPill='';
   if((effStatus==='met'||effStatus==='provided')&&expiryDays!==null&&expiryDays<=30){
@@ -9234,11 +9269,19 @@ function sfPackRowHtml(r,m,c){
       ?'<span class="badge b-rd" style="flex-shrink:0">Expired '+Math.abs(expiryDays)+'d ago</span>'
       :'<span class="badge b-am" style="flex-shrink:0">Expires in '+expiryDays+'d</span>';
   }
+  // Currency window pill: shown whenever this row resolved to a currency-type
+  // item, met or not, so a consultant can see at a glance why the same
+  // reference reads stale at one facility and fine at another.
+  var windowPill='';
+  if(cred&&cred.model==='currency'&&(effStatus==='met'||effStatus==='unverified'||effStatus==='provided')){
+    windowPill='<span class="badge b-gy" style="flex-shrink:0" title="Currency window resolved for this facility">'+cred.months+'mo window</span>';
+  }
   return '<div class="cp-row" style="padding:12px;border-bottom:1px solid var(--border)">'
     +'<div style="display:flex;align-items:center;gap:10px">'
     +'<span style="width:8px;height:8px;border-radius:50%;background:'+pill.dot+';flex-shrink:0"></span>'
     +'<span style="flex:1;font-size:12px;color:var(--t1);min-width:0">'+esc(r.item_label||r.item_key||'')+'</span>'
     +expiryPill
+    +windowPill
     +'<span class="badge '+pill.cls+'" style="flex-shrink:0">'+pillLabel+'</span>'
     +(effStatus==='missing'?'<button class="btn btn-g btn-xs" style="flex-shrink:0" onclick="sfToggleReqAttach('+r.id+')">'+(isOpen?'Cancel':'Attach')+'</button>':'')
     +'</div>'

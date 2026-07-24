@@ -4758,8 +4758,11 @@ function cleanRate(r){var n=parseFloat(r);return isNaN(n)?'':n;}
 // ── CV builder ─────────────────────────────────────────────────────────────────
 var CV_CONFIRMED_STATUSES=['Signed','Active','Expiring','Completed'];
 function cvMonthYear(d){return d?new Date(d).toLocaleDateString('en-AU',{month:'short',year:'numeric'}):'';}
+function cvLongDate(d){return d?new Date(d).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}):'';}
 function buildCvModel(candidate){
   var c=candidate;
+  var ahpraItem=c.compliance&&c.compliance.items&&c.compliance.items.ahpra;
+  var ahpraExpiry=(ahpraItem&&ahpraItem.expiry)||c.ahpraExpiry||'';
   var contracts=(c.contracts||[]).filter(function(k){return CV_CONFIRMED_STATUSES.indexOf(k.status)>=0;});
   var resolved=0,unresolved=0;
   var work=contracts.map(function(k){
@@ -4787,6 +4790,7 @@ function buildCvModel(candidate){
     name:c.name||'',
     classification:c.classification||'',
     ahpra:c.ahpraNumber||'',
+    ahpraExpiry:ahpraExpiry,
     about:c.spiel||'',
     work:work
   };
@@ -4844,6 +4848,12 @@ function cvDisplayName(model,level){
   if(level===2)return 'Candidate CC-'+model.id;
   return model.name||'';
 }
+function cvAhpraLine(model,level){
+  if(!model.ahpra)return '';
+  if(level===0)return 'AHPRA '+model.ahpra;
+  if(level===1&&model.ahpraExpiry)return 'AHPRA registered, current to '+cvLongDate(model.ahpraExpiry);
+  return 'AHPRA registered, verified by Captain Contract';
+}
 function cvSetNameLevel(level){cvNameLevel=level;renderCandPage();}
 function cvToggleSection(key){var s=cvCurSections().find(function(x){return x.key===key;});if(s)s.on=!s.on;renderCandPage();}
 function cvMoveSection(key,dir){
@@ -4861,10 +4871,11 @@ function renderCvDoc(c){
     return '<div class="cvb-sec"><div class="cvb-h2">'+esc(s.label.toUpperCase())+'</div>'+cvSecBody(model,s.key)+'</div>';
   }).join('');
   var displayName=cvDisplayName(model,cvNameLevel);
+  var ahpraLine=cvAhpraLine(model,cvNameLevel);
   var header='<div class="cvb-brandline"><span style="width:12px;height:12px;display:inline-flex">'+I.doc+'</span>CAPTAIN CONTRACT</div>'
     +'<div class="cvb-nm">'+esc(displayName)+'</div>'
     +(model.classification?'<div class="cvb-cls">'+esc(model.classification)+'</div>':'')
-    +(model.ahpra?'<div class="cvb-reg num">AHPRA '+esc(model.ahpra)+'</div>':'')
+    +(ahpraLine?'<div class="cvb-reg num">'+esc(ahpraLine)+'</div>':'')
     +'<div class="cvb-rule"></div>';
   var foot='<div class="cvb-foot"><span>CAPTAIN CONTRACT</span><span>NO CONTACT DETAILS INCLUDED</span></div>';
   return '<div class="cvb-doc cc-v2">'+header+body+foot+'</div>';
@@ -4951,9 +4962,10 @@ function generateCvPdf(cid){
       doc.text(model.classification,margin,y);
       y+=14;
     }
-    if(model.ahpra){
+    var ahpraLine=cvAhpraLine(model,cvNameLevel);
+    if(ahpraLine){
       doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(111,107,123);
-      doc.text('AHPRA '+model.ahpra,margin,y);
+      doc.text(ahpraLine,margin,y);
       y+=14;
     }
     y+=6;

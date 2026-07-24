@@ -4640,6 +4640,27 @@ var CP_STD=[
   {key:'ref2',label:'Reference 2',category:'References',desc:'From a recent clinical supervisor',hasExpiry:false,req:true},
 ];
 
+// ── Credential validity model ─────────────────────────────────────────────────
+// Two distinct ways a compliance item goes stale, not one. Type A has a real
+// expiry date printed on the document, same date regardless of which facility
+// is asking. Type B (CV, references) has no printed date, it goes stale by a
+// currency window that varies by facility, e.g. "reference within 12 months".
+// Unknown item keys default to 'none' so nothing breaks.
+var CRED_MODEL={
+  // TYPE A, expiry printed on the document.
+  ahpra:'expiry',als:'expiry',bls:'expiry',police_check:'expiry',
+  wwc:'expiry',ndis:'expiry',hep_b:'expiry',flu:'expiry',covid:'expiry',
+
+  // TYPE B, currency window. Valid if the reference date is within N months,
+  // N comes from the resolved requirement (currency_months), default 12.
+  cv:'currency',ref1:'currency',ref2:'currency',
+
+  // NOT MODELLED. Passport and visa do expire in reality, but no date is
+  // captured yet. Leave passing until real document dates are collected.
+  photo_id:'none',work_rights:'none'
+};
+function credModelOf(key){return CRED_MODEL[key]||'none';}
+
 function cpAutoCreateCompliance(cid){
   var c=candidates.find(function(x){return x.id===cid;});if(!c)return;
   showToast('Creating standard checklist...');

@@ -400,6 +400,35 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .msg-snd svg{width:15px;height:15px;stroke-width:2.6}
 .msg-cnts{font-size:10.5px;color:var(--ink4);font-variant-numeric:tabular-nums;padding:0 3px}
 .msg-cnts.warn{color:var(--a11)}
+/* MESSAGES HUB */
+.msghub{display:flex;height:calc(100vh - 130px);min-height:520px;background:var(--panel);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-card)}
+.msghub-list{width:300px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--panel)}
+.msghub-lh{padding:14px 14px 10px;border-bottom:1px solid var(--line);flex-shrink:0}
+.msghub-search{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:var(--panel2);box-shadow:var(--sh-b)}
+.msghub-search svg{width:13px;height:13px;color:var(--ink4);flex-shrink:0}
+.msghub-search input{flex:1;font-size:12.5px;border:none;background:none;outline:none;color:var(--ink)}
+.msghub-scroll{flex:1;overflow-y:auto;padding:6px}
+.msghub-item{display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;transition:.13s var(--e);margin-bottom:1px;position:relative}
+.msghub-item:hover{background:var(--panel2)}
+.msghub-item.on{background:var(--v3)}
+.msghub-item.on::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:2.5px;border-radius:0 3px 3px 0;background:var(--v9)}
+.msghub-av{width:34px;height:34px;border-radius:10px;background:var(--brand-grad);color:#fff;font-size:11.5px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.msghub-av .u{position:absolute;top:-2px;right:-2px;min-width:15px;height:15px;padding:0 3px;border-radius:50%;background:var(--r9);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.msghub-bd{flex:1;min-width:0}
+.msghub-r1{display:flex;align-items:baseline;gap:6px}
+.msghub-nm{font-size:12.5px;font-weight:600;letter-spacing:-.012em;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.msghub-tm{font-size:10px;color:var(--ink4);flex-shrink:0;font-variant-numeric:tabular-nums}
+.msghub-pv{font-size:11px;color:var(--ink3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}
+.msghub-item.unread .msghub-nm{font-weight:650}
+.msghub-item.unread .msghub-pv{color:var(--ink2);font-weight:500}
+.msghub-fl{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.msghub-mini{font-size:9.5px;font-weight:600;padding:1.5px 6px;border-radius:5px;background:var(--panel3);color:var(--ink3);letter-spacing:.01em}
+.msghub-mini.v{background:var(--v4);color:var(--v11)}
+.msghub-mini.g{background:var(--g3);color:var(--g11)}
+.msghub-mini.a{background:var(--a3);color:var(--a11)}
+.msghub-mini.r{background:var(--r3);color:var(--r11)}
+.msghub-stage{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(600px 380px at 50% 8%,rgba(110,86,207,.06),transparent 62%),var(--panel2)}
+.msghub-empty{color:var(--ink4);font-size:12.5px;text-align:center;padding:40px 20px}
 /* FILES COMPONENT */
 .files-drop{border:2px dashed var(--border-s);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);margin-bottom:14px}
 .files-drop:hover,.files-drop.drag-on{border-color:var(--brand);background:var(--brand-pale)}
@@ -753,6 +782,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
       <button class="sbi" onclick="VCon=null;nav('candidates')"><svg viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>Candidates<span class="nb nb-b" id="nb-c">0</span></button>
       <button class="sbi" onclick="nav('hotlist')"><svg viewBox="0 0 24 24"><path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>Hot List<span class="nb nb-a" id="nb-hot" style="display:none">0</span></button>
       <button class="sbi" onclick="nav('alerts')"><svg viewBox="0 0 24 24"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>Alerts<span class="nb nb-r" id="nb-al" style="display:none">0</span></button>
+      <button class="sbi" onclick="nav('messages')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Messages<span class="nb nb-b" id="nb-msg" style="display:none">0</span></button>
     </div>
     <div class="sb-grp">
       <span class="sb-gl">Pipeline</span>
@@ -1841,7 +1871,7 @@ function routeFromHash(){
   if(cm){var cid=parseInt(cm[1]);var ctab=cm[2]||'overview';if(candidates.find(function(x){return x.id===cid;})){openCandPage(cid,ctab);return;}}
   var fm=h.match(/^facility\/(\d+)$/);
   if(fm){var fid=parseInt(fm[1]);if(facilities.find(function(x){return x.id===fid;})){openFacPage(fid);return;}}
-  var known=['home','dashboard','candidates','hotlist','alerts','submissions','travel','contracts','facilities','jobboard','team','rateref','settings'];
+  var known=['home','dashboard','candidates','hotlist','alerts','messages','submissions','travel','contracts','facilities','jobboard','team','rateref','settings'];
   if(known.indexOf(h)>=0){if(h==='candidates')VCon=null;nav(h);return;}
   nav('home');
 }
@@ -1874,9 +1904,11 @@ function updateBadges(){
   var ss=cands.reduce(function(a,c){return a+c.submissions.length;},0);var nbS=document.getElementById("nb-s");nbS.textContent=ss;nbS.style.display=ss?"":"none";
   var tp=cands.reduce(function(a,c){return a+c.travel.flights.concat(c.travel.accommodation,c.travel.carHire,c.travel.expenses).filter(function(x){return x.approvalStatus==="Pending";}).length;},0);var nbT=document.getElementById("nb-t");nbT.textContent=tp;nbT.style.display=tp?"":"none";
   var ke=cands.reduce(function(a,c){return a+c.contracts.filter(function(k){var d=ddiff(k.endDate);return d!==null&&d<=14&&d>=0;}).length;},0);var nbK=document.getElementById("nb-k");nbK.textContent=ke;nbK.style.display=ke?"":"none";
+  var nbMsg=document.getElementById("nb-msg");
+  if(nbMsg){var unreadMsg=cands.reduce(function(a,c){return a+msgUnreadCount(c);},0);nbMsg.textContent=unreadMsg;nbMsg.style.display=unreadMsg?"":"none";}
   if(reds){document.getElementById("abar-txt").innerHTML="<strong>"+reds+" urgent alert"+(reds>1?"s":"")+"</strong> — "+autos.find(function(a){return a.level==="red";}).title;document.getElementById("abar").style.display="flex";}else document.getElementById("abar").style.display="none";
 }
-function renderPage(){({home:renderHome,dashboard:renderMgmtDash,candidates:renderCandidates,candidateprofile:renderCandPage,hotlist:renderHotlist,alerts:renderAlerts,submissions:renderSubmissions,travel:renderTravel,contracts:renderContracts,facilities:renderFacilities,facilityprofile:renderFacPage,jobboard:renderJobBoard,team:renderTeam,rateref:renderRateRef,settings:renderSettings}[curPage]||renderHome)();}
+function renderPage(){({home:renderHome,dashboard:renderMgmtDash,candidates:renderCandidates,candidateprofile:renderCandPage,hotlist:renderHotlist,alerts:renderAlerts,submissions:renderSubmissions,travel:renderTravel,contracts:renderContracts,facilities:renderFacilities,facilityprofile:renderFacPage,jobboard:renderJobBoard,team:renderTeam,rateref:renderRateRef,settings:renderSettings,messages:renderMessagesHub}[curPage]||renderHome)();}
 
 // SVG ICONS
 var _svg=function(p){return '<svg viewBox="0 0 24 24">'+p+'</svg>';};
@@ -4454,7 +4486,7 @@ var cpOpen={overview:true,personal:true,professional:true,avail:false,clinical:f
 var cpTravelTab='flights';
 var cpActType='Note';
 
-function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();msgMode='message';nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c)pushRecent('candidate',id,c.name,c.classification);}
+function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();msgMode='message';nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c){pushRecent('candidate',id,c.name,c.classification);if(cpTab==='messages')msgMarkThreadRead(c);}}
 function openCandAtSubs(candId){openCandPage(candId,'pipeline');setTimeout(function(){cpScrollTo('submissions');},120);}
 
 function flashElement(id){var el=document.getElementById(id);if(!el)return;el.classList.remove('flash-hl');void el.offsetWidth;el.classList.add('flash-hl');}
@@ -4521,7 +4553,11 @@ function cpSec(id,title,body,actHtml,badge){
     +'<div class="cp-sec-body">'+body+'</div>'
     +'</div>';
 }
-function setCpTab(t){cpTab=t;history.replaceState(null,'','#candidate/'+curCandId+'/'+t);renderCandPage();}
+function setCpTab(t){
+  cpTab=t;history.replaceState(null,'','#candidate/'+curCandId+'/'+t);
+  if(t==='messages'){var c=candidates.find(function(x){return x.id===curCandId;});if(c)msgMarkThreadRead(c);}
+  renderCandPage();
+}
 function cpScrollTo(id){
   var _tabFor={personal:'profile',professional:'profile',clinical:'profile',avail:'workpref',rates:'workpref',compliance:'compliance',submissions:'pipeline',contracts:'pipeline',travel:'history',activity:'history',admin:'history',files:'files',overview:'overview'};
   var t=_tabFor[id]||'overview';
@@ -5082,6 +5118,7 @@ function downloadCvPdf(){
 function msgSegments(n){return n<=0?1:(n<=160?1:Math.ceil(n/153));}
 function msgRefreshUI(){
   if(curPage==='candidateprofile')renderCandPage();
+  else if(curPage==='messages')renderMessagesHub();
 }
 function sendMessage(candidateId,body){
   var c=candidates.find(function(x){return x.id===candidateId;});
@@ -5249,6 +5286,83 @@ function msgSend(cid){
   fn(cid,v).then(function(r){
     if(r.error)showToast((noteMode?'Could not save note: ':'Could not send message: ')+r.error.message,'err');
   });
+}
+
+// ── Messages hub ─────────────────────────────────────────────────────────────
+function msgUnreadCount(c){return (c.messages||[]).filter(function(m){return m.direction==='in'&&!m.readAt;}).length;}
+function msgLastMsg(c){var m=c.messages||[];return m.length?m[m.length-1]:null;}
+function msgInitials(name){return (name||'').split(' ').map(function(n){return n[0];}).join('').slice(0,2).toUpperCase();}
+function msgListTime(ts){
+  if(!ts)return'';
+  var d=new Date(ts);d.setHours(0,0,0,0);
+  var diff=Math.round((TODAY-d)/86400000);
+  if(diff===0)return msgTimeOfDay(ts);
+  if(diff===1)return'Yesterday';
+  return new Date(ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+}
+function msgMarkThreadRead(c){
+  var unread=(c.messages||[]).filter(function(m){return m.direction==='in'&&!m.readAt;});
+  if(!unread.length)return;
+  var now=new Date().toISOString();
+  unread.forEach(function(m){
+    m.readAt=now;
+    if(typeof m.id==='number'){
+      sb.from('messages').update({read_at:now}).eq('id',m.id).then(function(r){
+        if(r.error)console.error('[DB] mark read',r.error);
+      });
+    }
+  });
+  updateBadges();
+}
+function msgConversations(){
+  return vc().filter(function(c){return (c.messages||[]).length>0;}).sort(function(a,b){
+    var la=msgLastMsg(a),lb=msgLastMsg(b);
+    var ta=la?la.createdAt:'',tb=lb?lb.createdAt:'';
+    return tb.localeCompare(ta);
+  });
+}
+var msgHubSelectedId=null,msgHubSearch='';
+function msgHubPick(id){
+  msgHubSelectedId=id;
+  var c=candidates.find(function(x){return x.id===id;});
+  if(c)msgMarkThreadRead(c);
+  msgMode='message';
+  renderMessagesHub();
+}
+function msgHubSearchInput(v){msgHubSearch=v;renderMessagesHub();}
+function renderMessagesHub(){
+  document.getElementById('tb-h').textContent='Messages';
+  var convos=msgConversations();
+  document.getElementById('tb-s').textContent=convos.length+' conversation'+(convos.length===1?'':'s');
+  document.getElementById('tb-r').innerHTML='';
+  if((!msgHubSelectedId||!convos.some(function(c){return c.id===msgHubSelectedId;}))&&convos.length)msgHubSelectedId=convos[0].id;
+  var q=(msgHubSearch||'').toLowerCase();
+  var filtered=convos.filter(function(c){return !q||c.name.toLowerCase().indexOf(q)>=0||(c.classification||'').toLowerCase().indexOf(q)>=0;});
+  var listHtml=filtered.map(function(c){
+    var last=msgLastMsg(c);
+    var preview=last?esc((last.direction==='out'?'You: ':(last.direction==='note'?'Note: ':''))+last.body):'';
+    var unread=msgUnreadCount(c);
+    var sc=cmpScore(c);
+    var scChip=sc>=90?'g':sc>=75?'a':'r';
+    return '<div class="msghub-item'+(c.id===msgHubSelectedId?' on':'')+(unread?' unread':'')+'" onclick="msgHubPick('+c.id+')">'
+      +'<div class="msghub-av">'+esc(msgInitials(c.name))+(unread?'<span class="u">'+unread+'</span>':'')+'</div>'
+      +'<div class="msghub-bd">'
+      +'<div class="msghub-r1"><span class="msghub-nm">'+esc(c.name)+'</span><span class="msghub-tm">'+(last?msgListTime(last.createdAt):'')+'</span></div>'
+      +'<div class="msghub-pv">'+preview+'</div>'
+      +'<div class="msghub-fl"><span class="msghub-mini v">'+esc(c.classification||'')+'</span><span class="msghub-mini '+scChip+'">'+sc+'% compliant</span></div>'
+      +'</div></div>';
+  }).join('');
+  var selC=candidates.find(function(x){return x.id===msgHubSelectedId;});
+  var stageHtml=selC
+    ?'<div style="width:380px;height:100%;max-height:700px">'+renderMsgThread(selC)+'</div>'
+    :'<div class="msghub-empty">Select a conversation to view the thread.</div>';
+  document.getElementById('page').innerHTML='<div class="msghub">'
+    +'<div class="msghub-list">'
+    +'<div class="msghub-lh"><div class="msghub-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input placeholder="Search conversations" value="'+esc(msgHubSearch)+'" oninput="msgHubSearchInput(this.value)"></div></div>'
+    +'<div class="msghub-scroll">'+(listHtml||'<div class="msghub-empty">No conversations yet.</div>')+'</div>'
+    +'</div>'
+    +'<div class="msghub-stage">'+stageHtml+'</div>'
+    +'</div>';
 }
 function cpUpdateContractStatus(cid,kid,status){
   var c=candidates.find(function(x){return x.id===cid;});if(!c)return;

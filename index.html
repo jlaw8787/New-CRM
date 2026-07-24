@@ -5040,6 +5040,70 @@ function downloadCvPdf(){
   var fname='CV-'+(c?c.name.replace(/[^a-z0-9]+/gi,'-'):'candidate')+'.pdf';
   _cvPdfDoc.save(fname);
 }
+
+// ── Messages ───────────────────────────────────────────────────────────────
+// Sending is stubbed this round, there is no SMS provider connected yet.
+function msgSegments(n){return n<=0?1:(n<=160?1:Math.ceil(n/153));}
+function msgRefreshUI(){
+  if(curPage==='candidateprofile')renderCandPage();
+}
+function sendMessage(candidateId,body){
+  var c=candidates.find(function(x){return x.id===candidateId;});
+  if(!c)return Promise.resolve({error:{message:'Candidate not found'}});
+  body=(body||'').trim();
+  if(!body)return Promise.resolve({error:{message:'Message is empty'}});
+  var localId='tmp-'+Date.now();
+  var msg={id:localId,direction:'out',body:body,status:'pending',author:CU.name,
+    createdAt:new Date().toISOString(),readAt:'',segments:msgSegments(body.length),_synced:false};
+  if(!c.messages)c.messages=[];
+  c.messages.push(msg);
+  msgRefreshUI();
+  return sb.from('messages').insert({candidate_id:candidateId,direction:'out',body:body,
+    status:'pending',author:CU.name,segments:msg.segments}).select().single().then(function(r){
+    if(r.error){
+      c.messages=c.messages.filter(function(m){return m.id!==localId;});
+      msgRefreshUI();
+      showToast('Could not send message: '+r.error.message,'err');
+      return r;
+    }
+    msg.id=r.data.id;msg._synced=true;
+    // PROVIDER HOOK: this setTimeout is the whole stub. Once a real SMS
+    // provider (Twilio or similar) is connected, replace it with the actual
+    // send request, and let the provider's status callback / webhook flip
+    // status to delivered or failed instead of a timer.
+    setTimeout(function(){
+      msg.status='delivered';
+      msgRefreshUI();
+      sb.from('messages').update({status:'delivered'}).eq('id',msg.id).then(function(r2){
+        if(r2.error)console.error('[DB] message status update',r2.error);
+      });
+    },900);
+    return{data:msg};
+  });
+}
+function addNote(candidateId,body){
+  var c=candidates.find(function(x){return x.id===candidateId;});
+  if(!c)return Promise.resolve({error:{message:'Candidate not found'}});
+  body=(body||'').trim();
+  if(!body)return Promise.resolve({error:{message:'Note is empty'}});
+  var localId='tmp-'+Date.now();
+  var msg={id:localId,direction:'note',body:body,status:'sent',author:CU.name,
+    createdAt:new Date().toISOString(),readAt:'',segments:null,_synced:false};
+  if(!c.messages)c.messages=[];
+  c.messages.push(msg);
+  msgRefreshUI();
+  return sb.from('messages').insert({candidate_id:candidateId,direction:'note',body:body,
+    status:'sent',author:CU.name}).select().single().then(function(r){
+    if(r.error){
+      c.messages=c.messages.filter(function(m){return m.id!==localId;});
+      msgRefreshUI();
+      showToast('Could not save note: '+r.error.message,'err');
+      return r;
+    }
+    msg.id=r.data.id;msg._synced=true;
+    return{data:msg};
+  });
+}
 function cpUpdateContractStatus(cid,kid,status){
   var c=candidates.find(function(x){return x.id===cid;});if(!c)return;
   var k=(c.contracts||[]).find(function(x){return x.id===kid;});if(!k)return;
@@ -9422,7 +9486,7 @@ function mapDocRow(d){
     description:d.description||'',isCurrent:d.is_current!==false,
     complianceItemId:d.compliance_item_id||null};
 }
-function mapCandidate(row,acts,comps,subs,cons,fls,acs,cars,exps,docs){
+function mapCandidate(row,acts,comps,subs,cons,fls,acs,cars,exps,docs,msgs){
   return{
     id:row.id,name:row.name,classification:row.classification||'RN',
     clinicalSkills:row.clinical_skills||[],primarySkill:row.primary_skill||null,phase:row.phase||'New Lead',
@@ -9442,6 +9506,7 @@ function mapCandidate(row,acts,comps,subs,cons,fls,acs,cars,exps,docs){
     minRate:row.min_rate||null,hasCar:!!row.has_car,
     accommodationRequired:!!row.accommodation_required,partnerAccommodation:!!row.partner_accommodation,
     doNotContact:!!row.do_not_contact,doNotContactReason:row.do_not_contact_reason||'',
+    smsConsent:!!row.sms_consent,smsConsentAt:row.sms_consent_at||'',smsOptedOutAt:row.sms_opted_out_at||'',
     spiel:row.spiel||'',
     preferredName:row.preferred_name||'',gender:row.gender||'',
     addressSuburb:row.address_suburb||'',addressPostcode:row.address_postcode||'',
@@ -9518,7 +9583,11 @@ function mapCandidate(row,acts,comps,subs,cons,fls,acs,cars,exps,docs){
         supervisor:k.supervisor||'',flightConfirmed:!!k.flight_confirmed,
         accomConfirmed:!!k.accom_confirmed,shiftConfirmed:!!k.shift_confirmed,
         lastEditedBy:k.last_edited_by||'',lastEditedAt:k.last_edited_at||''};}),
-    documents:(docs||[]).sort(function(a,b){return a.uploaded_at<b.uploaded_at?1:-1;}).map(mapDocRow)
+    documents:(docs||[]).sort(function(a,b){return a.uploaded_at<b.uploaded_at?1:-1;}).map(mapDocRow),
+    messages:(msgs||[]).sort(function(a,b){return a.created_at<b.created_at?-1:1;}).map(function(m){
+      return{id:m.id,direction:m.direction,body:m.body||'',status:m.status||'',
+        author:m.author||'',createdAt:m.created_at||'',readAt:m.read_at||'',
+        segments:m.segments||null,_synced:true};})
   };
 }
 
@@ -9562,17 +9631,19 @@ async function loadCandidates(){
     fetchAll('accommodation'),
     fetchAll('car_hire'),
     fetchAll('expenses'),
-    fetchAll('documents')
+    fetchAll('documents'),
+    fetchAll('messages')
   ]);
   results.forEach(function(r){if(r.error)throw r.error;});
   var byC=function(arr){var m={};(arr||[]).forEach(function(x){var cid=x.candidate_id;if(!m[cid])m[cid]=[];m[cid].push(x);});return m;};
   var acts=byC(results[1].data),comps=byC(results[2].data),subs=byC(results[3].data),
       cons=byC(results[4].data),fls=byC(results[5].data),acs=byC(results[6].data),
-      cars=byC(results[7].data),exps=byC(results[8].data),docs=byC(results[9].data);
+      cars=byC(results[7].data),exps=byC(results[8].data),docs=byC(results[9].data),
+      msgs=byC(results[10].data);
   return (results[0].data||[]).map(function(row){
     var cid=row.id;
     _dbCandIds.add(cid);
-    return mapCandidate(row,acts[cid],comps[cid],subs[cid],cons[cid],fls[cid],acs[cid],cars[cid],exps[cid],docs[cid]);
+    return mapCandidate(row,acts[cid],comps[cid],subs[cid],cons[cid],fls[cid],acs[cid],cars[cid],exps[cid],docs[cid],msgs[cid]);
   });
 }
 

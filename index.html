@@ -344,6 +344,26 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .cvb-cur{display:inline-block;font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--g11);background:var(--g3);padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:2px}
 .cvb-pend{font-size:11.5px;color:var(--ink4);line-height:1.6;padding:12px 14px;border-radius:8px;background:var(--panel3);box-shadow:var(--sh-b)}
 .cvb-foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);letter-spacing:.05em;font-weight:550}
+/* CV BUILDER — left control panel */
+.cvb-sl{font-size:10px;font-weight:650;letter-spacing:.07em;color:var(--ink4);text-transform:uppercase;margin:16px 0 8px}
+.cvb-sl:first-child{margin-top:0}
+.cvb-seg{display:flex;padding:3px;background:var(--panel2);border-radius:9px;box-shadow:var(--sh-b);gap:3px}
+.cvb-seg-o{flex:1;text-align:center;font-size:11px;font-weight:550;padding:6px 4px;border-radius:6px;cursor:pointer;color:var(--ink3);transition:.14s var(--e)}
+.cvb-seg-o.on{background:#fff;color:var(--v11);box-shadow:var(--sh-1);font-weight:650}
+.cvb-hint{font-size:10.5px;color:var(--ink4);margin-top:7px;line-height:1.5}
+.cvb-secrow{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:2px;transition:.14s var(--e)}
+.cvb-secrow:hover{background:var(--panel2)}
+.cvb-secrow.off{opacity:.45}
+.cvb-secrow .nm{flex:1;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink)}
+.cvb-chk{width:16px;height:16px;border-radius:5px;box-shadow:inset 0 0 0 1.5px var(--line2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.cvb-chk.on{background:var(--v9);box-shadow:none}
+.cvb-chk svg{width:10px;height:10px;stroke-width:3;color:#fff;display:none}
+.cvb-chk.on svg{display:block}
+.cvb-mv{display:flex;flex-direction:column;gap:1px}
+.cvb-mv button{color:var(--ink5);padding:0;line-height:0;background:none;border:none;cursor:pointer}
+.cvb-mv button:hover{color:var(--v9)}
+.cvb-mv button:disabled{opacity:.3;cursor:default}
+.cvb-mv svg{width:11px;height:11px;stroke-width:2.6}
 /* FILES COMPONENT */
 .files-drop{border:2px dashed var(--border-s);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);margin-bottom:14px}
 .files-drop:hover,.files-drop.drag-on{border-color:var(--brand);background:var(--brand-pale)}
@@ -4398,7 +4418,7 @@ var cpOpen={overview:true,personal:true,professional:true,avail:false,clinical:f
 var cpTravelTab='flights';
 var cpActType='Note';
 
-function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c)pushRecent('candidate',id,c.name,c.classification);}
+function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c)pushRecent('candidate',id,c.name,c.classification);}
 function openCandAtSubs(candId){openCandPage(candId,'pipeline');setTimeout(function(){cpScrollTo('submissions');},120);}
 
 function flashElement(id){var el=document.getElementById(id);if(!el)return;el.classList.remove('flash-hl');void el.offsetWidth;el.classList.add('flash-hl');}
@@ -4763,6 +4783,7 @@ function buildCvModel(candidate){
   });
   console.log('[CV builder] '+(c.name||'candidate')+': '+resolved+' of '+contracts.length+' confirmed contracts resolved a facility state, '+unresolved+' did not.');
   return{
+    id:c.id,
     name:c.name||'',
     classification:c.classification||'',
     ahpra:c.ahpraNumber||'',
@@ -4806,21 +4827,206 @@ function cvSecBody(model,key){
   }
   return '';
 }
+// ── CV builder controls: name display level, section toggle/reorder ──────────
+var cvNameLevel=0;
+var cvSections=null;
+function cvResetState(){
+  cvNameLevel=0;
+  cvSections=CV_SECTIONS.map(function(s){return{key:s.key,label:s.label,on:true};});
+}
+function cvCurSections(){return cvSections||(cvSections=CV_SECTIONS.map(function(s){return{key:s.key,label:s.label,on:true};}));}
+function cvDisplayName(model,level){
+  if(level===1){
+    var parts=(model.name||'').trim().split(/\s+/).filter(Boolean);
+    if(parts.length<2)return model.name||'';
+    return parts[0]+' '+parts[parts.length-1].charAt(0)+'.';
+  }
+  if(level===2)return 'Candidate CC-'+model.id;
+  return model.name||'';
+}
+function cvSetNameLevel(level){cvNameLevel=level;renderCandPage();}
+function cvToggleSection(key){var s=cvCurSections().find(function(x){return x.key===key;});if(s)s.on=!s.on;renderCandPage();}
+function cvMoveSection(key,dir){
+  var arr=cvCurSections();
+  var i=arr.findIndex(function(x){return x.key===key;});
+  var j=i+dir;
+  if(i<0||j<0||j>=arr.length)return;
+  var tmp=arr[i];arr[i]=arr[j];arr[j]=tmp;
+  renderCandPage();
+}
 function renderCvDoc(c){
   var model=buildCvModel(c);
-  var body=CV_SECTIONS.map(function(s){
+  var sections=cvCurSections().filter(function(s){return s.on;});
+  var body=sections.map(function(s){
     return '<div class="cvb-sec"><div class="cvb-h2">'+esc(s.label.toUpperCase())+'</div>'+cvSecBody(model,s.key)+'</div>';
   }).join('');
+  var displayName=cvDisplayName(model,cvNameLevel);
   var header='<div class="cvb-brandline"><span style="width:12px;height:12px;display:inline-flex">'+I.doc+'</span>CAPTAIN CONTRACT</div>'
-    +'<div class="cvb-nm">'+esc(model.name)+'</div>'
+    +'<div class="cvb-nm">'+esc(displayName)+'</div>'
     +(model.classification?'<div class="cvb-cls">'+esc(model.classification)+'</div>':'')
     +(model.ahpra?'<div class="cvb-reg num">AHPRA '+esc(model.ahpra)+'</div>':'')
     +'<div class="cvb-rule"></div>';
   var foot='<div class="cvb-foot"><span>CAPTAIN CONTRACT</span><span>NO CONTACT DETAILS INCLUDED</span></div>';
   return '<div class="cvb-doc cc-v2">'+header+body+foot+'</div>';
 }
+function renderCvPanel(c){
+  var levels=[[0,'Full'],[1,'Initial'],[2,'Reference']];
+  var hints=['Full name. Use once the facility has confirmed interest.',
+    'First name and surname initial. Standard for first review.',
+    'Reference number only, for a de-identified first look.'];
+  var arr=cvCurSections();
+  var h='<div class="cvb-sl">Show name as</div>'
+    +'<div class="cvb-seg">'+levels.map(function(l){
+      return '<div class="cvb-seg-o'+(cvNameLevel===l[0]?' on':'')+'" onclick="cvSetNameLevel('+l[0]+')">'+l[1]+'</div>';
+    }).join('')+'</div>'
+    +'<div class="cvb-hint">'+hints[cvNameLevel]+'</div>';
+  h+='<div class="cvb-sl">Sections</div><div>'+arr.map(function(s,i){
+    return '<div class="cvb-secrow'+(s.on?'':' off')+'">'
+      +'<div class="cvb-mv">'
+      +'<button onclick="cvMoveSection(\''+s.key+'\',-1)"'+(i===0?' disabled':'')+'><svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg></button>'
+      +'<button onclick="cvMoveSection(\''+s.key+'\',1)"'+(i===arr.length-1?' disabled':'')+'><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>'
+      +'</div>'
+      +'<span class="nm" onclick="cvToggleSection(\''+s.key+'\')">'+esc(s.label)+'</span>'
+      +'<div class="cvb-chk'+(s.on?' on':'')+'" onclick="cvToggleSection(\''+s.key+'\')"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>'
+      +'</div>';
+  }).join('')+'</div>';
+  h+='<div class="cvb-sl">Output</div>'
+    +'<button class="btn btn-p" style="width:100%;justify-content:center" onclick="cvExportPdf('+c.id+')">Export PDF</button>';
+  return h;
+}
 function renderCpCv(c){
-  return '<div class="cvb-doc-wrap">'+renderCvDoc(c)+'</div>';
+  return '<div class="cvb">'
+    +'<div class="cvb-panel">'+renderCvPanel(c)+'</div>'
+    +'<div class="cvb-doc-wrap">'+renderCvDoc(c)+'</div>'
+    +'</div>';
+}
+// ── CV export, reuses the jsPDF setup already used by the contract generator ─
+function generateCvPdf(cid){
+  try{
+    var c=candidates.find(function(x){return x.id===cid;});
+    if(!c){showToast('Candidate not found','err');return null;}
+    var jsPDFCtor=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:null;
+    if(!jsPDFCtor){showToast('PDF library failed to load — check your connection','err');return null;}
+    var model=buildCvModel(c);
+    var sections=cvCurSections().filter(function(s){return s.on;});
+    var displayName=cvDisplayName(model,cvNameLevel);
+
+    var doc=new jsPDFCtor({unit:'pt',format:'a4'});
+    var pageW=doc.internal.pageSize.getWidth();
+    var pageH=doc.internal.pageSize.getHeight();
+    var margin=54,y=64,lineH=14;
+
+    function ensureRoom(next){if(y+next>pageH-56){doc.addPage();y=64;}}
+    function sectionTitle(t){
+      ensureRoom(24);
+      doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(110,86,207);
+      doc.text(t.toUpperCase(),margin,y);
+      y+=14;doc.setTextColor(20,20,30);
+    }
+    function paragraph(text,opts){
+      opts=opts||{};
+      doc.setFont('helvetica',opts.style||'normal');doc.setFontSize(opts.size||9.5);
+      var col=opts.color||[40,38,46];doc.setTextColor(col[0],col[1],col[2]);
+      var wrapped=doc.splitTextToSize(text,pageW-margin*2);
+      wrapped.forEach(function(line){ensureRoom(lineH);doc.text(line,margin,y);y+=lineH;});
+      doc.setTextColor(20,20,30);
+    }
+    function placeholderNote(text){
+      var wrapped=doc.splitTextToSize(text,pageW-margin*2-20);
+      var boxH=wrapped.length*12+16;
+      ensureRoom(boxH+8);
+      doc.setFillColor(244,243,246);
+      doc.roundedRect(margin,y-11,pageW-margin*2,boxH,4,4,'F');
+      doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(140,138,150);
+      wrapped.forEach(function(line,i){doc.text(line,margin+10,y+3+i*12);});
+      y+=boxH+10;
+      doc.setTextColor(20,20,30);
+    }
+
+    doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(20,20,26);
+    doc.text(displayName||'Candidate',margin,y);
+    y+=20;
+    if(model.classification){
+      doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(62,59,71);
+      doc.text(model.classification,margin,y);
+      y+=14;
+    }
+    if(model.ahpra){
+      doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(111,107,123);
+      doc.text('AHPRA '+model.ahpra,margin,y);
+      y+=14;
+    }
+    y+=6;
+    doc.setDrawColor(234,233,239);doc.line(margin,y,pageW-margin,y);
+    y+=20;
+
+    sections.forEach(function(s){
+      sectionTitle(s.label);
+      if(s.key==='about'){
+        if(model.about)paragraph(model.about);else placeholderNote('No summary on file yet.');
+      } else if(s.key==='quals'){
+        placeholderNote('Qualifications and CPD are not held in the system yet. This section will populate once that data is captured.');
+      } else if(s.key==='work'){
+        if(!model.work.length){placeholderNote('No confirmed contracts on file yet.');}
+        else{
+          model.work.forEach(function(w){
+            var dateLine=cvMonthYear(w.startDate)+' to '+(w.current?'Present':cvMonthYear(w.endDate))+(w.current?'   CURRENT':'');
+            paragraph(dateLine,{style:'bold',size:9.5,color:[22,21,26]});
+            var facLine=w.state?w.facility+', '+w.state:w.facility;
+            paragraph(facLine,{style:'bold',size:9.5,color:[22,21,26]});
+            if(w.classification)paragraph(w.classification,{size:9.5,color:[62,59,71]});
+            if(w.area)paragraph(w.area,{size:9.5,color:[62,59,71]});
+            y+=8;
+          });
+        }
+      } else if(s.key==='skills'){
+        placeholderNote('Skills checklist is not held in the system yet. The full checklist form will drive this section later.');
+      } else if(s.key==='refs'){
+        placeholderNote('References are not held in the system yet. Written references will be pulled from uploaded files later.');
+      }
+      y+=8;
+    });
+
+    var pageCount=doc.internal.getNumberOfPages();
+    for(var p=1;p<=pageCount;p++){
+      doc.setPage(p);
+      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(158,154,171);
+      doc.text('CAPTAIN CONTRACT',margin,pageH-32);
+      doc.text('NO CONTACT DETAILS INCLUDED',pageW-margin,pageH-32,{align:'right'});
+    }
+    return doc;
+  }catch(e){
+    console.error('[CV PDF]',e);
+    showToast('Could not generate the CV PDF','err');
+    return null;
+  }
+}
+var _cvPdfDoc=null,_cvPdfBlobUrl=null,_cvPdfCandId=null;
+function cvExportPdf(cid){
+  var doc=generateCvPdf(cid);
+  if(!doc)return;
+  _cvPdfDoc=doc;_cvPdfCandId=cid;
+  if(_cvPdfBlobUrl){try{URL.revokeObjectURL(_cvPdfBlobUrl);}catch(e){}}
+  _cvPdfBlobUrl=doc.output('bloburl');
+  var c=candidates.find(function(x){return x.id===cid;});
+  document.getElementById('modal').style.maxWidth='820px';
+  document.getElementById('m-ttl').textContent='CV Preview'+(c?(' — '+esc(c.name)):'');
+  document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
+  document.getElementById('m-body').innerHTML='<div style="padding:0 0 8px">'
+    +'<iframe src="'+_cvPdfBlobUrl+'" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:8px"></iframe>'
+    +'</div>';
+  document.getElementById('m-foot').innerHTML='<span></span>'
+    +'<div style="display:flex;gap:7px">'
+    +'<button class="btn btn-g btn-sm" onclick="closeModal()">Close</button>'
+    +'<button class="btn btn-p btn-sm" onclick="downloadCvPdf()">Download PDF</button>'
+    +'</div>';
+  document.getElementById('mo').style.display='flex';
+}
+function downloadCvPdf(){
+  if(!_cvPdfDoc){showToast('Nothing to download','err');return;}
+  var c=candidates.find(function(x){return x.id===_cvPdfCandId;});
+  var fname='CV-'+(c?c.name.replace(/[^a-z0-9]+/gi,'-'):'candidate')+'.pdf';
+  _cvPdfDoc.save(fname);
 }
 function cpUpdateContractStatus(cid,kid,status){
   var c=candidates.find(function(x){return x.id===cid;});if(!c)return;

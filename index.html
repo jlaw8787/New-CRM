@@ -5050,6 +5050,10 @@ function msgRefreshUI(){
 function sendMessage(candidateId,body){
   var c=candidates.find(function(x){return x.id===candidateId;});
   if(!c)return Promise.resolve({error:{message:'Candidate not found'}});
+  // Hard gate, not a UI check. Consent and do-not-contact are enforced here
+  // so no composer or call site can bypass them, ever.
+  if(!c.smsConsent)return Promise.resolve({error:{message:'Candidate has not given SMS consent',code:'no_consent'}});
+  if(c.doNotContact)return Promise.resolve({error:{message:'Candidate is marked do not contact',code:'do_not_contact'}});
   body=(body||'').trim();
   if(!body)return Promise.resolve({error:{message:'Message is empty'}});
   var localId='tmp-'+Date.now();

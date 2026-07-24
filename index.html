@@ -4660,6 +4660,7 @@ var CRED_MODEL={
   photo_id:'none',work_rights:'none'
 };
 function credModelOf(key){return CRED_MODEL[key]||'none';}
+function credDateFieldLabel(key){return key==='cv'?'CV last updated':'Date reference was completed';}
 
 function cpAutoCreateCompliance(cid){
   var c=candidates.find(function(x){return x.id===cid;});if(!c)return;
@@ -4672,7 +4673,7 @@ function cpAutoCreateCompliance(cid){
     var items={};
     (res.data||[]).forEach(function(row){
       items[row.item_key]={id:row.id,checked:false,expiry:'',docName:'',docUrl:'',docAddedBy:'',docAddedAt:'',lastEditedBy:'',lastEditedAt:'',
-        category:row.category||'Other',itemLabel:row.item_label||row.item_key,status:'Not Started',verifiedBy:'',verifiedAt:'',isRequired:true,documentUrl:'',documentId:null};
+        category:row.category||'Other',itemLabel:row.item_label||row.item_key,status:'Not Started',verifiedBy:'',verifiedAt:'',isRequired:true,documentUrl:'',documentId:null,documentDate:''};
     });
     c.compliance={items:items};
     showToast('Standard checklist created');
@@ -4708,6 +4709,8 @@ async function cpSaveCompDoc(cid,key){
   var it=c.compliance.items[key];if(!it)return;
   var expInput=document.getElementById('cpdf-exp-'+key);
   var expiry=expInput?expInput.value:'';
+  var docDateInput=document.getElementById('cpdf-docdate-'+key);
+  var documentDate=docDateInput?docDateInput.value:'';
   var modeFile=document.querySelector('input[name="cpdf-mode-'+key+'"][value="file"]');
   var isFile=modeFile&&modeFile.checked;
   var fileUrl='',fileName='';
@@ -4735,10 +4738,12 @@ async function cpSaveCompDoc(cid,key){
   if(ins.error){showToast('Failed to save document: '+ins.error.message,'err');console.error(ins.error);return;}
   var compUpdate={document_id:ins.data.id,document_url:fileUrl};
   if(expiry)compUpdate.expiry=expiry;
+  if(documentDate)compUpdate.document_date=documentDate;
   var upd=await sb.from('compliance_items').update(compUpdate).eq('id',it.id);
   if(upd.error){showToast('Linked to doc table but failed to update item: '+upd.error.message,'err');console.error(upd.error);}
   it.documentId=ins.data.id;it.documentUrl=fileUrl;it.docName=fileName;
   if(expiry)it.expiry=expiry;
+  if(documentDate)it.documentDate=documentDate;
   if(!c.documents)c.documents=[];
   c.documents.unshift({id:ins.data.id,fileName:fileName,filePath:path||null,fileUrl:fileUrl,uploadedBy:CU.name,uploadedAt:new Date().toISOString(),category:'Compliance',complianceItemId:it.id});
   showToast('Document attached');
@@ -4819,8 +4824,11 @@ function renderCpCompliance(c){
         +'<div id="cpdf-file-'+entry.key+'"><input type="file" id="cpdf-input-'+entry.key+'" style="font-size:11px;width:100%"></div>'
         +'<div id="cpdf-url-'+entry.key+'" style="display:none"><input id="cpdf-url-val-'+entry.key+'" placeholder="https://..." style="width:100%;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px"></div>'
         +'<div style="display:flex;align-items:center;gap:6px;margin-top:8px">'
-        +'<label style="font-size:10px;color:var(--t3);white-space:nowrap">Expiry</label>'
-        +'<input type="date" id="cpdf-exp-'+entry.key+'" style="font-size:11px;padding:4px 4px;border:1px solid var(--border);border-radius:4px">'
+        +(credModelOf(entry.key)==='currency'
+          ?'<label style="font-size:10px;color:var(--t3);white-space:nowrap">'+esc(credDateFieldLabel(entry.key))+'</label>'
+            +'<input type="date" id="cpdf-docdate-'+entry.key+'" style="font-size:11px;padding:4px 4px;border:1px solid var(--border);border-radius:4px">'
+          :'<label style="font-size:10px;color:var(--t3);white-space:nowrap">Expiry</label>'
+            +'<input type="date" id="cpdf-exp-'+entry.key+'" style="font-size:11px;padding:4px 4px;border:1px solid var(--border);border-radius:4px">')
         +'<button class="btn btn-p btn-xs" onclick="event.stopPropagation();cpSaveCompDoc('+c.id+',&apos;'+entry.key+'&apos;)">Attach</button>'
         +'<button class="btn btn-g btn-xs" onclick="event.stopPropagation();cpToggleDocForm('+c.id+',&apos;'+entry.key+'&apos;)">Cancel</button>'
         +'</div>'
@@ -9269,19 +9277,23 @@ function sfPackRowHtml(r,m,c){
       ?'<span class="badge b-rd" style="flex-shrink:0">Expired '+Math.abs(expiryDays)+'d ago</span>'
       :'<span class="badge b-am" style="flex-shrink:0">Expires in '+expiryDays+'d</span>';
   }
-  // Currency window pill: shown whenever this row resolved to a currency-type
-  // item, met or not, so a consultant can see at a glance why the same
-  // reference reads stale at one facility and fine at another.
-  var windowPill='';
-  if(cred&&cred.model==='currency'&&(effStatus==='met'||effStatus==='unverified'||effStatus==='provided')){
-    windowPill='<span class="badge b-gy" style="flex-shrink:0" title="Currency window resolved for this facility">'+cred.months+'mo window</span>';
+  // Currency items have no printed expiry date, so instead of an expiry-style
+  // pill they show their age, e.g. "Given 4 months ago", shown whenever this
+  // row resolved to a currency-type item, met or not, so a consultant can see
+  // at a glance why the same reference reads stale at one facility and fine
+  // at another. The window itself (which varies by facility) is the hover
+  // title rather than crowding the pill text.
+  var agePill='';
+  if(cred&&cred.model==='currency'&&cred.ageMonths!=null&&(effStatus==='met'||effStatus==='unverified'||effStatus==='provided')){
+    var ageTxt='Given '+cred.ageMonths+' month'+(cred.ageMonths===1?'':'s')+' ago'+(cred.approxDate?' (unconfirmed)':'');
+    agePill='<span class="badge b-gy" style="flex-shrink:0" title="Window for this facility: '+cred.months+' months">'+esc(ageTxt)+'</span>';
   }
   return '<div class="cp-row" style="padding:12px;border-bottom:1px solid var(--border)">'
     +'<div style="display:flex;align-items:center;gap:10px">'
     +'<span style="width:8px;height:8px;border-radius:50%;background:'+pill.dot+';flex-shrink:0"></span>'
     +'<span style="flex:1;font-size:12px;color:var(--t1);min-width:0">'+esc(r.item_label||r.item_key||'')+'</span>'
     +expiryPill
-    +windowPill
+    +agePill
     +'<span class="badge '+pill.cls+'" style="flex-shrink:0">'+pillLabel+'</span>'
     +(effStatus==='missing'?'<button class="btn btn-g btn-xs" style="flex-shrink:0" onclick="sfToggleReqAttach('+r.id+')">'+(isOpen?'Cancel':'Attach')+'</button>':'')
     +'</div>'
@@ -9958,7 +9970,8 @@ function mapCandidate(row,acts,comps,subs,cons,fls,acs,cars,exps,docs,msgs){
         lastEditedBy:item.last_edited_by||'',lastEditedAt:item.last_edited_at||'',
         category:item.category||'Other',itemLabel:compLabel(item.item_key,item.item_label),
         status:item.status||'Not Started',verifiedBy:item.verified_by||'',verifiedAt:item.verified_at||'',
-        isRequired:item.is_required!==false,documentUrl:item.document_url||'',documentId:item.document_id||null};
+        isRequired:item.is_required!==false,documentUrl:item.document_url||'',documentId:item.document_id||null,
+        documentDate:item.document_date||''};
       return acc;},{})},
     submissions:(subs||[]).map(mapSubmissionRow),
     travel:{

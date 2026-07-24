@@ -4711,6 +4711,42 @@ function renderCpSubmissions(c){
 // ── Contracts section ─────────────────────────────────────────────────────────
 var CONTRACT_STATUSES=['Draft','Signed','Active','Expiring','Completed','Cancelled'];
 function cleanRate(r){var n=parseFloat(r);return isNaN(n)?'':n;}
+
+// ── CV builder ─────────────────────────────────────────────────────────────────
+var CV_CONFIRMED_STATUSES=['Signed','Active','Expiring','Completed'];
+function cvMonthYear(d){return d?new Date(d).toLocaleDateString('en-AU',{month:'short',year:'numeric'}):'';}
+function buildCvModel(candidate){
+  var c=candidate;
+  var contracts=(c.contracts||[]).filter(function(k){return CV_CONFIRMED_STATUSES.indexOf(k.status)>=0;});
+  var resolved=0,unresolved=0;
+  var work=contracts.map(function(k){
+    var fac=k.facilityId?facilities.find(function(f){return f.id===k.facilityId;}):null;
+    var state=fac&&fac.state?fac.state:'';
+    if(state)resolved++;else unresolved++;
+    return{
+      id:k.id,
+      startDate:k.startDate||'',
+      endDate:k.endDate||'',
+      current:!k.endDate,
+      facility:k.facility||'',
+      state:state,
+      classification:c.classification||'',
+      area:k.ward||''
+    };
+  }).sort(function(a,b){
+    var aKey=a.endDate||'9999-99-99',bKey=b.endDate||'9999-99-99';
+    if(aKey!==bKey)return bKey<aKey?-1:1;
+    return (b.startDate||'').localeCompare(a.startDate||'');
+  });
+  console.log('[CV builder] '+(c.name||'candidate')+': '+resolved+' of '+contracts.length+' confirmed contracts resolved a facility state, '+unresolved+' did not.');
+  return{
+    name:c.name||'',
+    classification:c.classification||'',
+    ahpra:c.ahpraNumber||'',
+    about:c.spiel||'',
+    work:work
+  };
+}
 function cpUpdateContractStatus(cid,kid,status){
   var c=candidates.find(function(x){return x.id===cid;});if(!c)return;
   var k=(c.contracts||[]).find(function(x){return x.id===kid;});if(!k)return;

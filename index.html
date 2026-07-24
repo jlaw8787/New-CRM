@@ -128,6 +128,10 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .toggle-pill{padding:4px 12px;border:none;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;color:var(--t2);background:transparent;transition:background .12s ease,color .12s ease}
 .toggle-pill:hover{background:rgba(38,33,92,.1)}
 .toggle-pill.on{background:var(--brand);color:#fff}
+.smsc-sw{position:relative;width:36px;height:20px;border-radius:20px;background:var(--border-s);cursor:pointer;transition:background .15s ease;flex-shrink:0;display:inline-block}
+.smsc-sw.on{background:var(--brand)}
+.smsc-sw .kn{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s ease}
+.smsc-sw.on .kn{transform:translateX(16px)}
 .card.clickable{cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease,transform .12s ease}
 .card.clickable:hover{box-shadow:0 4px 10px rgba(38,33,92,.08),0 20px 36px -22px rgba(38,33,92,.45);border-color:var(--brand);transform:translateY(-1px)}
 .mgmt-tile-click{cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease,transform .12s ease}
@@ -4537,6 +4541,58 @@ function saveCpSection(id){
   renderCandPage();showToast('Saved');
   syncCandidateToDb(saved).catch(function(e){showToast('DB sync error','err');console.error('[DB] saveCpSection',e);});
 }
+
+// ── SMS consent ──────────────────────────────────────────────────────────
+// There is no dedicated "who set it" column, so the "by NAME" attribution
+// shown under the toggle is read back from the activity log, which is the
+// one place that attribution genuinely survives a refresh.
+function smsConsentLastActivity(c){
+  var acts=(c.activity||[]).filter(function(a){return /^SMS consent/.test(a.content||'');});
+  return acts.length?acts[acts.length-1]:null;
+}
+function cpSetSmsConsent(id,value){
+  var c=candidates.find(function(x){return x.id===id;});if(!c)return;
+  var now=new Date().toISOString();
+  var payload,actContent;
+  if(value){
+    c.smsConsent=true;c.smsConsentAt=now;c.smsOptedOutAt='';
+    actContent='SMS consent given by '+CU.name;
+    payload={sms_consent:true,sms_consent_at:now,sms_opted_out_at:null};
+  }else{
+    c.smsConsent=false;c.smsOptedOutAt=now;c.smsConsentAt='';
+    actContent='SMS consent withdrawn by '+CU.name;
+    payload={sms_consent:false,sms_opted_out_at:now,sms_consent_at:null};
+  }
+  // Not addSysAct: that hardcodes author to "System", and the whole point here
+  // is that the real staff member who set it is recoverable after a refresh.
+  if(!c.activity)c.activity=[];
+  c.activity.push({id:uid(),type:'System',content:actContent,author:CU.name,ts:now});
+  renderCandPage();msgRefreshUI();
+  sb.from('candidates').update(payload).eq('id',id).then(function(r){
+    if(r.error){showToast('Could not save consent change: '+r.error.message,'err');console.error('[DB] sms consent update',r.error);}
+  });
+  sb.from('activity').insert({candidate_id:id,type:'System',content:actContent,author:CU.name,ts:now}).then(function(r2){
+    if(r2.error)console.error('[DB] sms consent activity insert',r2.error);
+  });
+}
+function renderSmsConsentBlock(c){
+  var lastAct=smsConsentLastActivity(c);
+  var byName=lastAct?lastAct.author:null;
+  var stateLine;
+  if(c.smsConsent)stateLine='Consent given '+fmt(c.smsConsentAt)+(byName?' by '+esc(byName):'');
+  else if(c.smsOptedOutAt)stateLine='Opted out '+fmt(c.smsOptedOutAt);
+  else stateLine='No SMS consent recorded yet';
+  return '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">'
+    +'<div>'
+    +'<div style="font-size:12px;color:var(--t1);font-weight:500">'+esc(stateLine)+'</div>'
+    +'<div style="font-size:10.5px;color:var(--t3);margin-top:4px;max-width:420px;line-height:1.5">Consent must be genuinely given by the candidate, not assumed.</div>'
+    +'</div>'
+    +'<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0">'
+    +'<span style="font-size:11px;color:var(--t2)">'+(c.smsConsent?'On':'Off')+'</span>'
+    +'<span class="smsc-sw'+(c.smsConsent?' on':'')+'" onclick="cpSetSmsConsent('+c.id+','+(!c.smsConsent)+')"><span class="kn"></span></span>'
+    +'</label>'
+    +'</div>';
+}
 function cpSec(id,title,body,actHtml,badge){
   var isEd=cpEditing===id;
   var hActs=actHtml!==undefined
@@ -5229,9 +5285,17 @@ function msgThreadBody(msgs){
 }
 function msgBlockedHtml(c){
   var first=(c.name||'This candidate').split(' ')[0];
+  var optedOut=!!c.smsOptedOutAt;
+  var stateLine=optedOut?('Opted out of SMS on '+fmt(c.smsOptedOutAt)):'No SMS consent recorded yet';
+  var reasonLine=optedOut
+    ?'They replied STOP or asked to be removed. Under the Australian Spam Act this cannot be switched back on from here, call instead or use an internal note. Reversing an opt-out is a considered edit on the Profile tab.'
+    :'Under the Australian Spam Act you cannot send an SMS without their consent. Call instead, leave an internal note, or record consent once it has genuinely been given.';
+  var action=optedOut?'':'<button class="btn btn-g btn-xs" style="margin-top:8px" onclick="openCandPage('+c.id+',\'profile\')">Record consent</button>';
   return '<div class="msg-blocked"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M4.9 4.9l14.2 14.2"/></svg>'
-    +'<div><div class="t">SMS blocked, opted out</div>'
-    +'<div class="s">'+esc(first)+' has not given SMS consent. Under the Australian Spam Act you cannot send them a marketing or contact SMS. Call instead, or leave an internal note.</div></div></div>';
+    +'<div><div class="t">SMS blocked'+(optedOut?', opted out':'')+'</div>'
+    +'<div class="s">'+esc(first)+': '+esc(stateLine)+'. '+reasonLine+'</div>'
+    +action
+    +'</div></div>';
 }
 function msgComposerHtml(c){
   var noteMode=msgMode==='note';
@@ -6407,6 +6471,7 @@ function renderCandPage(){
   var tabContent;
   if(_tab==='profile'){
     tabContent=cpSec('personal','Personal Details',cpEditing==='personal'?pEdit:pView)
+      +cpSec('smsconsent','SMS Consent',renderSmsConsentBlock(c),'')
       +cpSec('professional','Professional Details',cpEditing==='professional'?prEdit:prView)
       +cpSec('clinical','Clinical Profile',cpEditing==='clinical'?clEdit:clView);
   } else if(_tab==='workpref'){

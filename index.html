@@ -364,6 +364,42 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .cvb-mv button:hover{color:var(--v9)}
 .cvb-mv button:disabled{opacity:.3;cursor:default}
 .cvb-mv svg{width:11px;height:11px;stroke-width:2.6}
+/* MESSAGES THREAD — scoped under .msg so nothing here touches existing styles */
+.msg-thread{width:100%;height:100%;position:relative;background:#fff;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;
+ box-shadow:0 0 0 1px rgba(22,21,26,.05),0 2px 6px rgba(22,21,26,.05),0 24px 60px rgba(22,21,26,.14),0 8px 20px rgba(22,21,26,.07)}
+.msg-scroll{flex:1;overflow-y:auto;padding:16px 14px 10px;display:flex;flex-direction:column}
+.msg-tstamp{text-align:center;font-size:10.5px;color:var(--ink4);margin:12px 0 9px;font-weight:500}
+.msg-tstamp b{color:var(--ink2);font-weight:650}
+.msg-row{display:flex;margin-bottom:2px}
+.msg-row.o{justify-content:flex-end}
+.msg-b{max-width:76%;padding:9px 14px;font-size:13.5px;line-height:1.4;position:relative;letter-spacing:-.01em;white-space:pre-wrap;word-break:break-word}
+.msg-b.i{background:#E9E9EB;color:#000;border-radius:19px}
+.msg-b.o{background:linear-gradient(170deg,#7E67DE,#5D48C0);color:#fff;border-radius:19px;box-shadow:0 1px 2px rgba(93,72,192,.26)}
+.msg-b.i.tail{border-bottom-left-radius:5px}
+.msg-b.o.tail{border-bottom-right-radius:5px}
+.msg-rcpt{text-align:right;font-size:10.5px;color:var(--ink4);padding:2px 6px 8px;font-weight:500}
+.msg-rcpt.fail{color:var(--r11)}
+.msg-note{background:var(--a3);border-radius:12px;padding:10px 12px;margin:6px 0;box-shadow:inset 0 0 0 1px rgba(245,165,36,.25);width:100%}
+.msg-note .h{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--a11);margin-bottom:5px;text-transform:uppercase}
+.msg-note .h svg{width:11px;height:11px;stroke-width:2.5}
+.msg-note .b2{font-size:12.5px;line-height:1.5;color:#8A5510;white-space:pre-wrap}
+.msg-note .m{font-size:10.5px;color:#B08430;margin-top:5px}
+.msg-blocked{flex-shrink:0;padding:12px 14px;background:var(--r3);display:flex;gap:9px;align-items:flex-start;box-shadow:inset 0 .5px 0 rgba(0,0,0,.07)}
+.msg-blocked svg{width:15px;height:15px;stroke-width:2.2;color:var(--r11);margin-top:1px;flex-shrink:0}
+.msg-blocked .t{font-size:12px;font-weight:600;color:var(--r11)}
+.msg-blocked .s{font-size:11.5px;color:#A8484C;margin-top:2px;line-height:1.45}
+.msg-cmp{flex-shrink:0;padding:9px 10px 10px;display:flex;flex-direction:column;gap:6px;background:var(--panel2);box-shadow:inset 0 .5px 0 rgba(0,0,0,.06)}
+.msg-note-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3);cursor:pointer;user-select:none}
+.msg-note-toggle input{margin:0}
+.msg-cmpr{display:flex;align-items:flex-end;gap:8px}
+.msg-box{flex:1;display:flex;align-items:flex-end;border-radius:17px;box-shadow:0 0 0 1px var(--line2);padding:6px 6px 6px 12px;background:#fff;transition:.18s var(--e)}
+.msg-box:focus-within{box-shadow:0 0 0 1.5px var(--v9)}
+.msg-box textarea{flex:1;font-size:13.5px;line-height:1.32;resize:none;max-height:80px;min-height:21px;padding:1px 0;font-family:inherit;border:none;background:none;outline:none;color:var(--ink)}
+.msg-snd{width:28px;height:28px;border-radius:50%;background:linear-gradient(170deg,#7E67DE,#5D48C0);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s var(--spring);transform:scale(.8);opacity:.4;border:none;cursor:pointer}
+.msg-snd.live{transform:scale(1);opacity:1}
+.msg-snd svg{width:15px;height:15px;stroke-width:2.6}
+.msg-cnts{font-size:10.5px;color:var(--ink4);font-variant-numeric:tabular-nums;padding:0 3px}
+.msg-cnts.warn{color:var(--a11)}
 /* FILES COMPONENT */
 .files-drop{border:2px dashed var(--border-s);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);margin-bottom:14px}
 .files-drop:hover,.files-drop.drag-on{border-color:var(--brand);background:var(--brand-pale)}
@@ -4418,7 +4454,7 @@ var cpOpen={overview:true,personal:true,professional:true,avail:false,clinical:f
 var cpTravelTab='flights';
 var cpActType='Note';
 
-function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c)pushRecent('candidate',id,c.name,c.classification);}
+function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();msgMode='message';nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c)pushRecent('candidate',id,c.name,c.classification);}
 function openCandAtSubs(candId){openCandPage(candId,'pipeline');setTimeout(function(){cpScrollTo('submissions');},120);}
 
 function flashElement(id){var el=document.getElementById(id);if(!el)return;el.classList.remove('flash-hl');void el.offsetWidth;el.classList.add('flash-hl');}
@@ -5106,6 +5142,112 @@ function addNote(candidateId,body){
     }
     msg.id=r.data.id;msg._synced=true;
     return{data:msg};
+  });
+}
+
+// ── Messages thread renderer, shared by the candidate profile Messages tab
+// and the Messages hub, so there is exactly one thread component. ──────────
+var msgMode='message';
+function msgDayLabel(ts){
+  var d=new Date(ts);d.setHours(0,0,0,0);
+  var diff=Math.round((TODAY-d)/86400000);
+  if(diff===0)return 'Today';
+  if(diff===1)return 'Yesterday';
+  return d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:d.getFullYear()!==TODAY.getFullYear()?'numeric':undefined});
+}
+function msgTimeOfDay(ts){return ts?new Date(ts).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'}).toLowerCase():'';}
+function msgStatusLabel(m){
+  if(m.status==='pending')return 'Sending…';
+  if(m.status==='delivered')return 'Delivered';
+  if(m.status==='read')return m.readAt?('Read '+msgTimeOfDay(m.readAt)):'Read';
+  if(m.status==='failed')return 'Not delivered';
+  return m.status||'';
+}
+function msgNoteHtml(m){
+  var meta=(m.author||'Staff')+(m.createdAt?', '+msgDayLabel(m.createdAt).toLowerCase():'');
+  return '<div class="msg-note"><div class="h">'+I.pencil+'Not visible to candidate</div>'
+    +'<div class="b2">'+esc(m.body)+'</div>'
+    +'<div class="m">'+esc(meta)+'</div></div>';
+}
+function msgThreadBody(msgs){
+  if(!msgs.length)return '';
+  var html='',lastDay='';
+  msgs.forEach(function(m,i){
+    var day=m.createdAt?m.createdAt.slice(0,10):'';
+    if(day&&day!==lastDay){
+      html+='<div class="msg-tstamp"><b>'+esc(msgDayLabel(m.createdAt))+'</b></div>';
+      lastDay=day;
+    }
+    if(m.direction==='note'){html+=msgNoteHtml(m);return;}
+    var isOut=m.direction==='out';
+    var next=msgs[i+1];
+    var nextDay=next&&next.createdAt?next.createdAt.slice(0,10):null;
+    var tail=!next||next.direction==='note'||(nextDay&&nextDay!==day)||((next.direction==='out')!==isOut);
+    html+='<div class="msg-row'+(isOut?' o':'')+'"><div class="msg-b '+(isOut?'o':'i')+(tail?' tail':'')+'">'+esc(m.body)+'</div></div>';
+    if(tail&&isOut){
+      html+='<div class="msg-rcpt'+(m.status==='failed'?' fail':'')+'">'+esc(msgStatusLabel(m))+'</div>';
+    }
+  });
+  return html;
+}
+function msgBlockedHtml(c){
+  var first=(c.name||'This candidate').split(' ')[0];
+  return '<div class="msg-blocked"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M4.9 4.9l14.2 14.2"/></svg>'
+    +'<div><div class="t">SMS blocked, opted out</div>'
+    +'<div class="s">'+esc(first)+' has not given SMS consent. Under the Australian Spam Act you cannot send them a marketing or contact SMS. Call instead, or leave an internal note.</div></div></div>';
+}
+function msgComposerHtml(c){
+  var noteMode=msgMode==='note';
+  return '<div class="msg-cmp">'
+    +'<label class="msg-note-toggle"><input type="checkbox" '+(noteMode?'checked':'')+' onchange="msgToggleMode('+c.id+')">Internal note</label>'
+    +'<div class="msg-cmpr">'
+    +'<div class="msg-box" style="'+(noteMode?'background:var(--a3);box-shadow:inset 0 0 0 1px rgba(245,165,36,.3)':'')+'">'
+    +'<textarea id="msgBox" rows="1" placeholder="'+(noteMode?'Internal note, not visible to the candidate':'Text message')+'" oninput="msgCnt('+c.id+')" onkeydown="msgKeydown(event,'+c.id+')"></textarea>'
+    +'</div>'
+    +'<button class="msg-snd" id="msgSendBtn" onclick="msgSend('+c.id+')"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>'
+    +'</div>'
+    +'<div class="msg-cnts" id="msgCnts">'+(noteMode?'Internal note, not sent by SMS':'0 chars, 1 segment')+'</div>'
+    +'</div>';
+}
+function renderMsgThread(c){
+  var msgs=c.messages||[];
+  var body=msgThreadBody(msgs)||'<div class="cvb-pend" style="margin:16px">No messages yet.</div>';
+  var composer=c.smsConsent?msgComposerHtml(c):msgBlockedHtml(c);
+  return '<div class="msg-thread cc-v2"><div class="msg-scroll" id="msgScroll">'+body+'</div>'+composer+'</div>';
+}
+function msgToggleMode(cid){msgMode=msgMode==='note'?'message':'note';msgRefreshUI();}
+function msgCnt(cid){
+  var box=document.getElementById('msgBox');if(!box)return;
+  var v=box.value,n=v.length;
+  var btn=document.getElementById('msgSendBtn');
+  if(btn)btn.classList.toggle('live',!!v.trim());
+  var cntsEl=document.getElementById('msgCnts');
+  if(cntsEl){
+    if(msgMode==='note'){
+      cntsEl.textContent='Internal note, not sent by SMS';
+      cntsEl.classList.remove('warn');
+    }else{
+      var segs=msgSegments(n);
+      cntsEl.textContent=n+' chars, '+segs+' segment'+(segs>1?'s':'');
+      cntsEl.classList.toggle('warn',segs>1);
+    }
+  }
+  box.style.height='auto';box.style.height=Math.min(80,box.scrollHeight)+'px';
+}
+function msgKeydown(event,cid){
+  if(event.key==='Enter'&&!event.shiftKey){
+    event.preventDefault();
+    msgSend(cid);
+  }
+}
+function msgSend(cid){
+  var box=document.getElementById('msgBox');if(!box)return;
+  var v=box.value.trim();if(!v)return;
+  var noteMode=msgMode==='note';
+  box.value='';msgCnt(cid);
+  var fn=noteMode?addNote:sendMessage;
+  fn(cid,v).then(function(r){
+    if(r.error)showToast((noteMode?'Could not save note: ':'Could not send message: ')+r.error.message,'err');
   });
 }
 function cpUpdateContractStatus(cid,kid,status){
@@ -6145,6 +6287,7 @@ function renderCandPage(){
     +'<button class="cp-tab'+(_tab==='history'?' on':'')+'" onclick="setCpTab(\'history\')">Travel</button>'
     +'<button class="cp-tab'+(_tab==='files'?' on':'')+'" onclick="setCpTab(\'files\')">Files'+((c.documents||[]).filter(function(d){return !d.complianceItemId;}).length?' ('+(c.documents||[]).filter(function(d){return !d.complianceItemId;}).length+')':'')+'</button>'
     +'<button class="cp-tab'+(_tab==='cv'?' on':'')+'" onclick="setCpTab(\'cv\')">CV</button>'
+    +'<button class="cp-tab'+(_tab==='messages'?' on':'')+'" onclick="setCpTab(\'messages\')">Messages'+((c.messages||[]).length?' ('+(c.messages||[]).length+')':'')+'</button>'
     +'</div>';
 
   var tabContent;
@@ -6170,6 +6313,10 @@ function renderCandPage(){
     tabContent=cpSec('files','Files',renderFilesSection('candidate',c.id,isAdminOps),'');
   } else if(_tab==='cv'){
     tabContent=renderCpCv(c);
+  } else if(_tab==='messages'){
+    tabContent='<div style="display:flex;justify-content:center;padding:8px 0">'
+      +'<div style="width:100%;max-width:400px;height:640px">'+renderMsgThread(c)+'</div>'
+      +'</div>';
   } else {
     tabContent=cpSec('overview','Overview',cpEditing==='overview'?ovEdit:ovView)
       +naOverviewHtml+keyFactsHtml+teamHtml+readinessHtml;

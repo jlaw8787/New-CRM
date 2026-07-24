@@ -9125,8 +9125,24 @@ var REQ_SYNONYM_GROUPS=[
 function reqIsInfoRow(req){
   return /_note$/i.test(req.item_key||'')||/^note:/i.test((req.item_label||'').trim());
 }
-function reqItemValid(it){
-  return !!it&&compItemDone(it)&&!(it.expiry&&ddiff(it.expiry)<0);
+function reqItemValid(it,key){
+  if(!it||!compItemDone(it))return false;
+  var model=credModelOf(key);
+  if(model==='expiry'){
+    // Stage 2: a Type A item with no expiry recorded does not count as
+    // satisfied. It is not missing (the document may well be on file) and
+    // it is not expired, it needs someone to actually record the date.
+    if(!it.expiry)return false;
+    return ddiff(it.expiry)>=0;
+  }
+  // currency and none: unchanged this stage. Currency date logic lands in
+  // stage 3, none (photo_id, work_rights) is deliberately left passing.
+  return true;
+}
+function reqInvalidReason(it,key){
+  if(!it||!compItemDone(it))return null;
+  if(credModelOf(key)==='expiry'&&!it.expiry)return'no_expiry';
+  return null;
 }
 function reqSynonymCandKeys(req){
   var hay=((req.item_key||'')+' '+(req.item_label||'')).toLowerCase();
@@ -9151,14 +9167,23 @@ function reqMatchCandidate(req,c){
   var compItems=(c.compliance&&c.compliance.items)||{};
   // Tier 1: exact item_key match
   var exact=compItems[req.item_key];
-  if(exact)return reqItemValid(exact)?{status:'met',match:exact}:{status:'unverified',match:exact};
+  if(exact){
+    if(reqItemValid(exact,req.item_key))return{status:'met',match:exact};
+    return{status:'unverified',match:exact,reason:reqInvalidReason(exact,req.item_key)};
+  }
   // Tier 2: curated synonym group — checks ALL relevant candidate keys for the
   // concept (e.g. immunisations -> hep_b + covid + flu); MET only if every
   // matched item found is itself valid.
   var synKeys=reqSynonymCandKeys(req).filter(function(k){return compItems[k];});
   if(synKeys.length){
-    var allValid=synKeys.every(function(k){return reqItemValid(compItems[k]);});
-    return allValid?{status:'met',match:compItems[synKeys[0]]}:{status:'unverified',match:compItems[synKeys[0]]};
+    var invalidKey=null;
+    var allValid=synKeys.every(function(k){
+      var ok=reqItemValid(compItems[k],k);
+      if(!ok&&!invalidKey)invalidKey=k;
+      return ok;
+    });
+    if(allValid)return{status:'met',match:compItems[synKeys[0]]};
+    return{status:'unverified',match:compItems[invalidKey],reason:reqInvalidReason(compItems[invalidKey],invalidKey)};
   }
   // Tier 3: generic fallback — key substring or label word overlap. Can only
   // ever land on UNVERIFIED, never MET.
@@ -9192,6 +9217,11 @@ function sfPackRowHtml(r,m,c){
   var effStatus=isInfo?'info':(satisfiedDocId?'provided':m.status);
   var pillMap={info:{label:'Info',cls:'b-gr',dot:'var(--t3)'},met:{label:'Met',cls:'b-gn',dot:'var(--ok)'},provided:{label:'Provided',cls:'b-tl',dot:'var(--teal)'},unverified:{label:'Check manually',cls:'b-am',dot:'var(--warn)'},missing:{label:'Missing',cls:'b-rd',dot:'var(--danger)'}};
   var pill=pillMap[effStatus];
+  // A no_expiry reason gets its own specific label instead of the generic
+  // "Check manually" -- it is not that we can't verify it, it is that the
+  // date was never recorded, and that is a more precise thing to say.
+  var pillLabel=pill.label;
+  if(effStatus==='unverified'&&m.reason==='no_expiry')pillLabel='No expiry recorded';
   var isOpen=!!sfReqAttachOpen[r.id];
   var providedDoc=satisfiedDocId?(c.documents||[]).find(function(d){return d.id===satisfiedDocId;}):null;
   // Expiry pill only applies to rows the candidate has actually satisfied --
@@ -9209,7 +9239,7 @@ function sfPackRowHtml(r,m,c){
     +'<span style="width:8px;height:8px;border-radius:50%;background:'+pill.dot+';flex-shrink:0"></span>'
     +'<span style="flex:1;font-size:12px;color:var(--t1);min-width:0">'+esc(r.item_label||r.item_key||'')+'</span>'
     +expiryPill
-    +'<span class="badge '+pill.cls+'" style="flex-shrink:0">'+pill.label+'</span>'
+    +'<span class="badge '+pill.cls+'" style="flex-shrink:0">'+pillLabel+'</span>'
     +(effStatus==='missing'?'<button class="btn btn-g btn-xs" style="flex-shrink:0" onclick="sfToggleReqAttach('+r.id+')">'+(isOpen?'Cancel':'Attach')+'</button>':'')
     +'</div>'
     +(r.exception_note?'<div style="font-size:10px;color:var(--warn);margin-top:6px;padding-left:18px">'+esc(r.exception_note)+'</div>':'')

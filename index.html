@@ -5540,7 +5540,11 @@ function tplCurrentCand(){
   return candidates.find(function(x){return x.id===id;});
 }
 function tplInsert(id){
-  var t=smsTemplates.find(function(x){return x.id===id;});
+  // String() both sides: the onclick attribute always hands this a string,
+  // but sms_templates.id can be a numeric bigint id (as it is in this DB)
+  // rather than the uuid originally spec'd, so a strict === here never
+  // matches and the insert silently no-ops.
+  var t=smsTemplates.find(function(x){return String(x.id)===String(id);});
   var box=document.getElementById('msgBox');
   var c=tplCurrentCand();
   if(!t||!box||!c)return;
@@ -5636,7 +5640,7 @@ function tplListFootHtml(){
   return '<span></span><div style="display:flex;gap:7px"><button class="btn btn-g" onclick="closeModal()">Close</button><button class="btn btn-p" onclick="tplEditOpen(null)">New template</button></div>';
 }
 function tplEditOpen(id){
-  var t=id?smsTemplates.find(function(x){return x.id===id;}):null;
+  var t=id?smsTemplates.find(function(x){return String(x.id)===String(id);}):null;
   tplEditState=t?{id:t.id,name:t.name,body:t.body,scope:t.scope}:{id:null,name:'',body:'',scope:'personal'};
   tplManageView='edit';
   tplRenderManage();

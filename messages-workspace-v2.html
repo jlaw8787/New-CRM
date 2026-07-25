@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Captain Contract, Messages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16151A;--ink2:#3E3B47;--ink3:#6F6B7B;--ink4:#9E9AAB;--ink5:#C4C1CE;
+  --bg:#FCFCFD;--panel:#fff;--panel2:#FAFAFB;--panel3:#F4F3F6;
+  --line:#EAE9EF;--line2:#E0DFE7;
+  --v3:#F6F3FF;--v4:#EDE9FE;--v6:#DDD5F8;--v9:#6E56CF;--v10:#644FC1;--v11:#5B47B0;
+  --g3:#E9F9EE;--g9:#30A46C;--g11:#18794E;
+  --a3:#FFF7E0;--a9:#F5A524;--a11:#A15C07;
+  --r3:#FFEFEF;--r9:#E5484D;--r11:#CD2B31;
+  --sh-b:0 0 0 1px rgba(22,21,26,.055);
+  --sh-1:0 0 0 1px rgba(22,21,26,.05),0 1px 2px rgba(22,21,26,.04);
+  --sh-2:0 0 0 1px rgba(22,21,26,.05),0 2px 6px rgba(22,21,26,.05),0 10px 26px rgba(22,21,26,.07);
+  --e:cubic-bezier(.16,1,.3,1);--spring:cubic-bezier(.34,1.28,.5,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased;letter-spacing:-.011em;overflow:hidden}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block;flex-shrink:0}
+button{font:inherit;border:none;background:none;cursor:pointer;color:inherit}
+input,textarea,select{font:inherit;border:none;background:none;color:inherit;outline:none}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#DBD9E3;border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:#C4C1CE;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+
+.app{display:flex;height:100vh}
+/* rail */
+.rail{width:60px;flex-shrink:0;background:#131217;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:5px}
+.mk{width:34px;height:34px;border-radius:10px;background:linear-gradient(145deg,#8B72E8,#5A45B5);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(110,86,207,.45),inset 0 1px 0 rgba(255,255,255,.2);margin-bottom:12px}
+.ri{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#8F8B9B;cursor:pointer;transition:.14s var(--e);position:relative}
+.ri:hover{background:rgba(255,255,255,.06);color:#DCDAE2}
+.ri.on{background:rgba(255,255,255,.09);color:#fff}
+.ri.on::before{content:'';position:absolute;left:-11px;top:9px;bottom:9px;width:2px;border-radius:0 2px 2px 0;background:#8B72E8}
+.ri svg{width:17px;height:17px;stroke-width:1.9}
+.ri .bdg{position:absolute;top:5px;right:5px;min-width:15px;height:15px;border-radius:8px;background:#E5484D;color:#fff;font-size:9.5px;font-weight:650;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #131217}
+.ravt{margin-top:auto;width:30px;height:30px;border-radius:8px;background:linear-gradient(145deg,#8B72E8,#5A45B5);color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center}
+
+/* conversation list */
+.clist{width:288px;flex-shrink:0;background:var(--panel);box-shadow:inset -1px 0 0 var(--line);display:flex;flex-direction:column}
+.ch{padding:15px 16px 12px;box-shadow:inset 0 -1px 0 var(--line)}
+.ch .t{font-size:16px;font-weight:600;letter-spacing:-.03em;display:flex;align-items:center;justify-content:space-between}
+.ch .t .n{font-size:11px;font-weight:600;color:var(--v11);background:var(--v4);padding:2px 7px;border-radius:20px}
+.srch{display:flex;align-items:center;gap:8px;margin-top:11px;padding:7px 10px;border-radius:8px;background:var(--panel2);box-shadow:var(--sh-b)}
+.srch svg{width:13.5px;height:13.5px;stroke-width:2;color:var(--ink4)}
+.srch input{flex:1;font-size:12.5px}
+.cscroll{flex:1;overflow-y:auto;padding:6px}
+.ci{display:flex;gap:10px;padding:10px 11px;border-radius:10px;cursor:pointer;transition:.13s var(--e);margin-bottom:1px;position:relative}
+.ci:hover{background:var(--panel2)}
+.ci.on{background:var(--v3)}
+.ci.on::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:2.5px;border-radius:0 3px 3px 0;background:var(--v9)}
+.ci .av{width:34px;height:34px;border-radius:10px;color:#fff;font-size:11.5px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.ci .av .u{position:absolute;top:-2px;right:-2px;width:15px;height:15px;border-radius:50%;background:#E5484D;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.ci .bd{flex:1;min-width:0}
+.ci .r1{display:flex;align-items:baseline;gap:6px}
+.ci .nm{font-size:13px;font-weight:600;letter-spacing:-.016em;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci .tm{font-size:10.5px;color:var(--ink4);font-variant-numeric:tabular-nums;flex-shrink:0}
+.ci .pv{font-size:11.5px;color:var(--ink3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}
+.ci.unread .nm{font-weight:650}
+.ci.unread .pv{color:var(--ink2);font-weight:500}
+.ci .fl{display:flex;gap:4px;margin-top:5px}
+.mini{font-size:9.5px;font-weight:600;padding:1.5px 6px;border-radius:5px;background:var(--panel3);color:var(--ink3);letter-spacing:.01em}
+.mini.r{background:var(--r3);color:var(--r11)}
+.mini.a{background:var(--a3);color:var(--a11)}
+.mini.g{background:var(--g3);color:var(--g11)}
+.mini.v{background:var(--v4);color:var(--v11)}
+
+/* phone stage */
+.stage{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative;
+ background:radial-gradient(600px 380px at 50% 8%,rgba(110,86,207,.09),transparent 62%),var(--bg)}
+.stg-h{position:absolute;top:16px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:9px;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink4)}
+.phone{width:366px;height:min(748px,calc(100vh - 76px));flex-shrink:0}
+.screen{width:100%;height:100%;border-radius:30px;background:#fff;overflow:hidden;display:flex;flex-direction:column;position:relative;
+ box-shadow:0 0 0 1px rgba(22,21,26,.05),0 2px 6px rgba(22,21,26,.05),0 24px 60px rgba(22,21,26,.14),0 8px 20px rgba(22,21,26,.07)}
+/* ios notification banner */
+.banner{position:absolute;top:11px;left:11px;right:11px;z-index:9;display:flex;align-items:center;gap:10px;
+ padding:11px 13px;border-radius:19px;background:rgba(250,250,252,.82);backdrop-filter:blur(24px) saturate(1.8);
+ box-shadow:0 1px 2px rgba(22,21,26,.06),0 10px 30px rgba(22,21,26,.16),inset 0 0 0 .5px rgba(255,255,255,.7);
+ transform:translateY(-130%);opacity:0;transition:all .55s var(--spring);pointer-events:none}
+.banner.on{transform:none;opacity:1}
+.banner .iav{width:34px;height:34px;border-radius:10px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.banner .itx{min-width:0;flex:1}
+.banner .itx .a{font-size:12.5px;font-weight:650;color:#111;line-height:1.3;letter-spacing:-.015em}
+.banner .itx .b{font-size:12px;color:#3C3C43;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.banner .tmx{font-size:10.5px;color:#8E8E93;font-weight:500;align-self:flex-start;margin-top:2px}
+.ihd{flex-shrink:0;padding:14px 12px 8px;display:flex;align-items:center;gap:9px;background:rgba(249,249,251,.88);backdrop-filter:blur(18px) saturate(1.6);box-shadow:inset 0 -.5px 0 rgba(0,0,0,.11);z-index:4}
+.ihd .bk{color:#6E56CF;display:flex;align-items:center;position:relative}
+.ihd .bk svg{width:17px;height:17px;stroke-width:2.6}
+.ihd .bk .c{position:absolute;left:13px;top:-3px;background:#6E56CF;color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:0 5px;line-height:14px}
+.ihd .ctr{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;margin-left:-18px}
+.ihd .cav{width:33px;height:33px;border-radius:50%;color:#fff;font-size:11.5px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.ihd .cn{font-size:11.5px;font-weight:500;color:#111;display:flex;align-items:center;gap:3px}
+.ihd .cn svg{width:9px;height:9px;stroke-width:3;color:#8E8E93}
+
+.thread{flex:1;overflow-y:auto;padding:12px 11px 8px;display:flex;flex-direction:column;background:#fff}
+.tstamp{text-align:center;font-size:10.5px;color:#8E8E93;margin:12px 0 9px;font-weight:500}
+.tstamp b{color:#4A4A4F;font-weight:650}
+.row{display:flex;margin-bottom:2px}
+.row.o{justify-content:flex-end}
+.b{max-width:76%;padding:8px 13px;font-size:14.5px;line-height:1.35;position:relative;letter-spacing:-.015em;animation:bin .4s var(--spring) backwards;white-space:pre-wrap}
+@keyframes bin{from{opacity:0;transform:translateY(11px) scale(.92)}to{opacity:1;transform:none}}
+.b.i{background:#E9E9EB;color:#000;border-radius:19px}
+.b.o{background:linear-gradient(170deg,#7E67DE,#5D48C0);color:#fff;border-radius:19px;box-shadow:0 1px 2px rgba(93,72,192,.26)}
+.b.i.tail{border-bottom-left-radius:5px}
+.b.o.tail{border-bottom-right-radius:5px}
+.b.i.tail::after{content:'';position:absolute;left:-6px;bottom:0;width:14px;height:17px;background:#E9E9EB;border-bottom-right-radius:16px;z-index:-1}
+.b.o.tail::after{content:'';position:absolute;right:-6px;bottom:0;width:14px;height:17px;background:#5D48C0;border-bottom-left-radius:16px;z-index:-1}
+.rcpt{text-align:right;font-size:10.5px;color:#8E8E93;padding:2px 6px 6px;font-weight:500}
+.rcpt b{font-weight:700;color:#6E6E73}
+.tap{position:absolute;top:-13px;left:-11px;background:#E9E9EB;border-radius:50%;width:25px;height:25px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 2.5px #fff}
+.tap svg{width:13px;height:13px;fill:#FF375F;stroke:none}
+.typing{background:#E9E9EB;border-radius:19px;border-bottom-left-radius:5px;padding:11px 14px;display:flex;gap:4px;width:fit-content;animation:bin .35s var(--spring)}
+.typing i{width:7px;height:7px;border-radius:50%;background:#A3A3A8;animation:bl 1.25s infinite}
+.typing i:nth-child(2){animation-delay:.16s}.typing i:nth-child(3){animation-delay:.32s}
+@keyframes bl{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.icmp{flex-shrink:0;padding:8px 10px 8px;display:flex;align-items:flex-end;gap:8px;background:rgba(249,249,251,.9);backdrop-filter:blur(18px);box-shadow:inset 0 .5px 0 rgba(0,0,0,.09)}
+.plus{width:31px;height:31px;border-radius:50%;background:#E9E9EB;color:#6E6E73;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.plus svg{width:16px;height:16px;stroke-width:2.4}
+.ibox{flex:1;display:flex;align-items:flex-end;border-radius:17px;box-shadow:0 0 0 1px #D6D6DA;padding:5px 5px 5px 12px;background:#fff;transition:.18s var(--e)}
+.ibox:focus-within{box-shadow:0 0 0 1.5px var(--v9)}
+.ibox textarea{flex:1;font-size:14.5px;line-height:1.32;resize:none;max-height:80px;min-height:21px;padding:1px 0;letter-spacing:-.015em}
+.ibox textarea::placeholder{color:#AEAEB2}
+.snd{width:27px;height:27px;border-radius:50%;background:linear-gradient(170deg,#7E67DE,#5D48C0);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s var(--spring);transform:scale(.8);opacity:.4}
+.snd.live{transform:scale(1);opacity:1}
+.snd svg{width:15px;height:15px;stroke-width:2.6}
+.hbar{width:112px;height:4.5px;border-radius:3px;background:#0A0A0C;opacity:.22;margin:5px auto 7px;flex-shrink:0}
+.blocked{flex-shrink:0;padding:11px 14px;background:#FDEDED;display:flex;gap:9px;align-items:flex-start;box-shadow:inset 0 .5px 0 rgba(0,0,0,.07)}
+.blocked svg{width:15px;height:15px;stroke-width:2.2;color:var(--r11);margin-top:1px}
+.blocked .t{font-size:12px;font-weight:600;color:var(--r11)}
+.blocked .s{font-size:11.5px;color:#A8484C;margin-top:2px;line-height:1.45}
+
+/* right tools */
+.tools{width:344px;flex-shrink:0;background:var(--panel);box-shadow:inset 1px 0 0 var(--line);display:flex;flex-direction:column}
+.th2{padding:14px 16px 0;box-shadow:inset 0 -1px 0 var(--line)}
+.tt{display:flex;gap:18px}
+.tt .x{padding-bottom:11px;font-size:12.5px;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.14s var(--e)}
+.tt .x:hover{color:var(--ink)}
+.tt .x.on{color:var(--v11);border-bottom-color:var(--v9);font-weight:650}
+.tb{flex:1;overflow-y:auto;padding:15px 16px 20px}
+.tv{display:none}.tv.on{display:block;animation:fi .22s var(--e)}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.sl{font-size:10px;font-weight:650;letter-spacing:.08em;color:var(--ink4);margin:16px 0 9px;display:flex;align-items:center;justify-content:space-between}
+.sl:first-child{margin-top:0}
+.sl button{font-size:11px;font-weight:600;color:var(--v11);letter-spacing:0}
+.ctx{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px}
+.ctx .ic{width:25px;height:25px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ctx .ic svg{width:12.5px;height:12.5px;stroke-width:2.4}
+.ctx .n{font-size:12.5px;font-weight:500;flex:1}
+.ctx .d{font-size:11.5px;color:var(--ink4);font-variant-numeric:tabular-nums}
+.note{background:var(--a3);border-radius:9px;padding:11px 12px;box-shadow:inset 0 0 0 1px rgba(245,165,36,.2);margin-bottom:6px}
+.note .h{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--a11);margin-bottom:5px}
+.note .h svg{width:11px;height:11px;stroke-width:2.5}
+.note .b2{font-size:12.5px;line-height:1.5;color:#8A5510}
+.note .m{font-size:11px;color:#B08430;margin-top:6px}
+.tpl{padding:10px 11px;border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px;cursor:pointer;transition:.15s var(--e)}
+.tpl:hover{background:var(--v3);box-shadow:0 0 0 1px var(--v6)}
+.tpl .r1{display:flex;align-items:center;gap:7px}
+.tpl .t{font-size:12.5px;font-weight:600;letter-spacing:-.014em;flex:1}
+.tpl .p{font-size:11.5px;color:var(--ink4);margin-top:3px;line-height:1.45}
+.tpl .ed{opacity:0;color:var(--ink4);transition:.14s}
+.tpl:hover .ed{opacity:1}
+.tpl .ed svg{width:13px;height:13px;stroke-width:2.1}
+.fld{margin-bottom:11px}
+.fld label{display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:5px}
+.inp{width:100%;padding:8px 11px;border-radius:8px;box-shadow:var(--sh-b);background:var(--panel2);font-size:12.5px;transition:.15s var(--e)}
+.inp:focus{background:#fff;box-shadow:0 0 0 1px var(--v9),0 0 0 3px rgba(110,86,207,.1)}
+textarea.inp{resize:vertical;min-height:78px;line-height:1.5;font-family:inherit}
+.mrg{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.mk2{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;padding:4px 8px;border-radius:6px;background:var(--v3);color:var(--v11);box-shadow:0 0 0 1px var(--v6);cursor:pointer;transition:.14s var(--e)}
+.mk2:hover{background:var(--v4)}
+.prev{background:#F1F0F4;border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--ink2);margin-top:8px;position:relative}
+.prev .lb{font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--ink4);margin-bottom:5px}
+.cnts{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink4);margin-top:8px;font-variant-numeric:tabular-nums}
+.strk{width:52px;height:3px;border-radius:2px;background:var(--line2);overflow:hidden}
+.sfil{height:100%;background:var(--v9);width:0;transition:width .22s var(--e)}
+.sfil.warn{background:var(--a9)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:8px;transition:.15s var(--e)}
+.btn svg{width:14px;height:14px;stroke-width:2.2}
+.btn.p{background:linear-gradient(180deg,#7B63D8,var(--v9));color:#fff;box-shadow:0 1px 2px rgba(90,69,181,.28),0 3px 9px rgba(110,86,207,.2),inset 0 1px 0 rgba(255,255,255,.14)}
+.btn.p:hover{transform:translateY(-.5px)}
+.btn.p:disabled{opacity:.4;transform:none;cursor:not-allowed}
+.btn.s{box-shadow:var(--sh-b);background:var(--panel);color:var(--ink2)}
+.btn.s:hover{box-shadow:var(--sh-1)}
+.btn.full{width:100%}
+.btn.dgr{color:var(--r11)}
+.job{padding:10px 11px;border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px;cursor:pointer;transition:.15s var(--e)}
+.job:hover{box-shadow:0 0 0 1px var(--v6);background:var(--v3)}
+.job.on{box-shadow:0 0 0 1.5px var(--v9);background:var(--v3)}
+.job .t{font-size:12.5px;font-weight:600}
+.job .m{font-size:11.5px;color:var(--ink3);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap}
+.job .m .sp{color:var(--ink5)}
+.jmatch{font-size:10px;font-weight:650;padding:2px 7px;border-radius:5px;background:var(--g3);color:var(--g11)}
+.opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.opt{font-size:11.5px;font-weight:500;padding:5px 10px;border-radius:7px;cursor:pointer;transition:.14s var(--e);box-shadow:var(--sh-b);background:var(--panel2);color:var(--ink3)}
+.opt.on{background:var(--v4);color:var(--v11);box-shadow:0 0 0 1px var(--v6);font-weight:600}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);z-index:70;display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:11px;background:#1B1A20;color:#F5F4F8;box-shadow:0 20px 48px rgba(22,21,26,.3);font-size:12.5px;opacity:0;transition:.3s var(--e);pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.toast .ti{width:20px;height:20px;border-radius:6px;background:rgba(48,164,108,.24);color:#5BD99B;display:flex;align-items:center;justify-content:center}
+.toast .ti svg{width:12px;height:12px;stroke-width:2.8}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav class="rail">
+    <div class="mk"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <div class="ri" title="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></div>
+    <div class="ri" title="Candidates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    <div class="ri on" title="Messages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="bdg" id="railBdg">3</span></div>
+    <div class="ri" title="Compliance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <div class="ri" title="Job Board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+    <div class="ravt">MT</div>
+  </nav>
+
+  <div class="clist">
+    <div class="ch">
+      <div class="t">Messages <span class="n" id="unreadTot">3 new</span></div>
+      <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" placeholder="Search conversations" oninput="renderList()"></div>
+    </div>
+    <div class="cscroll" id="clist"></div>
+  </div>
+
+  <div class="stage">
+    <div class="stg-h">CANDIDATE VIEW <span style="color:var(--ink5)">·</span> <span id="stgName">live thread</span></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="banner" id="banner"><div class="iav" id="iav"></div><div class="itx"><div class="a" id="ia">New message</div><div class="b" id="ib"></div></div><span class="tmx">now</span></div>
+        <div class="ihd">
+          <span class="bk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span class="c" id="bkc">3</span></span>
+          <div class="ctr"><div class="cav" id="pav"></div><div class="cn" id="pnm">…<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        </div>
+        <div class="thread" id="th"></div>
+        <div id="cmpWrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tools">
+    <div class="th2"><div class="tt">
+      <div class="x on" onclick="tv('ctx',this)">Context</div>
+      <div class="x" onclick="tv('tpl',this)">Templates</div>
+      <div class="x" onclick="tv('promo',this)">Job promo</div>
+    </div></div>
+    <div class="tb">
+      <div class="tv on" id="t-ctx"></div>
+      <div class="tv" id="t-tpl"></div>
+      <div class="tv" id="t-promo"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="tt"><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><span id="tm"></span></div>
+
+<script>
+/* ─────────── data ─────────── */
+var GR=[['#8B72E8','#5A45B5'],['#3FB6A8','#1F8578'],['#E8A33D','#B87409'],['#E56B8C','#B03A5B'],['#5B9BE8','#2C6BB5'],['#7BC96F','#3C8C33']];
+var P=[
+ {id:1,n:'Sarah Keating',sp:'ICU',ph:'0400 000 001',g:0,consent:1,unread:0,avail:'4 Aug',states:['NT','SA'],comp:92,
+  flags:[{t:'Police check 6d',c:'r'}],
+  note:{by:'Rae Patel',w:'yesterday',t:'Police check expires 12 Sep, do not submit to aged care until the renewal is on file.'},
+  th:[{d:'y',t:'4:12 pm'},{o:1,x:'Hi Sarah, a 6 week ICU contract has come up at a regional base hospital that looks like a strong fit.'},
+      {o:1,x:'Want me to send the detail through?',r:'Delivered'},
+      {o:0,x:'Yes please, sounds good',tap:1},
+      {d:'t',t:'9:04 am'},{o:1,x:'Sent it through to your email just now with the facility fact sheet attached.'},
+      {o:1,x:'Give me a call if you want to talk it over.',r:'<b>Read</b> 9:06 am'}]},
+ {id:2,n:'Owen Bradley',sp:'Renal',ph:'0400 000 002',g:5,consent:1,unread:2,avail:'Now',states:['QLD','NT'],comp:71,
+  flags:[{t:'Manual handling 12d',c:'a'},{t:'Available now',c:'g'}],
+  note:{by:'Marc Thompson',w:'2 days ago',t:'Prefers Cairns or Townsville, will not go further west. Wants 8 week minimum.'},
+  th:[{d:'y',t:'2:20 pm'},{o:1,x:'Hi Owen, are you still looking for renal work in North QLD?'},
+      {o:0,x:'Yeah definitely, what have you got?'},
+      {d:'t',t:'8:15 am'},{o:1,x:'A renal unit in Cairns, 8 weeks from 18 Aug. Sending detail shortly.',r:'Delivered'},
+      {o:0,x:'Sounds good'},{o:0,x:'Can you check if accommodation is included?'}]},
+ {id:3,n:'Mia Chen',sp:'Theatre',ph:'0400 000 003',g:2,consent:1,unread:1,avail:'18 Aug',states:['TAS','VIC'],comp:78,
+  flags:[{t:'BLS 19d',c:'a'}],
+  note:null,
+  th:[{d:'t',t:'11:02 am'},{o:1,x:'Hi Mia, a theatre list has opened in Launceston from 18 Aug. Interested?',r:'Delivered'},
+      {o:0,x:'Possibly. What are the hours like?'}]},
+ {id:4,n:'Dev Okafor',sp:'Emergency',ph:'0400 000 004',g:1,consent:0,unread:0,avail:'Now',states:['QLD'],comp:100,
+  flags:[{t:'Opted out',c:'r'},{t:'Available now',c:'g'}],
+  note:{by:'Rae Patel',w:'1 week ago',t:'Asked to be contacted by phone only, replied STOP to SMS on 14 Jul.'},
+  th:[{d:'y',t:'10:00 am'},{o:1,x:'Hi Dev, we have an ED contract in Mount Isa starting soon.',r:'Delivered'},
+      {o:0,x:'STOP'}]},
+ {id:5,n:'Priya Nair',sp:'Midwifery',ph:'0400 000 005',g:3,consent:1,unread:0,avail:'11 Aug',states:['QLD','NSW'],comp:88,
+  flags:[{t:'Neonatal cert 31d',c:'a'}],note:null,
+  th:[{d:'t',t:'7:40 am'},{o:1,x:'Morning Priya, confirming your start date of 11 Aug. All paperwork is in.',r:'<b>Read</b> 7:52 am'},
+      {o:0,x:'Thanks Marc, all set'}]}
+];
+var TPL=[
+ {id:1,n:'New opportunity',b:'Hi {first_name}, a new {specialty} contract has come up that suits your profile. Want the detail?',own:'me'},
+ {id:2,n:'Compliance chase',b:'Hi {first_name}, your {credential} expires soon. Can you get the renewal started this week?',own:'me'},
+ {id:3,n:'Week one check in',b:'Hi {first_name}, checking in on how week one at {facility} is going. All good?',own:'team'},
+ {id:4,n:'Availability update',b:'Hi {first_name}, just updating our records. Are you still available from {start_date}?',own:'team'}
+];
+var JOBS=[
+ {id:1,f:'Regional Base Hospital',w:'ICU',s:'04 Aug',e:'30 Aug',rate:'example rate',loc:'NT',sp:'ICU'},
+ {id:2,f:'Cairns Renal Unit',w:'Renal',s:'18 Aug',e:'12 Oct',rate:'example rate',loc:'QLD',sp:'Renal'},
+ {id:3,f:'Launceston General',w:'Theatre',s:'18 Aug',e:'27 Sep',rate:'example rate',loc:'TAS',sp:'Theatre'},
+ {id:4,f:'District Hospital',w:'Midwifery',s:'11 Aug',e:'06 Sep',rate:'example rate',loc:'QLD',sp:'Midwifery'}
+];
+var cur=P[0], edit=null, sel=null, promoOpts={dates:1,rate:1,ward:1,link:1};
+
+function ini(n){return n.split(' ').map(x=>x[0]).join('').slice(0,2)}
+function gr(g){return 'linear-gradient(145deg,'+GR[g][0]+','+GR[g][1]+')'}
+function segs(n){return n===0?1:(n<=160?1:Math.ceil(n/153))}
+function tstamp(){var d=new Date(),h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0'),a=h>=12?'pm':'am';return (h%12||12)+':'+m+' '+a}
+function tst(m){var t=document.getElementById('tt');document.getElementById('tm').textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2900)}
+function merge(s,p){return s.replace(/{first_name}/g,p.n.split(' ')[0]).replace(/{specialty}/g,p.sp).replace(/{facility}/g,'the facility').replace(/{start_date}/g,p.avail).replace(/{credential}/g,(p.flags[0]||{t:'credential'}).t.replace(/ \d+d$/,''))}
+
+/* ─────────── list ─────────── */
+function lastOf(p){for(var i=p.th.length-1;i>=0;i--){if(p.th[i].x)return p.th[i]}return{x:''}}
+function renderList(){
+ var q=(document.getElementById('q').value||'').toLowerCase();
+ var L=P.filter(p=>!q||p.n.toLowerCase().includes(q)||p.sp.toLowerCase().includes(q));
+ document.getElementById('clist').innerHTML=L.map(function(p){
+  var l=lastOf(p);
+  return '<div class="ci'+(p.id===cur.id?' on':'')+(p.unread?' unread':'')+'" onclick="pick('+p.id+')">'+
+   '<div class="av" style="background:'+gr(p.g)+'">'+ini(p.n)+(p.unread?'<span class="u">'+p.unread+'</span>':'')+'</div>'+
+   '<div class="bd"><div class="r1"><span class="nm">'+p.n+'</span><span class="tm">'+(p.unread?'now':'2h')+'</span></div>'+
+   '<div class="pv">'+(l.o?'You: ':'')+l.x+'</div>'+
+   '<div class="fl"><span class="mini v">'+p.sp+'</span>'+p.flags.map(f=>'<span class="mini '+f.c+'">'+f.t+'</span>').join('')+'</div></div></div>'}).join('');
+ var tot=P.reduce((a,b)=>a+b.unread,0);
+ document.getElementById('unreadTot').textContent=tot?tot+' new':'all read';
+ document.getElementById('railBdg').style.display=tot?'flex':'none';
+ document.getElementById('railBdg').textContent=tot;
+ document.getElementById('bkc').style.display=tot?'block':'none';
+ document.getElementById('bkc').textContent=tot;
+}
+function pick(id){cur=P.find(p=>p.id===id);cur.unread=0;renderList();renderThread();renderTools();}
+
+/* ─────────── thread ─────────── */
+function renderThread(){
+ document.getElementById('pav').style.background=gr(cur.g);
+ document.getElementById('pav').textContent=ini(cur.n);
+ document.getElementById('pnm').innerHTML=cur.n.split(' ')[0]+' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
+ document.getElementById('stgName').textContent=cur.n+' · '+cur.ph;
+ var h='',t=cur.th;
+ t.forEach(function(m,i){
+  if(m.d){h+='<div class="tstamp"><b>'+(m.d==='y'?'Yesterday':'Today')+'</b> '+m.t+'</div>';return}
+  var nx=t[i+1], tail=!nx||nx.d||(!!nx.o!==!!m.o);
+  h+='<div class="row'+(m.o?' o':'')+'"><div class="b '+(m.o?'o':'i')+(tail?' tail':'')+'" style="animation-delay:'+Math.min(i*.045,.4)+'s">'+m.x+
+     (m.tap?'<div class="tap"><svg viewBox="0 0 24 24"><path d="M12 21s-8-4.9-8-10.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 3.6C20 16.1 12 21 12 21z"/></svg></div>':'')+'</div></div>';
+  if(m.r)h+='<div class="rcpt">'+m.r+'</div>';
+ });
+ document.getElementById('th').innerHTML=h;
+ var w=document.getElementById('cmpWrap');
+ if(!cur.consent){
+  w.innerHTML='<div class="blocked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M4.9 4.9l14.2 14.2"/></svg><div><div class="t">SMS blocked, opted out</div><div class="s">'+cur.n.split(' ')[0]+' replied STOP. Under the Spam Act you cannot send marketing SMS. Call instead.</div></div></div>';
+ }else{
+  w.innerHTML='<div class="icmp"><div class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>'+
+   '<div class="ibox"><textarea id="bx" rows="1" placeholder="Text Message" oninput="cnt()" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();snd()}"></textarea>'+
+   '<button class="snd" id="sb" onclick="snd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div>';
+ }
+ setTimeout(function(){var e=document.getElementById('th');e.scrollTop=e.scrollHeight},60);
+}
+function cnt(){var b=document.getElementById('bx');if(!b)return;
+ document.getElementById('sb').classList.toggle('live',!!b.value.trim());
+ b.style.height='auto';b.style.height=Math.min(80,b.scrollHeight)+'px'}
+function snd(){var b=document.getElementById('bx');if(!b)return;var v=b.value.trim();if(!v)return;
+ cur.th.push({o:1,x:v,r:'Sending…'});b.value='';cnt();renderThread();
+ setTimeout(function(){var m=cur.th[cur.th.length-1];m.r='Delivered';renderThread();renderList()},900)}
+
+function island(p,txt){
+ var el=document.getElementById('banner');
+ document.getElementById('iav').style.background=gr(p.g);
+ document.getElementById('iav').textContent=ini(p.n);
+ document.getElementById('ia').textContent=p.n;
+ document.getElementById('ib').textContent=txt;
+ el.classList.add('on');setTimeout(()=>el.classList.remove('on'),3400)}
+
+/* ─────────── tools ─────────── */
+function tv(v,el){['ctx','tpl','promo'].forEach(n=>document.getElementById('t-'+n).classList.remove('on'));
+ document.getElementById('t-'+v).classList.add('on');
+ document.querySelectorAll('.tt .x').forEach(x=>x.classList.remove('on'));el.classList.add('on')}
+function renderTools(){renderCtx();renderTpl();renderPromo()}
+
+function renderCtx(){
+ var p=cur,h='<div class="sl">CANDIDATE</div>';
+ h+='<div class="ctx"><div class="ic" style="background:var(--v4);color:var(--v11)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="n">'+p.sp+' RN</div><div class="d">'+p.states.join(', ')+'</div></div>';
+ h+='<div class="ctx"><div class="ic" style="background:'+(p.comp>=90?'var(--g3);color:var(--g11)':p.comp>=75?'var(--a3);color:var(--a11)':'var(--r3);color:var(--r11)')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="n">Compliance</div><div class="d">'+p.comp+'%</div></div>';
+ h+='<div class="ctx"><div class="ic" style="background:var(--g3);color:var(--g11)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div class="n">Available</div><div class="d">'+p.avail+'</div></div>';
+ h+='<div class="ctx"><div class="ic" style="background:'+(p.consent?'var(--g3);color:var(--g11)':'var(--r3);color:var(--r11)')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="n">SMS consent</div><div class="d">'+(p.consent?'opted in':'opted out')+'</div></div>';
+ if(p.note){h+='<div class="sl">INTERNAL NOTE</div><div class="note"><div class="h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>NOT VISIBLE TO CANDIDATE</div><div class="b2">'+p.note.t+'</div><div class="m">'+p.note.by+', '+p.note.w+'</div></div>'}
+ h+='<div class="sl">SIMULATE</div><button class="btn s full" onclick="simReply()">Incoming reply from '+p.n.split(' ')[0]+'</button>';
+ document.getElementById('t-ctx').innerHTML=h}
+
+function simReply(){
+ var p=cur, msgs=['Perfect, send it through','Sounds good, what are the dates again?','Yes I am keen, call me when you can'];
+ var m=msgs[Math.floor(Math.random()*msgs.length)];
+ var t=document.getElementById('th');
+ t.insertAdjacentHTML('beforeend','<div class="row" id="ty"><div class="typing"><i></i><i></i><i></i></div></div>');t.scrollTop=t.scrollHeight;
+ setTimeout(function(){var e=document.getElementById('ty');if(e)e.remove();
+  p.th.push({o:0,x:m});renderThread();renderList();island(p,m);tst('Reply from '+p.n+'. Alert raised and logged to their file.')},1800)}
+
+/* templates */
+function renderTpl(){
+ var h='';
+ if(edit){
+  h+='<div class="sl">'+(edit.id?'EDIT TEMPLATE':'NEW TEMPLATE')+'</div>';
+  h+='<div class="fld"><label>Name</label><input class="inp" id="tn" value="'+(edit.n||'').replace(/"/g,'&quot;')+'" oninput="tpPrev()"></div>';
+  h+='<div class="fld"><label>Message</label><textarea class="inp" id="tbd" oninput="tpPrev()">'+(edit.b||'')+'</textarea>';
+  h+='<div class="mrg">'+['{first_name}','{specialty}','{facility}','{start_date}','{credential}'].map(m=>'<span class="mk2" onclick="tIns(\''+m+'\')">'+m+'</span>').join('')+'</div></div>';
+  h+='<div class="prev"><div class="lb">PREVIEW FOR '+cur.n.toUpperCase()+'</div><span id="tpv"></span></div>';
+  h+='<div class="cnts"><span id="tc">0</span> chars<div class="strk"><div class="sfil" id="tsf"></div></div><span id="tsg">1 segment</span></div>';
+  h+='<div style="display:flex;gap:7px;margin-top:13px"><button class="btn p" style="flex:1" onclick="tSave()">Save template</button><button class="btn s" onclick="edit=null;renderTpl()">Cancel</button>'+
+     (edit.id?'<button class="btn s dgr" onclick="tDel()">Delete</button>':'')+'</div>';
+ }else{
+  h+='<div class="sl">MY TEMPLATES <button onclick="edit={n:\'\',b:\'\',own:\'me\'};renderTpl()">+ New</button></div>';
+  TPL.filter(t=>t.own==='me').forEach(function(t){
+   h+='<div class="tpl"><div class="r1" onclick="useTpl('+t.id+')"><span class="t">'+t.n+'</span><span class="ed" onclick="event.stopPropagation();edit=Object.assign({},TPL.find(x=>x.id==='+t.id+'));renderTpl()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span></div><div class="p" onclick="useTpl('+t.id+')">'+merge(t.b,cur)+'</div></div>'});
+  h+='<div class="sl">TEAM TEMPLATES</div>';
+  TPL.filter(t=>t.own==='team').forEach(function(t){
+   h+='<div class="tpl" onclick="useTpl('+t.id+')"><div class="r1"><span class="t">'+t.n+'</span><span class="mini">team</span></div><div class="p">'+merge(t.b,cur)+'</div></div>'});
+  h+='<div style="font-size:11px;color:var(--ink4);margin-top:14px;line-height:1.5">Previews resolve merge fields against '+cur.n.split(' ')[0]+'. Team templates are shared and locked.</div>';
+ }
+ document.getElementById('t-tpl').innerHTML=h;
+ if(edit)tpPrev()}
+function tIns(m){var e=document.getElementById('tbd');e.value+=(e.value&&!/\s$/.test(e.value)?' ':'')+m;e.focus();tpPrev()}
+function tpPrev(){var b=document.getElementById('tbd').value;document.getElementById('tpv').textContent=merge(b,cur);
+ var n=merge(b,cur).length,s=segs(n);
+ document.getElementById('tc').textContent=n;document.getElementById('tsg').textContent=s+' segment'+(s>1?'s':'');
+ var f=document.getElementById('tsf');f.style.width=Math.min(100,(n%160||(n?160:0))/160*100)+'%';f.classList.toggle('warn',s>1)}
+function tSave(){var n=document.getElementById('tn').value.trim(),b=document.getElementById('tbd').value.trim();
+ if(!n||!b){tst('Give the template a name and a message.');return}
+ if(edit.id){var t=TPL.find(x=>x.id===edit.id);t.n=n;t.b=b;tst('Template updated.')}
+ else{TPL.push({id:Date.now(),n:n,b:b,own:'me'});tst('Template saved to your library.')}
+ edit=null;renderTpl()}
+function tDel(){TPL.splice(TPL.findIndex(x=>x.id===edit.id),1);edit=null;renderTpl();tst('Template deleted.')}
+function useTpl(id){var t=TPL.find(x=>x.id===id);var b=document.getElementById('bx');
+ if(!b){tst('This candidate has opted out of SMS.');return}
+ b.value=merge(t.b,cur);cnt();b.focus();tst('Template inserted and merged.')}
+
+/* promo builder */
+function renderPromo(){
+ var h='<div class="sl">PICK A ROLE</div>';
+ JOBS.forEach(function(j){
+  var m=j.sp===cur.sp||cur.states.includes(j.loc);
+  h+='<div class="job'+(sel===j.id?' on':'')+'" onclick="sel='+j.id+';renderPromo()"><div class="t">'+j.f+(m?' <span class="jmatch">MATCH</span>':'')+'</div>'+
+     '<div class="m">'+j.w+'<span class="sp">·</span>'+j.s+' to '+j.e+'<span class="sp">·</span>'+j.loc+'</div></div>'});
+ if(sel){
+  h+='<div class="sl">INCLUDE</div><div class="opts">'+
+   [['ward','Ward'],['dates','Dates'],['rate','Rate'],['link','Fact sheet link']].map(o=>'<span class="opt'+(promoOpts[o[0]]?' on':'')+'" onclick="promoOpts.'+o[0]+'=!promoOpts.'+o[0]+';renderPromo()">'+o[1]+'</span>').join('')+'</div>';
+  var txt=promoText();
+  h+='<div class="prev" style="margin-top:12px"><div class="lb">SMS PREVIEW</div>'+txt.replace(/\n/g,'<br>')+'</div>';
+  var n=txt.length,s=segs(n);
+  h+='<div class="cnts"><span>'+n+'</span> chars<div class="strk"><div class="sfil'+(s>1?' warn':'')+'" style="width:'+Math.min(100,(n%160||(n?160:0))/160*100)+'%"></div></div><span>'+s+' segment'+(s>1?'s':'')+'</span>'+(s>1?'<span style="color:var(--a11);font-weight:600">costs '+s+'x</span>':'')+'</div>';
+  h+='<div style="display:flex;gap:7px;margin-top:13px"><button class="btn p" style="flex:1" '+(cur.consent?'':'disabled')+' onclick="sendPromo()">Send to '+cur.n.split(' ')[0]+'</button>'+
+     '<button class="btn s" onclick="tst(\'Would send to 14 matched, opted-in candidates.\')">Group (14)</button></div>';
+  if(!cur.consent)h+='<div style="font-size:11px;color:var(--r11);margin-top:9px;line-height:1.5">Blocked: '+cur.n.split(' ')[0]+' has opted out of SMS.</div>';
+ }else{h+='<div style="font-size:11.5px;color:var(--ink4);margin-top:14px;line-height:1.55">Pick a role to build a promo SMS. Roles matching '+cur.n.split(' ')[0]+'\'s specialty or states are tagged.</div>'}
+ document.getElementById('t-promo').innerHTML=h}
+function promoText(){var j=JOBS.find(x=>x.id===sel),f=cur.n.split(' ')[0],t='Hi '+f+', ';
+ t+=promoOpts.ward?(j.w+' role at '+j.f):('A role at '+j.f);
+ if(promoOpts.dates)t+=', '+j.s+' to '+j.e;
+ t+='.';
+ if(promoOpts.rate)t+=' Rate: '+j.rate+'.';
+ if(promoOpts.link)t+=' Fact sheet: cc.link/'+j.id+'a9';
+ t+=' Interested? Reply YES. Reply STOP to opt out.';
+ return t}
+function sendPromo(){var t=promoText();cur.th.push({o:1,x:t,r:'Sending…'});renderThread();renderList();
+ setTimeout(function(){cur.th[cur.th.length-1].r='Delivered';renderThread();tst('Promo sent and logged against '+cur.n+'.')},900)}
+
+renderList();renderThread();renderTools();
+</script>
+</body>
+</html>

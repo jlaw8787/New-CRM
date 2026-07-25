@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Captain Contract, CV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16151A;--ink2:#3E3B47;--ink3:#6F6B7B;--ink4:#9E9AAB;--ink5:#C4C1CE;
+  --bg:#FCFCFD;--panel:#fff;--panel2:#FAFAFB;--panel3:#F4F3F6;
+  --line:#EAE9EF;--line2:#E0DFE7;
+  --v3:#F6F3FF;--v4:#EDE9FE;--v6:#DDD5F8;--v9:#6E56CF;--v11:#5B47B0;--v12:#3D2E72;
+  --g3:#E9F9EE;--g11:#18794E;--a3:#FFF7E0;--a11:#A15C07;--r3:#FFEFEF;--r11:#CD2B31;
+  --sh-b:0 0 0 1px rgba(22,21,26,.055);
+  --sh-1:0 0 0 1px rgba(22,21,26,.05),0 1px 2px rgba(22,21,26,.04);
+  --e:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);font-size:13.5px;-webkit-font-smoothing:antialiased;letter-spacing:-.011em;overflow:hidden}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block;flex-shrink:0}
+button{font:inherit;border:none;background:none;cursor:pointer;color:inherit}
+input,textarea{font:inherit;border:none;background:none;color:inherit;outline:none}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-thumb{background:#DBD9E3;border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+.app{display:flex;height:100vh}
+
+.rail{width:56px;flex-shrink:0;background:#131217;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px}
+.mk{width:32px;height:32px;border-radius:9px;background:linear-gradient(145deg,#8B72E8,#5A45B5);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.ri{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#8F8B9B;cursor:pointer;transition:.14s var(--e);position:relative}
+.ri:hover{background:rgba(255,255,255,.06);color:#DCDAE2}
+.ri.on{background:rgba(255,255,255,.09);color:#fff}
+.ri.on::before{content:'';position:absolute;left:-10px;top:8px;bottom:8px;width:2px;border-radius:0 2px 2px 0;background:#8B72E8}
+.ri svg{width:16px;height:16px;stroke-width:1.9}
+.ravt{margin-top:auto;width:28px;height:28px;border-radius:8px;background:linear-gradient(145deg,#8B72E8,#5A45B5);color:#fff;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center}
+
+.side{width:262px;flex-shrink:0;background:var(--panel);box-shadow:inset -1px 0 0 var(--line);display:flex;flex-direction:column}
+.sh{padding:16px 17px 14px;box-shadow:inset 0 -1px 0 var(--line)}
+.sh .t{font-size:15.5px;font-weight:600;letter-spacing:-.03em}
+.sh .s{font-size:11.5px;color:var(--ink3);margin-top:3px}
+.sb{flex:1;overflow-y:auto;padding:15px 17px 20px}
+.sl{font-size:10px;font-weight:650;letter-spacing:.08em;color:var(--ink4);margin:18px 0 9px}
+.sl:first-child{margin-top:0}
+.seg{display:flex;padding:3px;background:var(--panel2);border-radius:9px;box-shadow:var(--sh-b);gap:3px}
+.seg .o{flex:1;text-align:center;font-size:11.5px;font-weight:550;padding:6px 4px;border-radius:6px;cursor:pointer;color:var(--ink3);transition:.14s var(--e)}
+.seg .o.on{background:#fff;color:var(--v11);box-shadow:var(--sh-1);font-weight:650}
+.hint{font-size:11px;color:var(--ink4);margin-top:8px;line-height:1.5}
+.sec{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;margin-bottom:3px;transition:.14s var(--e);cursor:pointer}
+.sec:hover{background:var(--panel2)}
+.sec.off{opacity:.42}
+.sec .nm{flex:1;font-size:12.5px;font-weight:500}
+.chk{width:17px;height:17px;border-radius:5px;box-shadow:inset 0 0 0 1.5px var(--line2);display:flex;align-items:center;justify-content:center;transition:.14s var(--e);flex-shrink:0}
+.chk.on{background:var(--v9);box-shadow:none}
+.chk svg{width:11px;height:11px;stroke-width:3;color:#fff;opacity:0}
+.chk.on svg{opacity:1}
+.mv{display:flex;flex-direction:column;gap:1px}
+.mv button{color:var(--ink5);padding:0;line-height:0}
+.mv button:hover{color:var(--v9)}
+.mv svg{width:11px;height:11px;stroke-width:2.6}
+.src{display:flex;align-items:center;gap:9px;padding:9px 0;font-size:12px;color:var(--ink2);border-bottom:1px solid var(--line)}
+.src:last-child{border:none}
+.src .d{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.src .n{flex:1}
+.src .c{font-size:11px;color:var(--ink4);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:8px;transition:.15s var(--e)}
+.btn svg{width:14px;height:14px;stroke-width:2.2}
+.btn.p{background:linear-gradient(180deg,#7B63D8,var(--v9));color:#fff;box-shadow:0 1px 2px rgba(90,69,181,.28),0 3px 9px rgba(110,86,207,.2)}
+.btn.p:hover{transform:translateY(-.5px)}
+.btn.s{box-shadow:var(--sh-b);background:var(--panel);color:var(--ink2)}
+.btn.full{width:100%}
+
+.stage{flex:1;min-width:0;display:flex;flex-direction:column;background:#F1F0F5}
+.top{height:50px;flex-shrink:0;background:var(--panel);box-shadow:inset 0 -1px 0 var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.top .t{font-size:13px;color:var(--ink3)}
+.top .t b{color:var(--ink);font-weight:600}
+.scroll{flex:1;overflow-y:auto;padding:26px 20px 70px;display:flex;justify-content:center}
+
+/* ── the document ── */
+.page{width:640px;background:#fff;border-radius:3px;box-shadow:0 1px 3px rgba(22,21,26,.09),0 14px 44px rgba(22,21,26,.11);height:fit-content;padding:52px 56px 44px}
+.brandline{display:flex;align-items:center;gap:7px;font-size:9.5px;font-weight:650;letter-spacing:.14em;color:var(--v9);margin-bottom:26px}
+.brandline svg{width:12px;height:12px;stroke-width:2.2}
+.nm{font-size:31px;font-weight:600;letter-spacing:-.04em;line-height:1.1}
+.cls{font-size:14.5px;color:var(--ink2);margin-top:7px;font-weight:450}
+.reg{font-size:12.5px;color:var(--ink3);margin-top:4px;font-variant-numeric:tabular-nums}
+.rule{height:1px;background:var(--line);margin:26px 0}
+.sec2{margin-bottom:30px}
+.sec2:last-child{margin-bottom:0}
+.h2{font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--v9);margin-bottom:14px}
+.spiel{font-size:13.5px;line-height:1.72;color:var(--ink2)}
+/* qualifications */
+.q{margin-bottom:13px}
+.q:last-child{margin-bottom:0}
+.q .t{font-size:13.5px;font-weight:600;letter-spacing:-.017em}
+.q .m{font-size:12.5px;color:var(--ink3);margin-top:2px}
+/* work history, stacked lines */
+.w{margin-bottom:22px}
+.w:last-child{margin-bottom:0}
+.w .l{font-size:13.5px;line-height:1.62;color:var(--ink2)}
+.w .l.d{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.012em}
+.w .l.f{font-weight:550;color:var(--ink)}
+.cur{display:inline-block;font-size:10px;font-weight:650;letter-spacing:.05em;color:var(--g11);background:var(--g3);padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:2px}
+/* skills checklist */
+.sk{display:grid;grid-template-columns:1fr 1fr;gap:9px 26px}
+.skr{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink2)}
+.skb{width:15px;height:15px;border-radius:4px;box-shadow:inset 0 0 0 1.4px var(--line2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.skb.on{background:var(--v9);box-shadow:none}
+.skb svg{width:10px;height:10px;stroke-width:3.2;color:#fff;opacity:0}
+.skb.on svg{opacity:1}
+.pend{font-size:12.5px;color:var(--ink4);line-height:1.6;padding:14px 16px;border-radius:8px;background:var(--panel2);box-shadow:var(--sh-b)}
+/* refs */
+.r{margin-bottom:15px}
+.r:last-child{margin-bottom:0}
+.r .t{font-size:13.5px;font-weight:600}
+.r .m{font-size:12.5px;color:var(--ink3);margin-top:2px}
+.r .q2{font-size:13px;line-height:1.65;color:var(--ink2);margin-top:7px}
+.foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:9.5px;color:var(--ink4);letter-spacing:.05em;font-weight:550}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);z-index:70;display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:11px;background:#1B1A20;color:#F5F4F8;box-shadow:0 20px 48px rgba(22,21,26,.3);font-size:12.5px;opacity:0;transition:.3s var(--e);pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.toast .ti{width:20px;height:20px;border-radius:6px;background:rgba(48,164,108,.24);color:#5BD99B;display:flex;align-items:center;justify-content:center}
+.toast .ti svg{width:12px;height:12px;stroke-width:2.8}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail">
+    <div class="mk"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <div class="ri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></div>
+    <div class="ri on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    <div class="ri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+    <div class="ravt">MT</div>
+  </nav>
+
+  <div class="side">
+    <div class="sh"><div class="t">CV</div><div class="s">Sarah Keating</div></div>
+    <div class="sb">
+      <div class="sl">SHOW NAME AS</div>
+      <div class="seg">
+        <div class="o on" onclick="setId(0,this)">Full</div>
+        <div class="o" onclick="setId(1,this)">Initial</div>
+        <div class="o" onclick="setId(2,this)">Reference</div>
+      </div>
+      <div class="hint" id="idn"></div>
+
+      <div class="sl">SECTIONS</div>
+      <div id="secs"></div>
+
+      <div class="sl">PULLED FROM</div>
+      <div class="src"><span class="d" style="background:var(--g11)"></span><span class="n">Confirmed contracts</span><span class="c">3</span></div>
+      <div class="src"><span class="d" style="background:var(--v9)"></span><span class="n">Compliance record</span><span class="c">AHPRA</span></div>
+      <div class="src"><span class="d" style="background:var(--a11)"></span><span class="n">Parsed CV</span><span class="c" id="pc">not yet</span></div>
+      <button class="btn s full" style="margin-top:11px" onclick="parseCV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Parse a CV</button>
+
+      <div class="sl">OUTPUT</div>
+      <button class="btn p full" onclick="tst('PDF generated.')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Export PDF</button>
+      <button class="btn s full" style="margin-top:7px" onclick="tst('Attached to the submission.')">Attach to submission</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="top"><div class="t">Candidates <b>/ Sarah Keating / CV</b></div><div class="t">No contact details included</div></div>
+    <div class="scroll"><div class="page" id="page"></div></div>
+  </div>
+</div>
+<div class="toast" id="tt"><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><span id="tm"></span></div>
+
+<script>
+var idLvl=0, parsed=false;
+var D={
+ name:'Sarah Keating', ref:'CC-1042', cls:'Registered Nurse', ahpra:'NMW0001234567',
+ spiel:'Eight years as a Registered Nurse, the last four in intensive care across regional and remote Australia. Comfortable with high acuity and ventilated patients, and used to being one of a small team a long way from a tertiary centre. Three completed travel contracts, all with return requested.',
+ quals:[{t:'Graduate Certificate in Critical Care Nursing',m:'Australian university, 2022'},{t:'Bachelor of Nursing',m:'Australian university, 2018'}],
+ cpd:[{t:'Advanced Life Support 2',m:'Renewed January 2026'},{t:'Basic Life Support',m:'Renewed March 2026'},{t:'Paediatric Advanced Life Support',m:'Completed November 2025'}],
+ work:[
+  {s:'Feb 2026',e:'Present',f:'Regional Base Hospital',st:'NT',c:'Registered Nurse',a:'Intensive Care Unit',cur:1},
+  {s:'Aug 2025',e:'Nov 2025',f:'District General Hospital',st:'SA',c:'Registered Nurse',a:'ICU and HDU'},
+  {s:'Mar 2025',e:'Jun 2025',f:'Coastal Health Service',st:'QLD',c:'Registered Nurse',a:'Emergency, ICU relief'}
+ ],
+ workExtra:[
+  {s:'Jan 2021',e:'Feb 2025',f:'Metropolitan Teaching Hospital',st:'QLD',c:'Clinical Nurse',a:'Intensive Care Unit'},
+  {s:'Feb 2018',e:'Dec 2020',f:'Regional Health Service',st:'QLD',c:'Registered Nurse',a:'Medical and Surgical'}
+ ],
+ skills:[['Ventilation',1],['Arterial lines',1],['CVC management',1],['Vasoactive infusions',1],['CRRT',1],['Triage',1],['IV cannulation',1],['Chest drains',0],['IABP',0],['Preceptorship',1]],
+ refs:[{t:'Nurse Unit Manager',m:'Regional Base Hospital, Intensive Care Unit',q:'Excellent clinician, strong in high acuity and a genuinely good fit in a small rural team. Would take her back any time.'},
+       {t:'Clinical Nurse Consultant',m:'District General Hospital',q:'Reliable, calm under pressure and a good teacher for the junior staff.'}]
+};
+var SEC=[{k:'spiel',n:'About',on:1},{k:'quals',n:'Qualifications and CPD',on:1},{k:'work',n:'Work history',on:1},{k:'skills',n:'Skills checklist',on:1},{k:'refs',n:'References',on:1}];
+function tst(m){var t=document.getElementById('tt');document.getElementById('tm').textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2800)}
+function setId(v,el){idLvl=v;document.querySelectorAll('.seg .o').forEach(o=>o.classList.remove('on'));el.classList.add('on');render()}
+function tog(i){SEC[i].on=SEC[i].on?0:1;renderSecs();render()}
+function mv(i,d){var j=i+d;if(j<0||j>=SEC.length)return;var t=SEC[i];SEC[i]=SEC[j];SEC[j]=t;renderSecs();render()}
+function renderSecs(){document.getElementById('secs').innerHTML=SEC.map(function(s,i){
+ return '<div class="sec'+(s.on?'':' off')+'">'+
+  '<div class="mv"><button onclick="mv('+i+',-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>'+
+  '<button onclick="mv('+i+',1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>'+
+  '<span class="nm" onclick="tog('+i+')">'+s.n+'</span>'+
+  '<div class="chk'+(s.on?' on':'')+'" onclick="tog('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div></div>'}).join('')}
+function nameOut(){
+ document.getElementById('idn').textContent=idLvl===0?'Full name. Use once the facility has confirmed interest.':idLvl===1?'First name and surname initial. Standard for first review.':'Reference number only, fully de-identified.';
+ return idLvl===0?D.name:idLvl===1?D.name.split(' ')[0]+' '+D.name.split(' ')[1][0]+'.':'Candidate '+D.ref}
+function body(k){
+ if(k==='spiel')return '<div class="spiel">'+D.spiel+'</div>';
+ if(k==='quals'){var q=(parsed?D.quals:[]).concat(D.cpd);
+  if(!parsed)return '<div class="pend">Degrees are not held in the system yet. Parse a CV to pull them in.</div>'+D.cpd.map(x=>'<div class="q" style="margin-top:13px"><div class="t">'+x.t+'</div><div class="m">'+x.m+'</div></div>').join('');
+  return q.map(x=>'<div class="q"><div class="t">'+x.t+'</div><div class="m">'+x.m+'</div></div>').join('')}
+ if(k==='work'){var w=D.work.concat(parsed?D.workExtra:[]);
+  return w.map(x=>'<div class="w">'+
+   '<div class="l d">'+x.s+' to '+x.e+(x.cur?'<span class="cur">CURRENT</span>':'')+'</div>'+
+   '<div class="l f">'+x.f+', '+x.st+'</div>'+
+   '<div class="l">'+x.c+'</div>'+
+   '<div class="l">'+x.a+'</div></div>').join('')}
+ if(k==='skills')return '<div class="sk">'+D.skills.map(s=>'<div class="skr"><span class="skb'+(s[1]?' on':'')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>'+s[0]+'</div>').join('')+'</div>'+
+  '<div class="pend" style="margin-top:15px">Placeholder list. The full checklist form comes later and will drive this section.</div>';
+ if(k==='refs')return D.refs.map(r=>'<div class="r"><div class="t">'+r.t+'</div><div class="m">'+r.m+'</div><div class="q2">'+r.q+'</div></div>').join('')+
+  '<div class="pend" style="margin-top:15px">Reference contact details released on request. Written references will be pulled from uploaded PDFs later.</div>';
+ return ''}
+function render(){
+ var h='<div class="brandline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>CAPTAIN CONTRACT</div>';
+ h+='<div class="nm">'+nameOut()+'</div><div class="cls">'+D.cls+'</div><div class="reg">AHPRA '+D.ahpra+'</div><div class="rule"></div>';
+ SEC.filter(s=>s.on).forEach(function(s,i){
+  h+='<div class="sec2"><div class="h2">'+s.n.toUpperCase()+'</div>'+body(s.k)+'</div>'});
+ h+='<div class="foot"><span>CAPTAIN CONTRACT</span><span>NO CONTACT DETAILS INCLUDED</span></div>';
+ document.getElementById('page').innerHTML=h}
+function parseCV(){
+ if(parsed){tst('Already parsed.');return}
+ parsed=true;document.getElementById('pc').textContent='4 items';
+ render();tst('CV parsed. Two earlier roles and two degrees added.')}
+renderSecs();render();
+</script>
+</body>
+</html>

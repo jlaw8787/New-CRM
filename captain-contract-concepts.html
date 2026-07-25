@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Captain Contract — Concept Mockups</title>
+<style>
+  :root{
+    --ink:#1a1d29; --ink-2:#5b6072; --ink-3:#8b90a0; --line:#e8eaf0; --line-2:#d5d8e2;
+    --bg:#f4f3fb; --surface:#ffffff; --surface-2:#faf9ff;
+    --brand:#5b4fd6; --brand-2:#7c5cff; --brand-bg:#eeedfe; --brand-ink:#3c3489;
+    --ed:#0f6e56; --ed-bg:#e1f5ee;
+    --medical:#185fa5; --medical-bg:#e6f1fb;
+    --renal:#854f0b; --renal-bg:#faeeda;
+    --mh:#3c3489; --mh-bg:#eeedfe;
+    --theatre:#72243e; --theatre-bg:#fbeaf0;
+    --midwifery:#3b6d11; --midwifery-bg:#eaf3de;
+    --icu:#993c1d; --icu-bg:#faece7;
+    --ok:#0f6e56; --ok-bg:#e1f5ee;
+    --warn:#854f0b; --warn-bg:#faeeda;
+    --danger:#a32d2d; --danger-bg:#fcebeb;
+    --radius:8px;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:100vh}
+
+  /* sidebar */
+  .side{width:236px;background:var(--surface);border-right:1px solid var(--line);flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);background:linear-gradient(120deg,#eeedfe,#f4f3fb)}
+  .brand-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+  .brand-name{font-weight:700;font-size:15px;letter-spacing:-0.01em}
+  .brand-sub{font-size:11px;color:var(--ink-3);font-weight:500}
+  .nav{padding:12px 12px;flex:1;overflow:auto}
+  .nav-label{font-size:10.5px;font-weight:600;color:var(--ink-3);letter-spacing:0.06em;text-transform:uppercase;padding:14px 10px 6px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:var(--radius);color:var(--ink-2);font-weight:500;cursor:pointer;font-size:13.5px;margin-bottom:1px}
+  .nav-item:hover{background:var(--bg)}
+  .nav-item.on{background:var(--brand-bg);color:var(--brand-ink);font-weight:600}
+  .nav-item .ico{width:17px;height:17px;flex-shrink:0;opacity:.9}
+  .nav-item .badge{margin-left:auto;font-size:11px;font-weight:600;background:var(--bg);color:var(--ink-2);padding:1px 7px;border-radius:20px}
+  .nav-item.on .badge{background:#fff}
+  .side-user{padding:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--brand-bg);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;flex-shrink:0}
+
+  /* main */
+  .main{flex:1;min-width:0}
+  .topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:5}
+  .page-title{font-size:19px;font-weight:700;letter-spacing:-0.02em}
+  .page-sub{font-size:12.5px;color:var(--ink-3);font-weight:500}
+  .search{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:7px 12px;font-size:13px;color:var(--ink-3);width:230px}
+  .kbd{margin-left:auto;font-size:11px;background:var(--surface);border:1px solid var(--line-2);border-radius:4px;padding:1px 5px;color:var(--ink-3)}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line-2);background:var(--surface);color:var(--ink)}
+  .btn:hover{background:var(--bg)}
+  .btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border-color:var(--brand)}
+  .btn-primary:hover{filter:brightness(1.08)}
+  .content{padding:24px 28px 60px}
+
+  .page{display:none}
+  .page.on{display:block}
+
+  /* metric tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 17px;cursor:pointer;transition:border-color .12s}
+  .tile:hover{border-color:var(--line-2)}
+  .tile .tl-ico{width:30px;height:30px;border-radius:8px;background:var(--brand-bg);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .tile .tl-label{font-size:12.5px;color:var(--ink-2);font-weight:500;margin-bottom:3px}
+  .tile .tl-num{font-size:27px;font-weight:700;letter-spacing:-0.02em}
+  .tile.danger{background:var(--danger-bg);border-color:#f3d0d0}
+  .tile.danger .tl-ico{background:var(--danger);color:#fff}
+  .tile.danger .tl-num,.tile.danger .tl-label{color:var(--danger)}
+  .tile .tl-delta{font-size:11.5px;font-weight:600;color:var(--ok);margin-top:2px}
+  .tile.t-teal{background:var(--ed-bg);border-color:#bfe9d8}
+  .tile.t-teal .tl-ico{background:var(--ed);color:#fff} .tile.t-teal .tl-num{color:var(--ed)}
+  .tile.t-blue{background:var(--medical-bg);border-color:#bcd9f4}
+  .tile.t-blue .tl-ico{background:var(--medical);color:#fff} .tile.t-blue .tl-num{color:var(--medical)}
+  .tile.t-purple{background:var(--brand-bg);border-color:#d5d1f7}
+  .tile.t-purple .tl-ico{background:var(--brand);color:#fff} .tile.t-purple .tl-num{color:var(--brand-ink)}
+  .tile.t-amber{background:var(--renal-bg);border-color:#f2d9a8}
+  .tile.t-amber .tl-ico{background:var(--renal);color:#fff} .tile.t-amber .tl-num{color:var(--renal)}
+  .tile.t-pink{background:var(--theatre-bg);border-color:#f2c9d8}
+  .tile.t-pink .tl-ico{background:var(--theatre);color:#fff} .tile.t-pink .tl-num{color:var(--theatre)}
+
+  .grid-2{display:grid;grid-template-columns:1.7fr 1fr;gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .card-hd{padding:13px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .card-hd h3{font-size:14px;font-weight:700;letter-spacing:-0.01em}
+  .card-hd .link{font-size:12.5px;color:var(--brand);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px}
+
+  /* priority rows */
+  .prow{padding:12px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;cursor:pointer}
+  .prow:last-child{border-bottom:none}
+  .prow:hover{background:var(--surface-2)}
+  .prow-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .prow-main{flex:1;min-width:0}
+  .prow-t{font-size:13.5px;font-weight:600;margin-bottom:1px}
+  .prow-s{font-size:12px;color:var(--ink-3)}
+  .prow-n{font-size:12px;font-weight:600;color:var(--ink-3);background:var(--bg);border-radius:20px;padding:2px 9px}
+
+  /* pills */
+  .pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .pill-out{background:transparent;border:1px solid;padding:1px 8px}
+  .p-ed{background:var(--ed-bg);color:var(--ed)} .o-ed{border-color:#5dcaa5;color:var(--ed)}
+  .p-med{background:var(--medical-bg);color:var(--medical)} .o-med{border-color:#85b7eb;color:var(--medical)}
+  .p-renal{background:var(--renal-bg);color:var(--renal)} .o-renal{border-color:#ef9f27;color:var(--renal)}
+  .p-mh{background:var(--mh-bg);color:var(--mh)} .o-mh{border-color:#afa9ec;color:var(--mh)}
+  .p-theatre{background:var(--theatre-bg);color:var(--theatre)} .o-theatre{border-color:#ed93b1;color:var(--theatre)}
+  .p-mid{background:var(--midwifery-bg);color:var(--midwifery)}
+  .p-icu{background:var(--icu-bg);color:var(--icu)}
+  .st-ok{background:var(--ok-bg);color:var(--ok)}
+  .st-warn{background:var(--warn-bg);color:var(--warn)}
+  .st-danger{background:var(--danger-bg);color:var(--danger)}
+  .st-sub{background:var(--brand-bg);color:var(--brand-ink)}
+
+  /* availability list */
+  .arow{padding:10px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .arow:last-child{border-bottom:none}
+  .arow-name{font-size:13px;font-weight:600;flex:1}
+
+  /* data grid */
+  .gridwrap{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .filterbar{padding:11px 15px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;font-size:12.5px;font-weight:500}
+  .chip-active{background:var(--brand-bg);color:var(--brand-ink)}
+  .chip-add{border:1px dashed var(--line-2);color:var(--ink-3);cursor:pointer}
+  .chip-search{background:var(--bg);border:1px solid var(--line);color:var(--ink-3)}
+  .grid-count{margin-left:auto;font-size:12.5px;color:var(--ink-3);font-weight:500}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;padding:10px 15px;font-size:11.5px;font-weight:600;color:var(--ink-3);background:var(--surface-2);border-bottom:1px solid var(--line);letter-spacing:0.02em;white-space:nowrap}
+  thead th .sort{opacity:.5;font-size:10px}
+  tbody td{padding:11px 15px;font-size:13px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--surface-2)}
+  .cell-name{display:flex;align-items:center;gap:9px;font-weight:600}
+  .av-sm{width:26px;height:26px;border-radius:50%;background:var(--brand-bg);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10.5px;flex-shrink:0}
+  .muted{color:var(--ink-3)}
+  .comp-ok{color:var(--ok);font-weight:600}
+  .comp-warn{color:var(--warn);font-weight:600}
+  .comp-danger{color:var(--danger);font-weight:600}
+  .pills-cell{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+
+  /* job board split */
+  .jb-layout{display:grid;grid-template-columns:1fr 380px;gap:16px}
+  .jb-role{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:11px;cursor:pointer;border-left:3px solid var(--line-2)}
+  .jb-role:hover{border-color:var(--line-2)}
+  .jb-role.open{border-left-color:var(--ok)}
+  .jb-role.filled{border-left-color:var(--warn);opacity:.85}
+  .jb-role-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .jb-fac{font-size:14.5px;font-weight:700;letter-spacing:-0.01em}
+  .jb-match{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .match-ring{width:34px;height:34px;border-radius:50%;border:2.5px solid var(--ok);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ok)}
+  .jb-meta{font-size:12.5px;color:var(--ink-2);margin-bottom:5px}
+  .jb-desc{font-size:12.5px;color:var(--ink-3)}
+  .jb-detail{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0;align-self:start;position:sticky;top:76px}
+  .jbd-hd{padding:16px 18px;border-bottom:1px solid var(--line);background:linear-gradient(120deg,var(--brand-bg),#faf9ff);border-radius:12px 12px 0 0}
+  .jbd-fac{font-size:16px;font-weight:700;color:var(--brand);letter-spacing:-0.01em}
+  .jbd-role{font-size:13px;color:var(--ink-2);margin-top:2px}
+  .jbd-tags{font-size:12px;color:var(--ink-3);margin-top:8px}
+  .jbd-match-hd{padding:11px 18px;font-size:11.5px;font-weight:600;color:var(--ink-3);letter-spacing:0.03em;text-transform:uppercase}
+  .cand-row{padding:11px 18px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .cand-score{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+  .sc-hi{background:var(--ok-bg);color:var(--ok)}
+  .sc-mid{background:var(--warn-bg);color:var(--warn)}
+  .cand-info{flex:1;min-width:0}
+  .cand-name{font-size:13px;font-weight:600}
+  .cand-meta{font-size:11.5px;color:var(--ink-3)}
+  .btn-sm{padding:5px 12px;font-size:12px}
+
+  /* candidate profile */
+  .prof-hero{background:linear-gradient(115deg,#5b4fd6,#7c5cff 55%,#9d6bff);border-radius:14px;padding:22px 24px;color:#fff;margin-bottom:18px;display:flex;align-items:center;gap:18px}
+  .prof-av{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0}
+  .prof-name{font-size:22px;font-weight:700;letter-spacing:-0.02em}
+  .prof-sub{font-size:13.5px;opacity:.85;margin-top:2px}
+  .prof-stats{margin-left:auto;display:flex;gap:26px;text-align:center}
+  .prof-stat .n{font-size:22px;font-weight:700}
+  .prof-stat .l{font-size:11.5px;opacity:.8}
+  .prof-cols{display:grid;grid-template-columns:300px 1fr;gap:16px}
+  .field-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:16px}
+  .fc-hd{padding:12px 16px;font-size:13px;font-weight:700;border-bottom:1px solid var(--line)}
+  .field-row{padding:10px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .field-row:last-child{border-bottom:none}
+  .field-row:hover{background:var(--surface-2)}
+  .field-k{font-size:12.5px;color:var(--ink-3)}
+  .field-v{font-size:12.5px;font-weight:600;text-align:right}
+  .field-edit{opacity:0;font-size:11px;color:var(--brand)}
+  .field-row:hover .field-edit{opacity:1}
+  .timeline{padding:4px 0}
+  .tl-item{padding:12px 18px;display:flex;gap:12px;position:relative}
+  .tl-dot{width:9px;height:9px;border-radius:50%;background:var(--brand);flex-shrink:0;margin-top:4px;z-index:1}
+  .tl-line{position:absolute;left:22px;top:20px;bottom:-12px;width:1px;background:var(--line)}
+  .tl-item:last-child .tl-line{display:none}
+  .tl-body{flex:1}
+  .tl-t{font-size:13px;font-weight:600}
+  .tl-s{font-size:12px;color:var(--ink-3);margin-top:1px}
+  .tl-time{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+  .tl-note .tl-dot{background:var(--warn)}
+  .tl-note .tl-body{background:var(--warn-bg);border-radius:8px;padding:9px 12px;margin-top:-4px}
+  .tab-strip{display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;margin-bottom:16px}
+  .tab{flex:1;text-align:center;padding:8px;border-radius:7px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
+  .tab.on{background:var(--brand-bg);color:var(--brand-ink)}
+
+  /* contracts */
+  .contract-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;border-left:3px solid var(--ok)}
+  .contract-card.expiring{border-left-color:var(--warn)}
+  .cc-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .cc-name{font-size:15px;font-weight:700;letter-spacing:-0.01em}
+  .cc-role{font-size:12.5px;color:var(--ink-3)}
+  .cc-tags{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .cc-tag{font-size:11.5px;font-weight:600;background:var(--bg);color:var(--ink-2);padding:2px 9px;border-radius:20px}
+  .cc-prog{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin-bottom:10px}
+  .cc-prog-fill{height:100%;background:var(--ok);border-radius:6px}
+  .cc-prog-fill.warn{background:var(--warn)}
+  .cc-foot{display:flex;gap:26px}
+  .cc-f{font-size:12px}
+  .cc-f .k{color:var(--ink-3);font-size:11px;text-transform:uppercase;letter-spacing:0.03em}
+  .cc-f .v{font-weight:600;margin-top:1px}
+  .cc-actions{margin-left:auto;display:flex;gap:8px}
+
+  .flag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px}
+  .flag-danger{background:var(--danger-bg);color:var(--danger)}
+  .note{font-size:12px;color:var(--ink-3);margin-top:14px;padding:0 2px}
+  svg.ic{width:1em;height:1em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-0.12em}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="brand-mark">CC</div>
+      <div><div class="brand-name">Captain Contract</div><div class="brand-sub">Travel Nursing</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Workspace</div>
+      <div class="nav-item on" onclick="go('dash',this)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>Dashboard</div>
+      <div class="nav-item" onclick="go('mgr',this)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>Manager view</div>
+      <div class="nav-item" onclick="go('cand',this)"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0114 0v1"/></svg>Candidates<span class="badge">55</span></div>
+      <div class="nav-item" onclick="go('prof',this)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21l2.3-7.4-6-4.6h7.6z"/></svg>Hot list<span class="badge">5</span></div>
+      <div class="nav-item" onclick="go('dash',this)"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>Alerts<span class="badge">47</span></div>
+      <div class="nav-label">Pipeline</div>
+      <div class="nav-item" onclick="go('cand',this)"><svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>Submissions<span class="badge">41</span></div>
+      <div class="nav-item" onclick="go('jb',this)"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v16"/></svg>Job board</div>
+      <div class="nav-item" onclick="go('contracts',this)"><svg class="ic" viewBox="0 0 24 24"><path d="M9 2h6a2 2 0 012 2v0H7v0a2 2 0 012-2z"/><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 12h6M9 16h4"/></svg>Contracts<span class="badge">9</span></div>
+      <div class="nav-label">Facilities</div>
+      <div class="nav-item" onclick="go('jb',this)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 21h18M6 21V7l6-4 6 4v14"/><path d="M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>Facilities</div>
+    </nav>
+    <div class="side-user">
+      <div class="avatar">MT</div>
+      <div><div style="font-size:13px;font-weight:600">Marcus Tran</div><div style="font-size:11px;color:var(--ink-3)">Consultant</div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ===== CONSULTANT DASHBOARD ===== -->
+    <div class="page on" id="page-dash">
+      <div class="topbar">
+        <div><div class="page-title">Dashboard</div><div class="page-sub">Thursday 16 July 2026 · 71 actions today</div></div>
+        <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search or jump to…<span class="kbd">⌘K</span></div>
+        <div class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Quick action</div>
+      </div>
+      <div class="content">
+        <div class="tiles">
+          <div class="tile t-teal"><div class="tl-ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0114 0v1"/></svg></div><div class="tl-label">Placements</div><div class="tl-num">16</div><div class="tl-delta">+3 this week</div></div>
+          <div class="tile t-blue"><div class="tl-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="tl-label">Submissions</div><div class="tl-num">41</div><div class="tl-delta">12 awaiting reply</div></div>
+          <div class="tile t-purple"><div class="tl-ico"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 12h6M9 16h4"/></svg></div><div class="tl-label">Active contracts</div><div class="tl-num">21</div><div class="tl-delta" style="color:var(--warn)">3 expiring soon</div></div>
+          <div class="tile danger"><div class="tl-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.7 3.9a2 2 0 00-3.4 0z"/></svg></div><div class="tl-label">Compliance alerts</div><div class="tl-num">47</div><div class="tl-delta" style="color:var(--danger)">7 expiring in 14d</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-hd"><h3>Today's priorities</h3><span class="link">Start my day <svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <div class="prow"><div class="prow-ico" style="background:var(--ed-bg);color:var(--ed)"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div><div class="prow-main"><div class="prow-t">19 open roles with strong matches</div><div class="prow-s">Hedland Health Campus (15) · Port Augusta (11)</div></div><span class="prow-n">19</span></div>
+            <div class="prow"><div class="prow-ico" style="background:var(--warn-bg);color:var(--warn)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.7 3.9a2 2 0 00-3.4 0z"/></svg></div><div class="prow-main"><div class="prow-t">7 compliance items expiring within 14 days</div><div class="prow-s">Most urgent: Influenza · expired 1d ago · Lucas Harris</div></div><span class="prow-n">7</span></div>
+            <div class="prow"><div class="prow-ico" style="background:var(--danger-bg);color:var(--danger)"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0114 0v1"/><path d="M19 8v6M19 8l-2 2M19 8l2 2"/></svg></div><div class="prow-main"><div class="prow-t">30 candidates overdue for check-in</div><div class="prow-s">Most overdue: Sophie King · never contacted</div></div><span class="prow-n">30</span></div>
+            <div class="prow"><div class="prow-ico" style="background:var(--brand-bg);color:var(--brand-ink)"><svg class="ic" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3-8.6A2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.5-1.1a2 2 0 012.1-.5c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg></div><div class="prow-main"><div class="prow-t">15 submissions awaiting follow-up</div><div class="prow-s">Most urgent: Alice Springs · 48h chase overdue</div></div><span class="prow-n">15</span></div>
+          </div>
+          <div class="card">
+            <div class="card-hd"><h3>Available now</h3><span class="link">Grid view</span></div>
+            <div class="arow"><div class="av-sm">SC</div><div class="arow-name">Sarah Chen</div><span class="pill p-ed">ED</span></div>
+            <div class="arow"><div class="av-sm">MO</div><div class="arow-name">Marcus Owen</div><span class="pill p-med">Medical</span></div>
+            <div class="arow"><div class="av-sm">PN</div><div class="arow-name">Priya Nair</div><span class="pill p-renal">Renal</span></div>
+            <div class="arow"><div class="av-sm">TW</div><div class="arow-name">Tom Wright</div><span class="pill p-mh">Mental Health</span></div>
+            <div class="arow"><div class="av-sm">LH</div><div class="arow-name">Leo Hart</div><span class="pill p-theatre">Theatre</span></div>
+            <div class="arow" style="justify-content:center"><span class="link" style="color:var(--brand);font-weight:600;font-size:12.5px">View all 12 available →</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MANAGER DASHBOARD ===== -->
+    <div class="page" id="page-mgr">
+      <div class="topbar">
+        <div><div class="page-title">Manager view</div><div class="page-sub">Team performance · July 2026</div></div>
+        <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search or jump to…<span class="kbd">⌘K</span></div>
+        <div class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg>Export</div>
+      </div>
+      <div class="content">
+        <div class="tiles">
+          <div class="tile t-blue"><div class="tl-label">Total submissions</div><div class="tl-num">284</div><div class="tl-delta">+18% vs June</div></div>
+          <div class="tile t-teal"><div class="tl-label">Accepted rate</div><div class="tl-num">41%</div><div class="tl-delta">+4pts</div></div>
+          <div class="tile t-purple"><div class="tl-label">Active contracts</div><div class="tl-num">73</div><div class="tl-delta">across 22 facilities</div></div>
+          <div class="tile t-amber"><div class="tl-label">Pipeline value</div><div class="tl-num">$1.2M</div><div class="tl-delta">next 90 days</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-hd"><h3>Consultant performance</h3><span class="link">Full report</span></div>
+            <table>
+              <thead><tr><th>Consultant</th><th>Subs</th><th>Placed</th><th>Rate</th><th>Pipeline</th></tr></thead>
+              <tbody>
+                <tr><td><div class="cell-name"><div class="av-sm">MT</div>Marcus Tran</div></td><td>68</td><td>31</td><td class="comp-ok">46%</td><td>$340k</td></tr>
+                <tr><td><div class="cell-name"><div class="av-sm">PN</div>Priya Nair</div></td><td>54</td><td>22</td><td class="comp-ok">41%</td><td>$285k</td></tr>
+                <tr><td><div class="cell-name"><div class="av-sm">SK</div>Sarah Keating</div></td><td>61</td><td>24</td><td class="comp-ok">39%</td><td>$310k</td></tr>
+                <tr><td><div class="cell-name"><div class="av-sm">DW</div>Dan Whitfield</div></td><td>47</td><td>16</td><td class="comp-warn">34%</td><td>$180k</td></tr>
+                <tr><td><div class="cell-name"><div class="av-sm">LB</div>Lisa Bennett</div></td><td>54</td><td>19</td><td class="comp-warn">35%</td><td>$205k</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-hd"><h3>Needs attention</h3></div>
+            <div class="prow"><div class="prow-ico" style="background:var(--danger-bg);color:var(--danger)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.7 3.9a2 2 0 00-3.4 0z"/></svg></div><div class="prow-main"><div class="prow-t">6 contracts expiring, no extension talk</div><div class="prow-s">$210k pipeline at risk</div></div><span class="prow-n">6</span></div>
+            <div class="prow"><div class="prow-ico" style="background:var(--warn-bg);color:var(--warn)"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="prow-main"><div class="prow-t">On-call cost trending 12% over budget</div><div class="prow-s">Review after-hours roster</div></div></div>
+            <div class="prow"><div class="prow-ico" style="background:var(--brand-bg);color:var(--brand-ink)"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0114 0v1"/></svg></div><div class="prow-main"><div class="prow-t">Dan Whitfield below team rate for 2 months</div><div class="prow-s">Suggest 1:1</div></div></div>
+            <div class="prow"><div class="prow-ico" style="background:var(--ed-bg);color:var(--ed)"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="prow-main"><div class="prow-t">Compliance pack coverage: 4 of 8 states live</div><div class="prow-s">QLD, TAS, WA, SA loaded</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CANDIDATE GRID ===== -->
+    <div class="page" id="page-cand">
+      <div class="topbar">
+        <div><div class="page-title">Candidates</div><div class="page-sub">55 total · 12 available now</div></div>
+        <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search candidates…<span class="kbd">⌘K</span></div>
+        <div class="btn btn-primary"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add candidate</div>
+      </div>
+      <div class="content">
+        <div class="gridwrap">
+          <div class="filterbar">
+            <span class="chip chip-search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search</span>
+            <span class="chip chip-active">Clinical area: ED, Medical <svg class="ic" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+            <span class="chip chip-active">States: QLD, WA, SA, TAS <svg class="ic" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+            <span class="chip chip-active">Available: 20 Aug – 23 Sep <svg class="ic" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+            <span class="chip chip-add"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add filter</span>
+            <span class="grid-count">Showing 6 of 55</span>
+          </div>
+          <table>
+            <thead><tr>
+              <th>Name <span class="sort">▾</span></th><th>Clinical areas</th><th>States</th><th>Available</th><th>Compliance</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="cell-name"><div class="av-sm">SC</div>Sarah Chen</div></td>
+                <td><div class="pills-cell"><span class="pill p-ed">ED</span><span class="pill pill-out o-med">Medical</span></div></td>
+                <td class="muted">QLD, WA</td>
+                <td class="muted"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg> from 1 Aug <span style="color:var(--ink-3)">· ongoing</span></td>
+                <td class="comp-ok">92%</td>
+                <td><span class="pill st-ok">Available</span></td>
+              </tr>
+              <tr>
+                <td><div class="cell-name"><div class="av-sm">MO</div>Marcus Owen</div></td>
+                <td><div class="pills-cell"><span class="pill p-ed">ED</span><span class="pill pill-out o-med">Medical</span><span class="pill pill-out o-renal">Renal</span></div></td>
+                <td class="muted">SA, TAS</td>
+                <td class="muted">15 Aug – 1 Dec</td>
+                <td class="comp-warn">78%</td>
+                <td><span class="pill st-ok">Available</span></td>
+              </tr>
+              <tr>
+                <td><div class="cell-name"><div class="av-sm">PN</div>Priya Nair</div></td>
+                <td><div class="pills-cell"><span class="pill p-med">Medical</span></div></td>
+                <td class="muted">QLD, SA, TAS</td>
+                <td class="muted">20 Aug – 23 Sep</td>
+                <td class="comp-ok">88%</td>
+                <td><span class="pill st-sub">Submitted</span></td>
+              </tr>
+              <tr>
+                <td><div class="cell-name"><div class="av-sm">TW</div>Tom Wright</div></td>
+                <td><div class="pills-cell"><span class="pill p-ed">ED</span><span class="pill pill-out o-renal">Renal</span></div></td>
+                <td class="muted">WA, SA</td>
+                <td class="muted"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg> from 1 Sep <span style="color:var(--ink-3)">· ongoing</span></td>
+                <td class="comp-danger">61%</td>
+                <td><span class="pill st-warn">Compliance</span></td>
+              </tr>
+              <tr>
+                <td><div class="cell-name"><div class="av-sm">LH</div>Leo Hart</div></td>
+                <td><div class="pills-cell"><span class="pill p-theatre">Theatre</span></div></td>
+                <td class="muted">QLD</td>
+                <td class="muted">now – 30 Oct</td>
+                <td class="comp-ok">95%</td>
+                <td><span class="pill st-ok">Available</span></td>
+              </tr>
+              <tr>
+                <td><div class="cell-name"><div class="av-sm">AK</div>Ava Kelly</div></td>
+                <td><div class="pills-cell"><span class="pill p-mid">Midwifery</span><span class="pill pill-out o-med">Medical</span></div></td>
+                <td class="muted">NT, WA</td>
+                <td class="muted">10 Sep – ongoing</td>
+                <td class="comp-ok">90%</td>
+                <td><span class="pill st-ok">Available</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">Concept — filter chips build a live query (this is the "ED nurse who flexes to Medical, open to QLD/WA/SA/TAS, available Aug–Sep" search). Solid pill = primary clinical area, outlined = will-flex. Availability supports open-ended "from" dates. Click any row to open the profile; inline-edit any cell.</div>
+      </div>
+    </div>
+
+    <!-- ===== CANDIDATE PROFILE ===== -->
+    <div class="page" id="page-prof">
+      <div class="topbar">
+        <div><div class="page-title">Candidate</div><div class="page-sub">Marcus Owen · ED Registered Nurse</div></div>
+        <div class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Submit to role</div>
+        <div class="btn btn-primary"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Add note</div>
+      </div>
+      <div class="content">
+        <div class="prof-hero">
+          <div class="prof-av">MO</div>
+          <div>
+            <div class="prof-name">Marcus Owen</div>
+            <div class="prof-sub">RN · ED nurse, will flex Medical &amp; Renal · SA, TAS</div>
+          </div>
+          <div class="prof-stats">
+            <div class="prof-stat"><div class="n">3</div><div class="l">Placements</div></div>
+            <div class="prof-stat"><div class="n">78%</div><div class="l">Compliance</div></div>
+            <div class="prof-stat"><div class="n">4</div><div class="l">Active subs</div></div>
+          </div>
+        </div>
+        <div class="prof-cols">
+          <div>
+            <div class="field-card">
+              <div class="fc-hd">Details</div>
+              <div class="field-row"><span class="field-k">Clinical areas</span><span class="field-v"><span class="pill p-ed" style="font-size:11px">ED</span> <span class="pill pill-out o-med" style="font-size:11px">Med</span></span></div>
+              <div class="field-row"><span class="field-k">Open to states</span><span class="field-v">SA, TAS <span class="field-edit">edit</span></span></div>
+              <div class="field-row"><span class="field-k">Availability</span><span class="field-v">15 Aug – 1 Dec <span class="field-edit">edit</span></span></div>
+              <div class="field-row"><span class="field-k">AHPRA</span><span class="field-v comp-ok">Verified</span></div>
+              <div class="field-row"><span class="field-k">Phone</span><span class="field-v">0412 338 xxx</span></div>
+              <div class="field-row"><span class="field-k">Preferred contact</span><span class="field-v">SMS</span></div>
+            </div>
+            <div class="field-card">
+              <div class="fc-hd">Compliance · 78%</div>
+              <div class="field-row"><span class="field-k">AHPRA registration</span><span class="comp-ok">✓</span></div>
+              <div class="field-row"><span class="field-k">Immunisations</span><span class="comp-ok">✓</span></div>
+              <div class="field-row"><span class="field-k">Police check</span><span class="comp-warn">Expires 12 Sep</span></div>
+              <div class="field-row"><span class="field-k">ALS certificate</span><span class="comp-danger">Missing</span></div>
+              <div class="field-row"><span class="field-k">Working w/ Children</span><span class="comp-ok">✓</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="tab-strip">
+              <div class="tab on">Timeline</div>
+              <div class="tab">Submissions</div>
+              <div class="tab">Contracts</div>
+              <div class="tab">Documents</div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><h3>Activity &amp; notes</h3><span class="link">Add note</span></div>
+              <div class="timeline">
+                <div class="tl-item tl-note"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-body"><div class="tl-t">Note · Marcus Tran</div><div class="tl-s">Keen on Tas roles but wants coastal. Following up re: Mersey after his current contract ends.</div></div><div class="tl-time">2h ago</div></div>
+                <div class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-body"><div class="tl-t">Submitted to Royal Hobart · Dialysis RN</div><div class="tl-s">Awaiting facility response</div></div><div class="tl-time">Today 9:14</div></div>
+                <div class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-body"><div class="tl-t">Compliance updated · Police check</div><div class="tl-s">Now expiring 12 Sep — flagged for renewal</div></div><div class="tl-time">Yesterday</div></div>
+                <div class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-body"><div class="tl-t">Contract signed · Katherine District</div><div class="tl-s">Medical ward · 6 weeks</div></div><div class="tl-time">3 Jul</div></div>
+                <div class="tl-item"><div class="tl-dot"></div><div class="tl-body"><div class="tl-t">SMS sent · availability check</div><div class="tl-s">Replied: available from 15 Aug</div></div><div class="tl-time">28 Jun</div></div>
+              </div>
+            </div>
+            <div class="note">Concept — the profile spine is a timeline: notes (amber) and auto-logged events (submitted, compliance changed, contract signed, SMS sent) in one stream. Left column fields are inline-editable. The future SMS component drops into this same timeline.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== JOB BOARD ===== -->
+    <div class="page" id="page-jb">
+      <div class="topbar">
+        <div><div class="page-title">Job board</div><div class="page-sub">19 open roles · 37 positions · 14 facilities</div></div>
+        <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search roles…<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="content">
+        <div class="filterbar" style="background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:16px">
+          <span class="chip chip-search">Status: Open</span>
+          <span class="chip chip-search">State: All</span>
+          <span class="chip chip-search">Clinical area: All</span>
+          <span class="chip chip-search">Type: RN</span>
+          <span class="chip chip-add"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add filter</span>
+        </div>
+        <div class="jb-layout">
+          <div>
+            <div class="jb-role open">
+              <div class="jb-role-top"><div class="jb-fac">Longreach Hospital</div><span class="pill st-ok">Open</span><span class="pill p-mh">Mental Health</span></div>
+              <div class="jb-match"><div class="match-ring">53</div><div class="jb-meta">53 matches · 10 strong · RN · QLD · from 7 Aug</div></div>
+              <div class="jb-desc">Contract block, Mental Health. Accommodation and travel per facility policy.</div>
+            </div>
+            <div class="jb-role open" style="border-left-color:var(--brand);outline:1.5px solid var(--brand-bg)">
+              <div class="jb-role-top"><div class="jb-fac">Emerald Hospital</div><span class="pill st-ok">Open</span><span class="pill p-renal">Renal</span></div>
+              <div class="jb-match"><div class="match-ring">50</div><div class="jb-meta">50 matches · 12 strong · RN · QLD · 18 Aug – 24 Oct · 2 positions</div></div>
+              <div class="jb-desc">Contract block, Dialysis. Accommodation and travel per facility policy.</div>
+            </div>
+            <div class="jb-role filled">
+              <div class="jb-role-top"><div class="jb-fac">Charleville Hospital</div><span class="pill st-warn">Filled</span><span class="pill p-icu">Emergency</span></div>
+              <div class="jb-match"><div class="match-ring" style="border-color:var(--warn);color:var(--warn)">36</div><div class="jb-meta">36 matches · 8 strong · RN · QLD · from 14 Aug</div></div>
+              <div class="jb-desc">Contract block, Emergency. Accommodation and travel per facility policy.</div>
+            </div>
+            <div class="jb-role open">
+              <div class="jb-role-top"><div class="jb-fac">Port Augusta Hospital</div><span class="pill st-ok">Open</span><span class="pill p-theatre">Theatre</span></div>
+              <div class="jb-match"><div class="match-ring">51</div><div class="jb-meta">51 matches · 11 strong · RN · SA · 23 Aug · 3 positions</div></div>
+              <div class="jb-desc">Contract block, Theatre. Accommodation and travel per facility policy.</div>
+            </div>
+          </div>
+          <div class="jb-detail">
+            <div class="jbd-hd">
+              <div class="jbd-fac">Emerald Hospital</div>
+              <div class="jbd-role">Dialysis · RN</div>
+              <div class="jbd-tags">QLD · 18 Aug – 24 Oct 2026 · 2 positions · Central QLD HHS</div>
+              <div style="margin-top:12px"><span class="btn btn-primary btn-sm" style="width:100%;justify-content:center"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></svg>Promote role</span></div>
+            </div>
+            <div class="jbd-match-hd">Matches · 50</div>
+            <div class="cand-row"><div class="cand-score sc-hi">92</div><div class="cand-info"><div class="cand-name">Mia Wright</div><div class="cand-meta">Theatre RN · 91% compliant · avail 14 Jul</div></div><span class="btn btn-primary btn-sm">Submit</span></div>
+            <div class="cand-row"><div class="cand-score sc-hi">88</div><div class="cand-info"><div class="cand-name">Henry Singh</div><div class="cand-meta">Dialysis RN · 100% compliant · avail 25 Sep</div></div><span class="btn btn-sm">Submit</span></div>
+            <div class="cand-row"><div class="cand-score sc-mid">70</div><div class="cand-info"><div class="cand-name">Leo Murphy</div><div class="cand-meta">ED RN · 100% compliant · avail 30 Jun</div></div><span class="btn btn-sm">Submit</span></div>
+            <div class="cand-row"><div class="cand-score sc-mid">70</div><div class="cand-info"><div class="cand-name">Cooper Nguyen</div><div class="cand-meta">ED RN · 100% compliant · avail 30 Jul</div></div><span class="btn btn-sm">Submit</span></div>
+          </div>
+        </div>
+        <div class="note">Concept — click any open role to see it detailed with its ranked candidate matches and one-click submit. "Promote role" generates a shareable facility + destination pack to send candidates.</div>
+      </div>
+    </div>
+
+    <!-- ===== CONTRACTS ===== -->
+    <div class="page" id="page-contracts">
+      <div class="topbar">
+        <div><div class="page-title">Contracts</div><div class="page-sub">28 total · 21 active · 3 expiring soon</div></div>
+        <div class="search"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search contracts…<span class="kbd">⌘K</span></div>
+        <div class="btn"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg>Weekend handover</div>
+        <div class="btn btn-primary"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New contract</div>
+      </div>
+      <div class="content">
+        <div class="tiles">
+          <div class="tile t-purple"><div class="tl-label">Total contracts</div><div class="tl-num">28</div></div>
+          <div class="tile t-teal"><div class="tl-label">Active</div><div class="tl-num">21</div></div>
+          <div class="tile t-amber"><div class="tl-label">Expiring soon</div><div class="tl-num">8</div></div>
+          <div class="tile t-blue"><div class="tl-label">Pipeline value</div><div class="tl-num">$257k</div></div>
+        </div>
+        <div class="contract-card expiring">
+          <div class="cc-top"><div class="cell-name"><div class="av-sm">SR</div><div><div class="cc-name">Sinead Ryan</div><div class="cc-role">Dialysis RN · Weipa Hospital</div></div></div><span class="pill st-warn" style="margin-left:auto">Expires in 1 day</span><span class="flag flag-danger"><svg class="ic" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.7 3.9a2 2 0 00-3.4 0z"/></svg>ALS expires during contract</span></div>
+          <div class="cc-tags"><span class="cc-tag">$63/hr</span><span class="cc-tag">38h/wk</span><span class="cc-tag">North West QLD</span><span class="pill p-renal">Dialysis</span></div>
+          <div class="cc-prog"><div class="cc-prog-fill warn" style="width:96%"></div></div>
+          <div class="cc-foot"><div class="cc-f"><div class="k">Start</div><div class="v">5 May 2026</div></div><div class="cc-f"><div class="k">End</div><div class="v">16 Jul 2026</div></div><div class="cc-f"><div class="k">Remaining</div><div class="v" style="color:var(--warn)">1 day</div></div><div class="cc-actions"><span class="btn btn-sm">Extension talk</span><span class="btn btn-sm btn-primary">Generate PDF</span></div></div>
+        </div>
+        <div class="contract-card">
+          <div class="cc-top"><div class="cell-name"><div class="av-sm">LM</div><div><div class="cc-name">Leo Murphy</div><div class="cc-role">ED RN · Weipa Hospital</div></div></div><span class="pill st-ok" style="margin-left:auto">Active</span></div>
+          <div class="cc-tags"><span class="cc-tag">$70/hr</span><span class="cc-tag">38h/wk</span><span class="cc-tag">North West QLD</span><span class="pill p-ed">ED</span></div>
+          <div class="cc-prog"><div class="cc-prog-fill" style="width:64%"></div></div>
+          <div class="cc-foot"><div class="cc-f"><div class="k">Start</div><div class="v">6 May 2026</div></div><div class="cc-f"><div class="k">End</div><div class="v">25 Jul 2026</div></div><div class="cc-f"><div class="k">Remaining</div><div class="v">10 days</div></div><div class="cc-actions"><span class="btn btn-sm">Manage</span><span class="btn btn-sm btn-primary">Generate PDF</span></div></div>
+        </div>
+        <div class="contract-card">
+          <div class="cc-top"><div class="cell-name"><div class="av-sm">ZG</div><div><div class="cc-name">Zoe Green</div><div class="cc-role">Remote Area Nurse · Longreach Hospital</div></div></div><span class="pill st-ok" style="margin-left:auto">Active</span></div>
+          <div class="cc-tags"><span class="cc-tag">$76/hr</span><span class="cc-tag">38h/wk</span><span class="cc-tag">Central West QLD</span><span class="pill p-med">Medical</span></div>
+          <div class="cc-prog"><div class="cc-prog-fill" style="width:32%"></div></div>
+          <div class="cc-foot"><div class="cc-f"><div class="k">Start</div><div class="v">20 Apr 2026</div></div><div class="cc-f"><div class="k">End</div><div class="v">2 Oct 2026</div></div><div class="cc-f"><div class="k">Remaining</div><div class="v">79 days</div></div><div class="cc-actions"><span class="btn btn-sm">Manage</span><span class="btn btn-sm btn-primary">Generate PDF</span></div></div>
+        </div>
+        <div class="note">Concept — contracts as progress cards: at-a-glance timeline bar, compliance-expiring-during-contract flagged inline (the audit-safe alert), extension prompts surfaced, one-click PDF generation.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<script>
+function go(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('page-'+id).classList.add('on');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
+  el.classList.add('on');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

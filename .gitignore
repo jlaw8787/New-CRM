@@ -7,3 +7,5 @@ Thumbs.db
 # Old backup/draft folders
 Archive/
 New folder/
+# Local Claude settings
+.claude/settings.local.json

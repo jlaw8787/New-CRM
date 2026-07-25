@@ -5549,12 +5549,14 @@ function tplInsert(id){
   box.focus();
   showToast('Template inserted and merged.');
 }
-function tplRowClick(id){
-  // Close first, then insert, so the fresh (post close) composer textarea is
-  // the one that ends up with the merged text. Doing it the other way round
-  // would have the re-render wipe out the value tplInsert just set.
-  tplPopoverOpen=false;
-  msgRefreshUI();
+function tplRowClick(id,e){
+  // stopPropagation first, unconditionally, before anything else runs. Do
+  // not rely on the popover wrapper's own stopPropagation to guard this: once
+  // tplClosePopover detaches that wrapper mid dispatch, its handler can no
+  // longer be trusted to still block the bubble to document, and the click
+  // then re-triggers tplClosePopoverOnce right after insert, wiping the box.
+  if(e)e.stopPropagation();
+  tplClosePopover();
   tplInsert(id);
 }
 var tplPopoverOpen=false,tplManageView='list',tplEditState=null;
@@ -5565,16 +5567,22 @@ function tplTogglePopover(e){
   msgRefreshUI();
   if(tplPopoverOpen)setTimeout(function(){document.addEventListener('click',tplClosePopoverOnce);},0);
 }
-function tplClosePopoverOnce(e){
+function tplClosePopover(){
+  // Remove only the popover node. #msgBox, and anything the user has typed
+  // or an insert just set into it, must not be touched by closing this.
   document.removeEventListener('click',tplClosePopoverOnce);
+  tplPopoverOpen=false;
+  var wrap=document.getElementById('tpl-pop-wrap');
+  if(wrap)wrap.remove();
+}
+function tplClosePopoverOnce(e){
   var wrap=document.getElementById('tpl-pop-wrap');
   if(wrap&&wrap.contains(e.target))return;
-  tplPopoverOpen=false;
-  msgRefreshUI();
+  tplClosePopover();
 }
 function tplPopRowHtml(t,c){
   var preview=mergeTemplate(t.body,c);
-  return '<div class="tpl-pop-row" onclick="tplRowClick(&apos;'+jsAttrEsc(t.id)+'&apos;)">'
+  return '<div class="tpl-pop-row" onclick="tplRowClick(&apos;'+jsAttrEsc(t.id)+'&apos;,event)">'
     +'<div class="tpl-pop-nm">'+esc(t.name)+'</div>'
     +'<div class="tpl-pop-pv">'+esc(preview)+'</div>'
     +'</div>';

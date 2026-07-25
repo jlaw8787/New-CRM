@@ -433,6 +433,39 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .msghub-mini.r{background:var(--r3);color:var(--r11)}
 .msghub-stage{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(600px 380px at 50% 8%,rgba(110,86,207,.06),transparent 62%),var(--panel2)}
 .msghub-empty{color:var(--ink4);font-size:12.5px;text-align:center;padding:40px 20px}
+/* SMS TEMPLATES */
+.msg-cmp-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.msg-tpl-wrap{position:relative}
+.msg-tpl-btn{font-size:11px;font-weight:550;color:var(--v9);background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:6px;transition:.14s var(--e)}
+.msg-tpl-btn:hover{background:var(--v3)}
+.tpl-pop{position:absolute;bottom:100%;right:0;margin-bottom:8px;width:280px;max-height:300px;overflow-y:auto;background:var(--panel);border-radius:12px;box-shadow:var(--sh-2);padding:8px;z-index:6}
+.tpl-pop-sec{font-size:10px;font-weight:650;letter-spacing:.08em;color:var(--ink4);padding:8px 6px 4px}
+.tpl-pop-sec:first-child{padding-top:4px}
+.tpl-pop-row{padding:7px 6px;border-radius:8px;cursor:pointer;transition:.12s var(--e)}
+.tpl-pop-row:hover{background:var(--panel2)}
+.tpl-pop-nm{font-size:12px;font-weight:600;color:var(--ink)}
+.tpl-pop-pv{font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tpl-pop-empty{font-size:11px;color:var(--ink4);padding:6px}
+.tpl-pop-manage{margin-top:4px;padding:8px 6px;border-top:1px solid var(--line);font-size:11px;font-weight:600;color:var(--v9);cursor:pointer;text-align:center;border-radius:8px}
+.tpl-pop-manage:hover{background:var(--v3)}
+.tpl-mlist{padding:14px 17px}
+.tpl-msec{font-size:10px;font-weight:650;letter-spacing:.08em;color:var(--ink4);margin:14px 0 6px}
+.tpl-msec:first-child{margin-top:0}
+.tpl-mrow{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;box-shadow:var(--sh-b);margin-bottom:6px;background:var(--panel)}
+.tpl-mrow-nm{font-size:12.5px;font-weight:600;color:var(--ink);flex-shrink:0;width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tpl-mrow-bd{flex:1;font-size:11.5px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tpl-eform{padding:14px 17px;display:flex;flex-direction:column;gap:4px}
+.tpl-lbl{font-size:10px;font-weight:650;letter-spacing:.06em;color:var(--ink4);text-transform:uppercase;margin-top:10px}
+.tpl-lbl:first-child{margin-top:0}
+.tpl-input{padding:8px 10px;border-radius:8px;box-shadow:var(--sh-b);font-size:12.5px;color:var(--ink);background:var(--panel);border:none;width:100%;font-family:inherit}
+.tpl-input:focus{box-shadow:0 0 0 1.5px var(--v9)}
+textarea.tpl-input{resize:vertical;min-height:70px;line-height:1.4}
+.tpl-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tpl-chip{font-size:10.5px;font-weight:550;padding:3px 8px;border-radius:6px;background:var(--v3);color:var(--v11);border:none;cursor:pointer;transition:.12s var(--e)}
+.tpl-chip:hover{background:var(--v4)}
+.tpl-preview{font-size:12px;color:var(--ink2);line-height:1.5;padding:9px 11px;border-radius:9px;background:var(--panel3);box-shadow:var(--sh-b);white-space:pre-wrap;min-height:20px}
+.tpl-cnt{font-size:10.5px;color:var(--ink4);margin-top:5px;font-variant-numeric:tabular-nums}
+.tpl-cnt.warn{color:var(--a11)}
 /* FILES COMPONENT */
 .files-drop{border:2px dashed var(--border-s);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);margin-bottom:14px}
 .files-drop:hover,.files-drop.drag-on{border-color:var(--brand);background:var(--brand-pale)}
@@ -739,10 +772,17 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .lc-prev{min-height:30px;margin-bottom:15px}
 .lc-btn{width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer}
 .lc-btn:hover{background:#4e2490}
+
+/* MASCOT */
+#mascot-wrap{position:fixed;left:-9999px;top:-9999px;pointer-events:none;z-index:10000;opacity:0;transition:opacity .3s ease}
+#mascot-wrap.on{opacity:1}
+#mascot-canvas{display:block;filter:drop-shadow(0 10px 16px rgba(0,0,0,.35))}
+
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)!important}.g2,.g3{grid-template-columns:1fr}.f2,.f3,.f4{grid-template-columns:1fr}.rate-grid{grid-template-columns:repeat(2,1fr)}#panel{width:100%}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="assets/mascot/mascot.js" defer></script>
 </head>
 <body>
 <!-- LOGIN -->
@@ -5329,7 +5369,11 @@ function msgBlockedHtml(c){
 function msgComposerHtml(c){
   var noteMode=msgMode==='note';
   return '<div class="msg-cmp">'
+    +'<div class="msg-cmp-top">'
     +'<label class="msg-note-toggle"><input type="checkbox" '+(noteMode?'checked':'')+' onchange="msgToggleMode('+c.id+')">Internal note</label>'
+    +'<div class="msg-tpl-wrap"><button type="button" class="msg-tpl-btn" onclick="tplTogglePopover(event)">Templates</button>'
+    +(tplPopoverOpen?tplPopoverHtml(c):'')
+    +'</div></div>'
     +'<div class="msg-cmpr">'
     +'<div class="msg-box" style="'+(noteMode?'background:var(--a3);box-shadow:inset 0 0 0 1px rgba(245,165,36,.3)':'')+'">'
     +'<textarea id="msgBox" rows="1" placeholder="'+(noteMode?'Internal note, not visible to the candidate':'Text message')+'" oninput="msgCnt('+c.id+')" onkeydown="msgKeydown(event,'+c.id+')"></textarea>'
@@ -5456,6 +5500,220 @@ function renderMessagesHub(){
     +'</div>'
     +'<div class="msghub-stage">'+stageHtml+'</div>'
     +'</div>';
+}
+// ── SMS templates ────────────────────────────────────────────────────────
+var smsTemplates=[];
+function tplActiveFacility(c){
+  var ks=(c.contracts||[]);
+  var active=ks.filter(function(k){return k.status==='Active'||k.status==='Confirmed';});
+  var k=active[0]||ks[0];
+  return (k&&k.facility)?k.facility:'the facility';
+}
+function mergeTemplate(body,c){
+  if(!c)return body||'';
+  var first=((c.name||'').trim().split(/\s+/)[0])||'there';
+  var map={
+    'first_name':first,
+    'full_name':c.name||'',
+    'specialty':c.classification||'',
+    'facility':tplActiveFacility(c),
+    'start_date':c.availableFrom?fmt(c.availableFrom):'',
+    'state':c.state||'',
+    'consultant':(uById(c.consultantId)||{}).name||(CU&&CU.name)||''
+  };
+  return String(body||'').replace(/\{(first_name|full_name|specialty|facility|start_date|state|consultant)\}/g,
+    function(m,k){return map[k]!=null?map[k]:m;});
+}
+function loadSmsTemplates(){
+  return sb.from('sms_templates').select('*').then(function(r){
+    if(r.error){console.error('[DB] sms_templates load',r.error);return;}
+    smsTemplates=(r.data||[]).map(function(t){
+      return {id:t.id,name:t.name,body:t.body,scope:t.scope||'personal',
+        ownerId:t.owner_id,updatedAt:t.updated_at};
+    });
+  });
+}
+function tplMine(){return smsTemplates.filter(function(t){return t.scope!=='team'&&t.ownerId===CU.id;});}
+function tplTeam(){return smsTemplates.filter(function(t){return t.scope==='team';});}
+function tplCurrentCand(){
+  var id=(curPage==='messages')?msgHubSelectedId:curCandId;
+  return candidates.find(function(x){return x.id===id;});
+}
+function tplInsert(id){
+  var t=smsTemplates.find(function(x){return x.id===id;});
+  var box=document.getElementById('msgBox');
+  var c=tplCurrentCand();
+  if(!t||!box||!c)return;
+  box.value=mergeTemplate(t.body,c);
+  msgCnt(c.id);
+  box.focus();
+  showToast('Template inserted and merged.');
+}
+function tplRowClick(id){
+  // Close first, then insert, so the fresh (post close) composer textarea is
+  // the one that ends up with the merged text. Doing it the other way round
+  // would have the re-render wipe out the value tplInsert just set.
+  tplPopoverOpen=false;
+  msgRefreshUI();
+  tplInsert(id);
+}
+var tplPopoverOpen=false,tplManageView='list',tplEditState=null;
+var TPL_TOKENS=['first_name','full_name','specialty','facility','start_date','state','consultant'];
+function tplTogglePopover(e){
+  if(e)e.stopPropagation();
+  tplPopoverOpen=!tplPopoverOpen;
+  msgRefreshUI();
+  if(tplPopoverOpen)setTimeout(function(){document.addEventListener('click',tplClosePopoverOnce);},0);
+}
+function tplClosePopoverOnce(e){
+  document.removeEventListener('click',tplClosePopoverOnce);
+  var wrap=document.getElementById('tpl-pop-wrap');
+  if(wrap&&wrap.contains(e.target))return;
+  tplPopoverOpen=false;
+  msgRefreshUI();
+}
+function tplPopRowHtml(t,c){
+  var preview=mergeTemplate(t.body,c);
+  return '<div class="tpl-pop-row" onclick="tplRowClick(&apos;'+jsAttrEsc(t.id)+'&apos;)">'
+    +'<div class="tpl-pop-nm">'+esc(t.name)+'</div>'
+    +'<div class="tpl-pop-pv">'+esc(preview)+'</div>'
+    +'</div>';
+}
+function tplPopoverHtml(c){
+  var mine=tplMine(),team=tplTeam();
+  var mineHtml=mine.length?mine.map(function(t){return tplPopRowHtml(t,c);}).join(''):'<div class="tpl-pop-empty">No personal templates yet.</div>';
+  var teamHtml=team.length?team.map(function(t){return tplPopRowHtml(t,c);}).join(''):'<div class="tpl-pop-empty">No team templates yet.</div>';
+  return '<div class="tpl-pop" id="tpl-pop-wrap" onclick="event.stopPropagation()">'
+    +'<div class="tpl-pop-sec">MY TEMPLATES</div>'+mineHtml
+    +'<div class="tpl-pop-sec">TEAM TEMPLATES</div>'+teamHtml
+    +'<div class="tpl-pop-manage" onclick="tplManageOpen()">Manage templates</div>'
+    +'</div>';
+}
+// Editor modal, personal template CRUD. Reuses the shared #mo modal shell,
+// same as the other entity editors (openUserModal and so on).
+function tplManageOpen(){
+  tplPopoverOpen=false;
+  msgRefreshUI();
+  tplManageView='list';
+  tplEditState=null;
+  document.getElementById('modal').style.maxWidth='480px';
+  tplRenderManage();
+  document.getElementById('mo').style.display='flex';
+}
+function tplRenderManage(){
+  document.getElementById('m-ttl').textContent=tplManageView==='edit'?(tplEditState.id?'Edit template':'New template'):'Manage templates';
+  document.getElementById('m-info').innerHTML='';
+  document.getElementById('m-tabs').innerHTML='';
+  document.getElementById('m-body').innerHTML=tplManageView==='edit'?tplEditFormHtml():tplListHtml();
+  document.getElementById('m-foot').innerHTML=tplManageView==='edit'?tplEditFootHtml():tplListFootHtml();
+  if(tplManageView==='edit')tplUpdatePreview();
+}
+function tplListRowHtml(t,editable){
+  return '<div class="tpl-mrow">'
+    +'<div class="tpl-mrow-nm">'+esc(t.name)+'</div>'
+    +'<div class="tpl-mrow-bd">'+esc(t.body)+'</div>'
+    +(editable?'<button class="btn btn-g btn-xs" onclick="tplEditOpen(&apos;'+jsAttrEsc(t.id)+'&apos;)">Edit</button>':'')
+    +'</div>';
+}
+function tplListHtml(){
+  var mine=tplMine(),team=tplTeam();
+  var isOps=CU.role==='ops';
+  var h='<div class="tpl-mlist"><div class="tpl-msec">MY TEMPLATES</div>';
+  h+=mine.length?mine.map(function(t){return tplListRowHtml(t,true);}).join(''):'<div class="tpl-pop-empty">No personal templates yet.</div>';
+  h+='<div class="tpl-msec">TEAM TEMPLATES</div>';
+  h+=team.length?team.map(function(t){return tplListRowHtml(t,isOps);}).join(''):'<div class="tpl-pop-empty">No team templates yet.</div>';
+  return h+'</div>';
+}
+function tplListFootHtml(){
+  return '<span></span><div style="display:flex;gap:7px"><button class="btn btn-g" onclick="closeModal()">Close</button><button class="btn btn-p" onclick="tplEditOpen(null)">New template</button></div>';
+}
+function tplEditOpen(id){
+  var t=id?smsTemplates.find(function(x){return x.id===id;}):null;
+  tplEditState=t?{id:t.id,name:t.name,body:t.body,scope:t.scope}:{id:null,name:'',body:'',scope:'personal'};
+  tplManageView='edit';
+  tplRenderManage();
+}
+function tplEditCancel(){tplManageView='list';tplEditState=null;tplRenderManage();}
+function tplEditFormHtml(){
+  var isOps=CU.role==='ops';
+  var chips=TPL_TOKENS.map(function(tk){return '<button type="button" class="tpl-chip" onclick="tplInsertToken(&apos;'+tk+'&apos;)">{'+tk+'}</button>';}).join('');
+  return '<div class="tpl-eform">'
+    +'<label class="tpl-lbl">Name</label>'
+    +'<input id="tplEditName" class="tpl-input" value="'+esc(tplEditState.name)+'" oninput="tplEditState.name=this.value">'
+    +'<label class="tpl-lbl">Message</label>'
+    +'<textarea id="tplEditBody" class="tpl-input" rows="4" oninput="tplEditState.body=this.value;tplUpdatePreview()">'+esc(tplEditState.body)+'</textarea>'
+    +'<div class="tpl-chips">'+chips+'</div>'
+    +(isOps?('<label class="msg-note-toggle" style="margin-top:10px"><input type="checkbox" '+(tplEditState.scope==='team'?'checked':'')+' onchange="tplEditState.scope=this.checked?&apos;team&apos;:&apos;personal&apos;">Team template</label>'):'')
+    +'<div class="tpl-lbl">Preview</div>'
+    +'<div class="tpl-preview" id="tplPreview"></div>'
+    +'<div class="tpl-cnt" id="tplCnt"></div>'
+    +'</div>';
+}
+function tplInsertToken(tk){
+  var box=document.getElementById('tplEditBody');
+  if(!box)return;
+  var start=box.selectionStart,end=box.selectionEnd;
+  var v=box.value;
+  var token='{'+tk+'}';
+  box.value=v.slice(0,start)+token+v.slice(end);
+  tplEditState.body=box.value;
+  var pos=start+token.length;
+  box.focus();box.setSelectionRange(pos,pos);
+  tplUpdatePreview();
+}
+function tplUpdatePreview(){
+  var c=tplCurrentCand();
+  var merged=mergeTemplate(tplEditState.body,c);
+  var prevEl=document.getElementById('tplPreview');
+  if(prevEl)prevEl.textContent=merged||'Nothing to preview yet.';
+  var cntEl=document.getElementById('tplCnt');
+  if(cntEl){
+    var segs=msgSegments(merged.length);
+    cntEl.textContent=merged.length+' chars, '+segs+' segment'+(segs>1?'s':'');
+    cntEl.classList.toggle('warn',segs>1);
+  }
+}
+function tplEditFootHtml(){
+  return '<span>'+(tplEditState.id?'<button class="btn btn-d btn-sm" onclick="tplConfirmDelete(&apos;'+jsAttrEsc(tplEditState.id)+'&apos;)">Delete</button>':'')+'</span>'
+    +'<div style="display:flex;gap:7px"><button class="btn btn-g" onclick="tplEditCancel()">Cancel</button><button class="btn btn-p" onclick="tplSave()">Save</button></div>';
+}
+function tplUpsert(rec){ // rec: {id?, name, body, scope}
+  var payload={name:rec.name,body:rec.body,scope:rec.scope||'personal',
+    owner_id:(rec.scope==='team')?null:CU.id,updated_at:new Date().toISOString()};
+  var q=rec.id
+    ? sb.from('sms_templates').update(payload).eq('id',rec.id).select().single()
+    : sb.from('sms_templates').insert(payload).select().single();
+  return q.then(function(r){
+    if(r.error){showToast('Could not save template: '+r.error.message,'err');return r;}
+    return loadSmsTemplates().then(function(){return r;});
+  });
+}
+function tplDelete(id){
+  return sb.from('sms_templates').delete().eq('id',id).then(function(r){
+    if(r.error){showToast('Could not delete: '+r.error.message,'err');return r;}
+    return loadSmsTemplates().then(function(){return r;});
+  });
+}
+function tplSave(){
+  var name=(tplEditState.name||'').trim();
+  var body=(tplEditState.body||'').trim();
+  if(!name||!body){showToast('Name and message are required','err');return;}
+  tplUpsert({id:tplEditState.id,name:name,body:body,scope:tplEditState.scope}).then(function(r){
+    if(r.error)return;
+    tplManageView='list';tplEditState=null;
+    tplRenderManage();
+    msgRefreshUI();
+  });
+}
+function tplConfirmDelete(id){
+  showConfirm({title:'Delete template?',message:'This cannot be undone.',confirmLabel:'Delete'},function(){
+    tplDelete(id).then(function(r){
+      if(r.error)return;
+      tplManageView='list';tplEditState=null;
+      tplRenderManage();
+      msgRefreshUI();
+    });
+  });
 }
 function cpUpdateContractStatus(cid,kid,status){
   var c=candidates.find(function(x){return x.id===cid;});if(!c)return;
@@ -10666,7 +10924,7 @@ async function initApp(){
     +'<div class="skel" style="height:38px;margin-bottom:16px"></div>'
     +'<div class="skel" style="height:38px"></div>';
   try{
-    var loaded=await Promise.all([loadUsers(),loadFacilities(),loadCandidates(),loadRoles(),loadFacilityChecklists(),loadFollowups(),loadComplianceRequirements()]);
+    var loaded=await Promise.all([loadUsers(),loadFacilities(),loadCandidates(),loadRoles(),loadFacilityChecklists(),loadFollowups(),loadComplianceRequirements(),loadSmsTemplates()]);
     users=loaded[0];facilities=loaded[1];candidates=loaded[2];roles=loaded[3];facilityChecklists=loaded[4];followups=loaded[5];complianceRequirements=loaded[6];
     // Resolve submission facility names (no 'facility' text col in DB — derive from facilityId)
     candidates.forEach(function(c){c.submissions.forEach(function(s){if(!s.facility&&s.facilityId){var f=facilities.find(function(fac){return fac.id===s.facilityId;});if(f)s.facility=f.name;}});});

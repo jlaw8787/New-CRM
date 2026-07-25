@@ -398,16 +398,19 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .msg-cmpr{display:flex;align-items:flex-end;gap:8px}
 .msg-box{flex:1;display:flex;align-items:flex-end;border-radius:17px;box-shadow:0 0 0 1px var(--line2);padding:6px 6px 6px 12px;background:#fff;transition:.18s var(--e)}
 .msg-box:focus-within{box-shadow:0 0 0 1.5px var(--v9)}
-.msg-box textarea{flex:1;font-size:13.5px;line-height:1.32;resize:none;max-height:80px;min-height:21px;padding:1px 0;font-family:inherit;border:none;background:none;outline:none;color:var(--ink)}
+.msg-box textarea{flex:1;font-size:13.5px;line-height:1.32;resize:none;max-height:80px;min-height:21px;padding:1px 0;font-family:inherit;border:none;background:transparent;outline:none;box-shadow:none;color:var(--ink)}
+.msg-box textarea:focus{border:none;background:transparent;outline:none;box-shadow:none}
 .msg-snd{width:28px;height:28px;border-radius:50%;background:linear-gradient(170deg,#7E67DE,#5D48C0);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s var(--spring);transform:scale(.8);opacity:.4;border:none;cursor:pointer}
 .msg-snd.live{transform:scale(1);opacity:1}
 .msg-snd svg{width:15px;height:15px;stroke-width:2.6}
 .msg-cnts{font-size:10.5px;color:var(--ink4);font-variant-numeric:tabular-nums;padding:0 3px}
 .msg-cnts.warn{color:var(--a11)}
-/* MESSAGES HUB */
-.msghub{display:flex;height:calc(100vh - 130px);min-height:520px;background:var(--panel);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-card)}
-.msghub-list{width:300px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--panel)}
-.msghub-lh{padding:14px 14px 10px;border-bottom:1px solid var(--line);flex-shrink:0}
+/* MESSAGES HUB, three pane workspace ported from messages-workspace-v2.html.
+   Namespaced under msghub- / msg- / mt- throughout, none of which collide
+   with anything else in this sheet, so this can't leak into other pages. */
+.msghub{display:flex;height:calc(100vh - 130px);min-height:560px;background:var(--panel);box-shadow:var(--sh-b);border-radius:14px;overflow:hidden}
+.msghub-list{width:288px;flex-shrink:0;box-shadow:inset -1px 0 0 var(--line);display:flex;flex-direction:column;background:var(--panel)}
+.msghub-lh{padding:14px 14px 10px;box-shadow:inset 0 -1px 0 var(--line);flex-shrink:0}
 .msghub-search{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:var(--panel2);box-shadow:var(--sh-b)}
 .msghub-search svg{width:13px;height:13px;color:var(--ink4);flex-shrink:0}
 .msghub-search input{flex:1;font-size:12.5px;border:none;background:none;outline:none;color:var(--ink)}
@@ -416,7 +419,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .msghub-item:hover{background:var(--panel2)}
 .msghub-item.on{background:var(--v3)}
 .msghub-item.on::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:2.5px;border-radius:0 3px 3px 0;background:var(--v9)}
-.msghub-av{width:34px;height:34px;border-radius:10px;background:var(--brand-grad);color:#fff;font-size:11.5px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.msghub-av{width:34px;height:34px;border-radius:10px;color:#fff;font-size:11.5px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
 .msghub-av .u{position:absolute;top:-2px;right:-2px;min-width:15px;height:15px;padding:0 3px;border-radius:50%;background:var(--r9);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
 .msghub-bd{flex:1;min-width:0}
 .msghub-r1{display:flex;align-items:baseline;gap:6px}
@@ -431,23 +434,105 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .msghub-mini.g{background:var(--g3);color:var(--g11)}
 .msghub-mini.a{background:var(--a3);color:var(--a11)}
 .msghub-mini.r{background:var(--r3);color:var(--r11)}
-.msghub-stage{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(600px 380px at 50% 8%,rgba(110,86,207,.06),transparent 62%),var(--panel2)}
+.msghub-stage{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(600px 380px at 50% 8%,rgba(110,86,207,.09),transparent 62%),var(--panel2)}
+.msghub-phone{width:100%;max-width:390px;height:100%;max-height:720px}
 .msghub-empty{color:var(--ink4);font-size:12.5px;text-align:center;padding:40px 20px}
-/* SMS TEMPLATES */
-.msg-cmp-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.msg-tpl-wrap{position:relative}
-.msg-tpl-btn{font-size:11px;font-weight:550;color:var(--v9);background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:6px;transition:.14s var(--e)}
-.msg-tpl-btn:hover{background:var(--v3)}
-.tpl-pop{position:absolute;bottom:100%;right:0;margin-bottom:8px;width:280px;max-height:300px;overflow-y:auto;background:var(--panel);border-radius:12px;box-shadow:var(--sh-2);padding:8px;z-index:6}
-.tpl-pop-sec{font-size:10px;font-weight:650;letter-spacing:.08em;color:var(--ink4);padding:8px 6px 4px}
-.tpl-pop-sec:first-child{padding-top:4px}
-.tpl-pop-row{padding:7px 6px;border-radius:8px;cursor:pointer;transition:.12s var(--e)}
-.tpl-pop-row:hover{background:var(--panel2)}
-.tpl-pop-nm{font-size:12px;font-weight:600;color:var(--ink)}
-.tpl-pop-pv{font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* phone screen contact header, sits above the thread scroll on both the hub
+   stage and the candidate profile Messages tab, so the two match. */
+.msg-hdr{flex-shrink:0;padding:13px 16px;display:flex;align-items:center;gap:10px;background:rgba(249,249,251,.92);box-shadow:inset 0 -1px 0 rgba(0,0,0,.07);position:relative;z-index:3}
+.msg-hdr-av{width:34px;height:34px;border-radius:50%;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.msg-hdr-bd{min-width:0}
+.msg-hdr-nm{font-size:13px;font-weight:650;color:var(--ink);letter-spacing:-.012em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-hdr-sub{font-size:10.5px;color:var(--ink4);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ios style slide down banner for a fresh inbound reply, stage 4 */
+.msg-banner{position:absolute;top:10px;left:10px;right:10px;z-index:9;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;background:rgba(250,250,252,.92);backdrop-filter:blur(20px) saturate(1.8);box-shadow:var(--sh-2);transform:translateY(-130%);opacity:0;transition:all .5s var(--spring);pointer-events:none}
+.msg-banner.on{transform:none;opacity:1}
+.msg-banner-av{width:32px;height:32px;border-radius:9px;color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.msg-banner-tx{flex:1;min-width:0}
+.msg-banner-a{font-size:12px;font-weight:650;color:var(--ink)}
+.msg-banner-b{font-size:11.5px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+
+/* dev only, ops role, exercises the banner and inbound alert with no
+   provider connected yet */
+.msg-dev{flex-shrink:0;padding:6px 12px;text-align:center;background:var(--panel3);box-shadow:inset 0 1px 0 rgba(0,0,0,.05)}
+.msg-dev button{font-size:10.5px;font-weight:600;color:var(--v11);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px}
+.msg-dev button:hover{background:var(--v3)}
+
+/* tools rail, right pane of the hub only */
+.mt-rail{width:320px;flex-shrink:0;background:var(--panel);box-shadow:inset 1px 0 0 var(--line);display:flex;flex-direction:column}
+.mt-tabs-wrap{padding:13px 15px 0;box-shadow:inset 0 -1px 0 var(--line);flex-shrink:0}
+.mt-tabs{display:flex;gap:16px}
+.mt-tab{padding-bottom:10px;font-size:12.5px;font-weight:500;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.14s var(--e)}
+.mt-tab:hover{color:var(--ink)}
+.mt-tab.on{color:var(--v11);border-bottom-color:var(--v9);font-weight:650}
+.mt-body{flex:1;overflow-y:auto;padding:14px 15px 20px}
+.mt-view{display:none}
+.mt-view.on{display:block}
+.mt-sl{font-size:10px;font-weight:650;letter-spacing:.08em;color:var(--ink4);margin:16px 0 8px;display:flex;align-items:center;justify-content:space-between}
+.mt-sl:first-child{margin-top:0}
+.mt-sl button{font-size:11px;font-weight:600;color:var(--v11)}
+.mt-ctx{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px}
+.mt-ctx-ic{width:25px;height:25px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mt-ctx-ic svg{width:12.5px;height:12.5px;stroke-width:2.4}
+.mt-ctx-n{font-size:12.5px;font-weight:500;flex:1}
+.mt-ctx-d{font-size:11.5px;color:var(--ink4);font-variant-numeric:tabular-nums}
+.mt-note{background:var(--a3);border-radius:9px;padding:11px 12px;box-shadow:inset 0 0 0 1px rgba(245,165,36,.2);margin-bottom:6px}
+.mt-note-h{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--a11);margin-bottom:5px;text-transform:uppercase}
+.mt-note-h svg{width:11px;height:11px;stroke-width:2.5}
+.mt-note-b{font-size:12.5px;line-height:1.5;color:#8A5510}
+.mt-note-m{font-size:11px;color:#B08430;margin-top:6px}
+.mt-empty{font-size:11.5px;color:var(--ink4);line-height:1.55;margin-top:6px}
+.mt-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:8px;transition:.15s var(--e);width:100%;border:none;cursor:pointer}
+.mt-btn.p{background:linear-gradient(180deg,#7B63D8,var(--v9));color:#fff;box-shadow:0 1px 2px rgba(90,69,181,.28),0 3px 9px rgba(110,86,207,.2),inset 0 1px 0 rgba(255,255,255,.14)}
+.mt-btn.p:hover{transform:translateY(-.5px)}
+.mt-btn.p:disabled{opacity:.4;transform:none;cursor:not-allowed}
+.mt-btn.s{box-shadow:var(--sh-b);background:var(--panel);color:var(--ink2)}
+.mt-btn.s:hover{box-shadow:var(--sh-1)}
+.mt-btn.dgr{color:var(--r11)}
+.mt-btnrow{display:flex;gap:7px;margin-top:13px}
+
+/* templates tab, stage 2 */
+.mt-tpl{padding:10px 11px;border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px;cursor:pointer;transition:.15s var(--e)}
+.mt-tpl:hover{background:var(--v3);box-shadow:0 0 0 1px var(--v6)}
+.mt-tpl-r1{display:flex;align-items:center;gap:7px}
+.mt-tpl-t{font-size:12.5px;font-weight:600;letter-spacing:-.014em;flex:1}
+.mt-tpl-p{font-size:11.5px;color:var(--ink4);margin-top:3px;line-height:1.45}
+.mt-tpl-ed{opacity:0;color:var(--ink4);transition:.14s;flex-shrink:0;display:flex}
+.mt-tpl:hover .mt-tpl-ed{opacity:1}
+.mt-tpl-ed svg{width:13px;height:13px;stroke-width:2.1}
+.mt-tpl-team{font-size:9.5px;font-weight:600;padding:1.5px 6px;border-radius:5px;background:var(--panel3);color:var(--ink3);flex-shrink:0}
+.mt-fld{margin-bottom:11px}
+.mt-fld label{display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-bottom:5px}
+.mt-inp{width:100%;padding:8px 11px;border-radius:8px;box-shadow:var(--sh-b);background:var(--panel2);font-size:12.5px;transition:.15s var(--e);border:none;font-family:inherit;color:var(--ink)}
+.mt-inp:focus{background:#fff;box-shadow:0 0 0 1px var(--v9),0 0 0 3px rgba(110,86,207,.1);outline:none}
+textarea.mt-inp{resize:vertical;min-height:78px;line-height:1.5}
+.mt-mrg{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.mt-chip{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;padding:4px 8px;border-radius:6px;background:var(--v3);color:var(--v11);box-shadow:0 0 0 1px var(--v6);cursor:pointer;transition:.14s var(--e);border:none}
+.mt-chip:hover{background:var(--v4)}
+.mt-prev{background:var(--panel3);border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--ink2);margin-top:8px;white-space:pre-wrap}
+.mt-prev-lb{font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--ink4);margin-bottom:5px;text-transform:uppercase}
+.mt-cnts{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink4);margin-top:8px;font-variant-numeric:tabular-nums}
+.mt-strk{width:52px;height:3px;border-radius:2px;background:var(--line2);overflow:hidden;flex-shrink:0}
+.mt-sfil{height:100%;background:var(--v9);width:0;transition:width .22s var(--e)}
+.mt-sfil.warn{background:var(--a9)}
+
+/* job promo tab, stage 3 */
+.mt-job{padding:10px 11px;border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px;cursor:pointer;transition:.15s var(--e)}
+.mt-job:hover{box-shadow:0 0 0 1px var(--v6);background:var(--v3)}
+.mt-job.on{box-shadow:0 0 0 1.5px var(--v9);background:var(--v3)}
+.mt-job-t{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mt-job-m{font-size:11.5px;color:var(--ink3);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap}
+.mt-job-m .sp{color:var(--ink5)}
+.mt-jmatch{font-size:10px;font-weight:650;padding:2px 7px;border-radius:5px;background:var(--g3);color:var(--g11)}
+.mt-opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.mt-opt{font-size:11.5px;font-weight:500;padding:5px 10px;border-radius:7px;cursor:pointer;transition:.14s var(--e);box-shadow:var(--sh-b);background:var(--panel2);color:var(--ink3);border:none}
+.mt-opt.on{background:var(--v4);color:var(--v11);box-shadow:0 0 0 1px var(--v6);font-weight:600}
+.mt-opt.dis{opacity:.4;cursor:not-allowed}
+/* SMS TEMPLATES, editor modal only now, the composer popover is retired
+   in favour of the Templates tab in the tools rail (see mt-tpl above). */
 .tpl-pop-empty{font-size:11px;color:var(--ink4);padding:6px}
-.tpl-pop-manage{margin-top:4px;padding:8px 6px;border-top:1px solid var(--line);font-size:11px;font-weight:600;color:var(--v9);cursor:pointer;text-align:center;border-radius:8px}
-.tpl-pop-manage:hover{background:var(--v3)}
 .tpl-mlist{padding:14px 17px}
 .tpl-msec{font-size:10px;font-weight:650;letter-spacing:.08em;color:var(--ink4);margin:14px 0 6px}
 .tpl-msec:first-child{margin-top:0}
@@ -1530,6 +1615,16 @@ function getAutos(cands){
       }
       if(s.status==="Promoting"){var dSt=ddiff(s.submittedDate);if(dSt!==null&&dSt<=-7)alerts.push({id:'promoting:'+s.id,level:"amber",type:"sub",title:"Still promoting: "+c.name,desc:"In Promoting for "+Math.abs(dSt)+"d at "+s.facility+". Submit or close.",cid:c.id,tab:"Submissions"});}
     });
+    // Inbound replies already land on the candidate as direction 'in' with a
+    // readAt, no new table. One alert per candidate regardless of how many
+    // unread inbound messages they have, deduped by id.
+    var unreadIn=(c.messages||[]).filter(function(m){return m.direction==='in'&&!m.readAt;});
+    if(unreadIn.length){
+      var lastIn=unreadIn[unreadIn.length-1];
+      var preview=(lastIn.body||'').trim();
+      if(preview.length>90)preview=preview.slice(0,90)+'...';
+      alerts.push({id:'inbound:'+c.id,level:'amber',type:'message',title:'New reply: '+c.name,desc:preview,cid:c.id,tab:'Messages'});
+    }
     var ci=ciStatus(c);
     if(ci.stale&&["Active","Screening","Compliance","On Assignment","Redeployment"].indexOf(c.phase)>=0)alerts.push({id:'checkin:'+c.id,level:"red",type:"checkin",title:"No check-in 14+ days: "+c.name,desc:"Last: "+(c.lastCheckin?fmt(c.lastCheckin):"never")+" — Phase: "+c.phase,cid:c.id,tab:"Activity"});
     c.contracts.forEach(function(k){
@@ -1982,7 +2077,8 @@ var I={
   sheet:_svg('<rect x="3.75" y="4.5" width="16.5" height="15" rx="1.5"/><path d="M3.75 9.75h16.5M3.75 15h16.5M9 4.5v15M15 4.5v15"/>'),
   photo:_svg('<rect x="3.75" y="4.5" width="16.5" height="15" rx="1.5"/><circle cx="8.25" cy="9" r="1.25"/><path d="M20.25 15.75l-4.5-4.5-3.75 3.75-2.25-2.25-4.5 4.5"/>'),
   archive:_svg('<rect x="3.75" y="4.5" width="16.5" height="4.5" rx="1"/><path d="M5.25 9v9a1.5 1.5 0 001.5 1.5h10.5a1.5 1.5 0 001.5-1.5V9M9.75 13.5h4.5"/>'),
-  case:_svg('<rect x="3" y="7.5" width="18" height="12" rx="1.5"/><path d="M8.25 7.5V6a1.5 1.5 0 011.5-1.5h4.5A1.5 1.5 0 0115.75 6v1.5"/><path d="M3 12.75h18"/>')
+  case:_svg('<rect x="3" y="7.5" width="18" height="12" rx="1.5"/><path d="M8.25 7.5V6a1.5 1.5 0 011.5-1.5h4.5A1.5 1.5 0 0115.75 6v1.5"/><path d="M3 12.75h18"/>'),
+  msg:_svg('<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>')
 };
 function ico(svg,px,color){var st='width:'+(px||14)+'px;height:'+(px||14)+'px'+(color?';stroke:'+color:'')+';flex-shrink:0;vertical-align:middle';return svg.replace('<svg ','<svg style="'+st+'" ');}
 // Shared metric-tile renderer (style pass) -- one definition used by
@@ -2006,7 +2102,7 @@ function kpiChip(opts){
     +'</div>';
 }
 function ntIcon(type){return {Note:I.pencil,Call:I.phone,Email:I.mail,Meeting:I.meet,System:I.sys}[type]||I.pencil;}
-function aiIcon(t){return {sub:I.doc,interview:I.person,checkin:I.person,contract:I.doc,extend:I.info,travel:I.plane,comp:I.warn,ahpra:I.warn,redeploy:I.person}[t]||I.warn;}
+function aiIcon(t){return {sub:I.doc,interview:I.person,checkin:I.person,contract:I.doc,extend:I.info,travel:I.plane,comp:I.warn,ahpra:I.warn,redeploy:I.person,message:I.msg}[t]||I.warn;}
 function aiHtml(a){var cls={red:"ai-r",amber:"ai-a",blue:"ai-b"}[a.level]||"ai-a";var ic={red:"var(--danger)",amber:"#d4900a",blue:"var(--accent)"}[a.level]||"#d4900a";var q=String.fromCharCode(39);var h='<div class="ai '+cls+'" onclick="openCandPage('+a.cid+')" style="cursor:pointer">';h+='<div style="color:'+ic+';flex-shrink:0">'+aiIcon(a.type)+'</div>';h+='<div style="flex:1"><div class="ai-title">'+esc(a.title)+'</div><div class="ai-desc">'+esc(a.desc)+'</div></div>';if(a.afn)h+='<button class="ai-act" onclick="event.stopPropagation();'+a.afn+'">'+esc(a.action)+'</button>';h+="</div>";return h;}
 // PAGE RENDERERS
 // ── MORNING BRIEF ───────────────────────────────────────────────────────────
@@ -2853,6 +2949,7 @@ function alertRowHtml(a){
   if(a.type==='comp'||a.type==='ahpra'||a.type==='contract_comp'){rowClick='openCandAtComp('+a.cid+',\''+a.key+'\''+')';}
   else if(a.type==='sub'){rowClick='openCandAtSubAlert('+a.cid+','+(a.subId||'null')+')';}
   else if(a.type==='checkin'){rowClick='openCandAtCheckin('+a.cid+')';}
+  else if(a.type==='message'){rowClick='openCandPage('+a.cid+',\'messages\')';}
   else{rowClick='openCandPage('+a.cid+')';}
   var actions='';
   if(a.type==='checkin'){
@@ -2866,6 +2963,8 @@ function alertRowHtml(a){
         +'<button class="ai-act" style="background:#e8f0ff;color:var(--accent);margin-left:4px" onclick="event.stopPropagation();openCandAtSubs('+a.cid+')">Open Sub</button>';
   } else if(a.type==='comp'||a.type==='ahpra'||a.type==='contract_comp'){
     actions='<button class="ai-act" style="background:var(--ok-l);color:var(--ok)" onclick="event.stopPropagation();alertMarkVerified('+a.cid+',\''+a.key+'\',\''+aid+'\')">Mark Verified</button>';
+  } else if(a.type==='message'){
+    actions='<button class="ai-act" style="background:#e8f0ff;color:var(--accent)" onclick="event.stopPropagation();openCandPage('+a.cid+',\'messages\')">Open Thread</button>';
   } else {
     actions='<button class="ai-act" style="background:#e8f0ff;color:var(--accent)" onclick="event.stopPropagation();openCandPage('+a.cid+')">Open</button>';
   }
@@ -2901,6 +3000,7 @@ function renderAlerts(){
     {key:'placementcomp',label:'Compliance Expiring During Placement',color:'var(--danger)',items:all.filter(function(a){return a.type==='contract_comp';})},
     {key:'followups',label:'Follow-ups Due',color:'var(--danger)',items:all.filter(function(a){return a.type==='sub';})},
     {key:'checkins',label:'Check-ins Overdue',color:'var(--warn)',items:all.filter(function(a){return a.type==='checkin';})},
+    {key:'replies',label:'New Replies',color:'var(--warn)',items:all.filter(function(a){return a.type==='message';})},
     {key:'travel',label:'Travel Not Arranged',color:'#d97706',items:all.filter(function(a){return a.type==='travel';})},
     {key:'contractactions',label:'Contract Actions',color:'var(--accent)',items:all.filter(function(a){return (a.type==='contract'&&a.level!=='red')||a.type==='extend'||a.type==='redeploy';})},
     {key:'expiring',label:'Expiring Soon',color:'#d97706',items:all.filter(function(a){return (a.type==='comp'||a.type==='ahpra')&&a.level!=='red';})}
@@ -4530,7 +4630,7 @@ var cpOpen={overview:true,personal:true,professional:true,avail:false,clinical:f
 var cpTravelTab='flights';
 var cpActType='Note';
 
-function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();msgMode='message';nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c){pushRecent('candidate',id,c.name,c.classification);if(cpTab==='messages')msgMarkThreadRead(c);}}
+function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();msgMode='message';nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c){pushRecent('candidate',id,c.name,c.classification);if(cpTab==='messages'){var freshIn=msgLastUnreadIn(c);msgMarkThreadRead(c);if(freshIn)msgShowBanner(c,freshIn);}}}
 function openCandAtSubs(candId){openCandPage(candId,'pipeline');setTimeout(function(){cpScrollTo('submissions');},120);}
 
 function flashElement(id){var el=document.getElementById(id);if(!el)return;el.classList.remove('flash-hl');void el.offsetWidth;el.classList.add('flash-hl');}
@@ -5306,6 +5406,34 @@ function addNote(candidateId,body){
     return{data:msg};
   });
 }
+// Dev only, stage 4. Inserts a direction 'in' message on the open candidate
+// so the inbound alert and the banner can be exercised before any SMS
+// provider is connected. Persists the same way sendMessage/addNote do so it
+// survives a reload like a real reply would.
+function msgSimulateInbound(candidateId){
+  var c=candidates.find(function(x){return x.id===candidateId;});
+  if(!c)return;
+  var samples=['Perfect, send it through.','Sounds good, what are the dates again?','Yes I am keen, call me when you can.','Can you tell me more about the facility?'];
+  var body=samples[Math.floor(Math.random()*samples.length)];
+  var localId='tmp-'+Date.now();
+  var msg={id:localId,direction:'in',body:body,status:'delivered',author:c.name,
+    createdAt:new Date().toISOString(),readAt:'',segments:null,_synced:false};
+  if(!c.messages)c.messages=[];
+  c.messages.push(msg);
+  msgRefreshUI();
+  msgShowBanner(c,msg);
+  updateBadges();
+  sb.from('messages').insert({candidate_id:candidateId,direction:'in',body:body,
+    status:'delivered',author:c.name}).select().single().then(function(r){
+    if(r.error){
+      c.messages=c.messages.filter(function(m){return m.id!==localId;});
+      msgRefreshUI();
+      showToast('Could not simulate reply: '+r.error.message,'err');
+      return;
+    }
+    msg.id=r.data.id;msg._synced=true;
+  });
+}
 
 // ── Messages thread renderer, shared by the candidate profile Messages tab
 // and the Messages hub, so there is exactly one thread component. ──────────
@@ -5369,11 +5497,7 @@ function msgBlockedHtml(c){
 function msgComposerHtml(c){
   var noteMode=msgMode==='note';
   return '<div class="msg-cmp">'
-    +'<div class="msg-cmp-top">'
     +'<label class="msg-note-toggle"><input type="checkbox" '+(noteMode?'checked':'')+' onchange="msgToggleMode('+c.id+')">Internal note</label>'
-    +'<div class="msg-tpl-wrap"><button type="button" class="msg-tpl-btn" onclick="tplTogglePopover(event)">Templates</button>'
-    +(tplPopoverOpen?tplPopoverHtml(c):'')
-    +'</div></div>'
     +'<div class="msg-cmpr">'
     +'<div class="msg-box" style="'+(noteMode?'background:var(--a3);box-shadow:inset 0 0 0 1px rgba(245,165,36,.3)':'')+'">'
     +'<textarea id="msgBox" rows="1" placeholder="'+(noteMode?'Internal note, not visible to the candidate':'Text message')+'" oninput="msgCnt('+c.id+')" onkeydown="msgKeydown(event,'+c.id+')"></textarea>'
@@ -5383,11 +5507,37 @@ function msgComposerHtml(c){
     +'<div class="msg-cnts" id="msgCnts">'+(noteMode?'Internal note, not sent by SMS':'0 chars, 1 segment')+'</div>'
     +'</div>';
 }
+// Rotating gradients so avatars read as distinct people, same palette idea
+// as messages-workspace-v2.html but keyed off the real candidate id instead
+// of a mock group index.
+var MSG_GRADS=[['#8B72E8','#5A45B5'],['#3FB6A8','#1F8578'],['#E8A33D','#B87409'],['#E56B8C','#B03A5B'],['#5B9BE8','#2C6BB5'],['#7BC96F','#3C8C33']];
+function msgAvGrad(id){var g=MSG_GRADS[Math.abs(Number(id)||0)%MSG_GRADS.length];return 'linear-gradient(145deg,'+g[0]+','+g[1]+')';}
+function msgLastNote(c){
+  var msgs=c.messages||[];
+  for(var i=msgs.length-1;i>=0;i--){if(msgs[i].direction==='note')return msgs[i];}
+  return null;
+}
+function msgThreadHdrHtml(c){
+  return '<div class="msg-hdr"><div class="msg-hdr-av" style="background:'+msgAvGrad(c.id)+'">'+esc(msgInitials(c.name))+'</div>'
+    +'<div class="msg-hdr-bd"><div class="msg-hdr-nm">'+esc(c.name)+'</div>'
+    +(c.classification?'<div class="msg-hdr-sub">'+esc(c.classification)+'</div>':'')
+    +'</div></div>';
+}
+// Empty, hidden until msgShowBanner runs (stage 4). Present on every thread
+// render so the banner has somewhere to slide into without a extra render.
+function msgBannerHtml(){
+  return '<div class="msg-banner" id="msgBanner"><div class="msg-banner-av" id="msgBannerAv"></div>'
+    +'<div class="msg-banner-tx"><div class="msg-banner-a" id="msgBannerA"></div><div class="msg-banner-b" id="msgBannerB"></div></div></div>';
+}
 function renderMsgThread(c){
   var msgs=c.messages||[];
   var body=msgThreadBody(msgs)||'<div class="cvb-pend" style="margin:16px">No messages yet.</div>';
   var composer=c.smsConsent?msgComposerHtml(c):msgBlockedHtml(c);
-  return '<div class="msg-thread cc-v2"><div class="msg-scroll" id="msgScroll">'+body+'</div>'+composer+'</div>';
+  var devTool=(CU&&CU.role==='ops')
+    ?'<div class="msg-dev"><button type="button" onclick="msgSimulateInbound('+c.id+')">Dev: simulate inbound reply</button></div>'
+    :'';
+  return '<div class="msg-thread cc-v2">'+msgBannerHtml()+msgThreadHdrHtml(c)
+    +'<div class="msg-scroll" id="msgScroll">'+body+'</div>'+composer+devTool+'</div>';
 }
 function msgToggleMode(cid){msgMode=msgMode==='note'?'message':'note';msgRefreshUI();}
 function msgCnt(cid){
@@ -5437,7 +5587,35 @@ function msgListTime(ts){
   if(diff===1)return'Yesterday';
   return new Date(ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
 }
+// Slide down banner, stage 4. Shown on the phone stage when a thread has (or
+// just had) a fresh unread inbound, cleared by msgMarkThreadRead. No live
+// provider channel exists yet, so the only real trigger today is opening a
+// thread that has an unread inbound, or the dev simulate button below.
+var msgBannerTimer=null,msgBannerForId=null;
+function msgLastUnreadIn(c){
+  var u=(c.messages||[]).filter(function(m){return m.direction==='in'&&!m.readAt;});
+  return u.length?u[u.length-1]:null;
+}
+function msgShowBanner(c,m){
+  var el=document.getElementById('msgBanner');
+  if(!el||!m)return;
+  msgBannerForId=c.id;
+  document.getElementById('msgBannerAv').style.background=msgAvGrad(c.id);
+  document.getElementById('msgBannerAv').textContent=msgInitials(c.name);
+  document.getElementById('msgBannerA').textContent='New reply from '+c.name;
+  document.getElementById('msgBannerB').textContent=m.body||'';
+  el.classList.add('on');
+  clearTimeout(msgBannerTimer);
+  msgBannerTimer=setTimeout(msgHideBanner,3400);
+}
+function msgHideBanner(){
+  var el=document.getElementById('msgBanner');
+  if(el)el.classList.remove('on');
+  msgBannerForId=null;
+  clearTimeout(msgBannerTimer);
+}
 function msgMarkThreadRead(c){
+  if(msgBannerForId===c.id)msgHideBanner();
   var unread=(c.messages||[]).filter(function(m){return m.direction==='in'&&!m.readAt;});
   if(!unread.length)return;
   var now=new Date().toISOString();
@@ -5462,9 +5640,11 @@ var msgHubSelectedId=null,msgHubSearch='';
 function msgHubPick(id){
   msgHubSelectedId=id;
   var c=candidates.find(function(x){return x.id===id;});
+  var freshIn=c?msgLastUnreadIn(c):null;
   if(c)msgMarkThreadRead(c);
   msgMode='message';
   renderMessagesHub();
+  if(c&&freshIn)msgShowBanner(c,freshIn);
 }
 function msgHubSearchInput(v){msgHubSearch=v;renderMessagesHub();}
 function renderMessagesHub(){
@@ -5482,7 +5662,7 @@ function renderMessagesHub(){
     var sc=cmpScore(c);
     var scChip=sc>=90?'g':sc>=75?'a':'r';
     return '<div class="msghub-item'+(c.id===msgHubSelectedId?' on':'')+(unread?' unread':'')+'" onclick="msgHubPick('+c.id+')">'
-      +'<div class="msghub-av">'+esc(msgInitials(c.name))+(unread?'<span class="u">'+unread+'</span>':'')+'</div>'
+      +'<div class="msghub-av" style="background:'+msgAvGrad(c.id)+'">'+esc(msgInitials(c.name))+(unread?'<span class="u">'+unread+'</span>':'')+'</div>'
       +'<div class="msghub-bd">'
       +'<div class="msghub-r1"><span class="msghub-nm">'+esc(c.name)+'</span><span class="msghub-tm">'+(last?msgListTime(last.createdAt):'')+'</span></div>'
       +'<div class="msghub-pv">'+preview+'</div>'
@@ -5491,7 +5671,7 @@ function renderMessagesHub(){
   }).join('');
   var selC=candidates.find(function(x){return x.id===msgHubSelectedId;});
   var stageHtml=selC
-    ?'<div style="width:380px;height:100%;max-height:700px">'+renderMsgThread(selC)+'</div>'
+    ?'<div class="msghub-phone">'+renderMsgThread(selC)+'</div>'
     :'<div class="msghub-empty">Select a conversation to view the thread.</div>';
   document.getElementById('page').innerHTML='<div class="msghub">'
     +'<div class="msghub-list">'
@@ -5499,7 +5679,186 @@ function renderMessagesHub(){
     +'<div class="msghub-scroll">'+(listHtml||'<div class="msghub-empty">No conversations yet.</div>')+'</div>'
     +'</div>'
     +'<div class="msghub-stage">'+stageHtml+'</div>'
+    +(selC?'<div class="mt-rail">'+mtShellHtml()+'</div>':'')
     +'</div>';
+  if(selC)mtRenderAll();
+}
+
+// ── Tools rail, right pane of the Messages hub only. Context / Templates /
+// Job promo. Tab switching is local state, no reload. ──────────────────────
+var mtActiveTab='ctx';
+function mtShellHtml(){
+  return '<div class="mt-tabs-wrap"><div class="mt-tabs">'
+    +'<div class="mt-tab'+(mtActiveTab==='ctx'?' on':'')+'" data-mt="ctx" onclick="mtSwitch(&apos;ctx&apos;)">Context</div>'
+    +'<div class="mt-tab'+(mtActiveTab==='tpl'?' on':'')+'" data-mt="tpl" onclick="mtSwitch(&apos;tpl&apos;)">Templates</div>'
+    +'<div class="mt-tab'+(mtActiveTab==='promo'?' on':'')+'" data-mt="promo" onclick="mtSwitch(&apos;promo&apos;)">Job promo</div>'
+    +'</div></div>'
+    +'<div class="mt-body">'
+    +'<div class="mt-view'+(mtActiveTab==='ctx'?' on':'')+'" id="mt-ctx"></div>'
+    +'<div class="mt-view'+(mtActiveTab==='tpl'?' on':'')+'" id="mt-tpl"></div>'
+    +'<div class="mt-view'+(mtActiveTab==='promo'?' on':'')+'" id="mt-promo"></div>'
+    +'</div>';
+}
+function mtSwitch(v){
+  mtActiveTab=v;
+  document.querySelectorAll('.mt-tab').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-mt')===v);});
+  document.querySelectorAll('.mt-view').forEach(function(x){x.classList.toggle('on',x.id==='mt-'+v);});
+}
+function mtRenderAll(){
+  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+  if(!c)return;
+  document.getElementById('mt-ctx').innerHTML=mtCtxHtml(c);
+  document.getElementById('mt-tpl').innerHTML=mtTplHtml(c);
+  document.getElementById('mt-promo').innerHTML=mtPromoHtml(c);
+}
+function mtCtxRowHtml(iconSvg,bg,fg,label,val){
+  return '<div class="mt-ctx"><div class="mt-ctx-ic" style="background:'+bg+';color:'+fg+'">'+iconSvg+'</div><div class="mt-ctx-n">'+label+'</div><div class="mt-ctx-d">'+val+'</div></div>';
+}
+function mtCtxHtml(c){
+  var sc=cmpScore(c);
+  var compBg=sc>=90?'var(--g3)':sc>=75?'var(--a3)':'var(--r3)';
+  var compFg=sc>=90?'var(--g11)':sc>=75?'var(--a11)':'var(--r11)';
+  var states=(c.statesOpen&&c.statesOpen.length)?c.statesOpen.join(', '):(c.state||'Not set');
+  var h='<div class="mt-sl">CANDIDATE</div>';
+  h+=mtCtxRowHtml(I.person,'var(--v4)','var(--v11)',esc(c.classification||'Classification not set'),esc(states));
+  h+=mtCtxRowHtml(I.chk,compBg,compFg,'Compliance',sc+'%');
+  h+=mtCtxRowHtml(I.cal,'var(--g3)','var(--g11)','Available',c.availableFrom?fmt(c.availableFrom):'Not set');
+  h+=mtCtxRowHtml(I.chk,c.smsConsent?'var(--g3)':'var(--r3)',c.smsConsent?'var(--g11)':'var(--r11)','SMS consent',c.smsConsent?'Opted in':'Opted out');
+  var note=msgLastNote(c);
+  if(note){
+    h+='<div class="mt-sl">INTERNAL NOTE</div><div class="mt-note"><div class="mt-note-h">'+I.pencil+'NOT VISIBLE TO CANDIDATE</div>'
+      +'<div class="mt-note-b">'+esc(note.body)+'</div>'
+      +'<div class="mt-note-m">'+esc(note.author||'Staff')+', '+esc(msgDayLabel(note.createdAt).toLowerCase())+'</div></div>';
+  }
+  return h;
+}
+// Stage 2: templates tab. tplMine/tplTeam/tplInsert/mergeTemplate and the
+// create-edit-delete modal are the existing engine (see SMS templates below),
+// this only re-homes the entry point from the old composer popover.
+function mtTplRowHtml(t,c,editable){
+  var preview=mergeTemplate(t.body,c);
+  return '<div class="mt-tpl" onclick="tplInsert(&apos;'+jsAttrEsc(t.id)+'&apos;)">'
+    +'<div class="mt-tpl-r1"><span class="mt-tpl-t">'+esc(t.name)+'</span>'
+    +(t.scope==='team'?'<span class="mt-tpl-team">team</span>':'')
+    +(editable?'<span class="mt-tpl-ed" onclick="event.stopPropagation();tplManageOpen();tplEditOpen(&apos;'+jsAttrEsc(t.id)+'&apos;)">'+I.pencil+'</span>':'')
+    +'</div>'
+    +'<div class="mt-tpl-p">'+esc(preview)+'</div>'
+    +'</div>';
+}
+function mtTplHtml(c){
+  var mine=tplMine(),team=tplTeam();
+  var isOps=CU.role==='ops';
+  var first=(c.name||'').split(' ')[0]||'this candidate';
+  var h='<div class="mt-sl">MY TEMPLATES<button onclick="tplManageOpen()">Manage</button></div>';
+  h+=mine.length?mine.map(function(t){return mtTplRowHtml(t,c,true);}).join(''):'<div class="mt-empty">No personal templates yet.</div>';
+  h+='<div class="mt-sl">TEAM TEMPLATES</div>';
+  h+=team.length?team.map(function(t){return mtTplRowHtml(t,c,isOps);}).join(''):'<div class="mt-empty">No team templates yet.</div>';
+  h+='<div class="mt-empty">Previews resolve merge fields against '+esc(first)+'. Team templates are shared'+(isOps?'.':' and locked.')+'</div>';
+  return h;
+}
+
+// Stage 3: job promo tab. Named msgPromo* throughout, not promo*, because
+// the app already has an unrelated email "Promote a location" feature using
+// that whole namespace (promoIntro, renderPromoPanel, promoFactSheetOf, and
+// so on). Reuses promoFactSheetOf() for the real fact sheet link and
+// matchScore() (the same engine roleMatchList calls) for the MATCH tag.
+var msgPromoRoleId=null,msgPromoOpts={dates:true,rate:true,ward:true,link:true};
+function msgPromoPick(id){msgPromoRoleId=id;mtRenderPromo();}
+function msgPromoToggle(key){msgPromoOpts[key]=!msgPromoOpts[key];mtRenderPromo();}
+function msgPromoText(role,c,opts){
+  var fac=facilities.find(function(f){return f.id===role.facilityId;})||{};
+  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
+  var t='Hi '+first+', ';
+  t+=(opts.ward&&role.ward)?(role.ward+' role at '+(fac.name||'the facility')):('A role at '+(fac.name||'the facility'));
+  if(opts.dates&&role.startDate)t+=', '+fmt(role.startDate)+' to '+(role.endDate?fmt(role.endDate):'TBC');
+  t+='.';
+  if(opts.rate&&role.rate)t+=' Rate: '+role.rate+'.';
+  if(opts.link){
+    var fs=promoFactSheetOf(fac);
+    if(fs)t+=' Fact sheet: '+fs.fileUrl;
+  }
+  t+=' Interested? Reply YES. Reply STOP to opt out.';
+  return t;
+}
+function mtPromoJobRowHtml(role,isMatch,fac){
+  var dates=role.startDate?(fmt(role.startDate)+' to '+(role.endDate?fmt(role.endDate):'TBC')):'Dates TBC';
+  return '<div class="mt-job'+(msgPromoRoleId===role.id?' on':'')+'" onclick="msgPromoPick('+role.id+')">'
+    +'<div class="mt-job-t">'+esc(fac&&fac.name?fac.name:'Facility TBC')+(isMatch?'<span class="mt-jmatch">MATCH</span>':'')+'</div>'
+    +'<div class="mt-job-m">'+esc(role.ward||'Ward TBC')+'<span class="sp">&middot;</span>'+esc(dates)+(fac&&fac.state?'<span class="sp">&middot;</span>'+esc(fac.state):'')+'</div>'
+    +'</div>';
+}
+function mtPromoTogglesHtml(role){
+  var hasRate=!!role.rate;
+  var defs=[['ward','Ward'],['dates','Dates'],['rate','Rate'],['link','Fact sheet link']];
+  return '<div class="mt-opts">'+defs.map(function(o){
+    var key=o[0],disabled=key==='rate'&&!hasRate,on=msgPromoOpts[key]&&!disabled;
+    return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;)"')+'>'+o[1]+'</span>';
+  }).join('')+'</div>';
+}
+function mtPromoHtml(c){
+  var openRoles=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';});
+  var first=(c.name||'').split(' ')[0]||'this candidate';
+  var h='<div class="mt-sl">PICK A ROLE</div>';
+  if(!openRoles.length)return h+'<div class="mt-empty">No open roles yet. Add roles via the Job Board.</div>';
+  var tagged=openRoles.map(function(r){return{r:r,m:matchScore(c,r).score>0};});
+  tagged.sort(function(a,b){return (b.m?1:0)-(a.m?1:0);});
+  h+=tagged.map(function(x){
+    var fac=facilities.find(function(f){return f.id===x.r.facilityId;});
+    return mtPromoJobRowHtml(x.r,x.m,fac);
+  }).join('');
+  var role=msgPromoRoleId?roles.find(function(r){return r.id===msgPromoRoleId;}):null;
+  if(!role)return h+'<div class="mt-empty">Pick a role to build a promo SMS. Roles matching '+esc(first)+"'s profile are tagged.</div>";
+  h+='<div class="mt-sl">INCLUDE</div>'+mtPromoTogglesHtml(role);
+  var txt=msgPromoText(role,c,msgPromoOpts);
+  var n=txt.length,segs=msgSegments(n);
+  h+='<div class="mt-prev"><div class="mt-prev-lb">SMS PREVIEW</div>'+esc(txt)+'</div>';
+  h+='<div class="mt-cnts"><span class="num">'+n+'</span> chars<div class="mt-strk"><div class="mt-sfil'+(segs>1?' warn':'')+'" style="width:'+Math.min(100,(n%160||(n?160:0))/160*100)+'%"></div></div><span class="num">'+segs+'</span> segment'+(segs>1?'s':'')
+    +(segs>1?'<span style="color:var(--a11);font-weight:600;margin-left:4px">costs '+segs+'x</span>':'')+'</div>';
+  var matchCount=roleMatchList(vc(),role).length;
+  h+='<div class="mt-btnrow"><button class="mt-btn p" style="flex:1" '+(c.smsConsent?'':'disabled')+' onclick="msgPromoSendOne('+role.id+')">Send to '+esc(first)+'</button>'
+    +'<button class="mt-btn s" onclick="msgPromoSendGroup('+role.id+')">Group ('+matchCount+')</button></div>';
+  if(!c.smsConsent)h+='<div style="font-size:11px;color:var(--r11);margin-top:9px;line-height:1.5">Blocked: '+esc(first)+' has opted out of SMS.</div>';
+  return h;
+}
+function mtRenderPromo(){
+  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+  if(!c)return;
+  var el=document.getElementById('mt-promo');
+  if(el)el.innerHTML=mtPromoHtml(c);
+}
+function msgPromoSendOne(roleId){
+  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+  var role=roles.find(function(r){return r.id===roleId;});
+  if(!c||!role)return;
+  if(!c.smsConsent){showToast('Candidate has not given SMS consent','err');return;}
+  var text=msgPromoText(role,c,msgPromoOpts);
+  sendMessage(c.id,text).then(function(r){
+    if(r.error){showToast('Could not send: '+r.error.message,'err');return;}
+    showToast('Promo sent to '+((c.name||'candidate').split(' ')[0])+'.');
+  });
+}
+function msgPromoSendGroup(roleId){
+  var role=roles.find(function(r){return r.id===roleId;});
+  if(!role)return;
+  var matched=roleMatchList(vc(),role).map(function(x){return x.c;});
+  var eligible=matched.filter(function(c){return c.smsConsent&&!c.doNotContact;});
+  var skipped=matched.length-eligible.length;
+  if(!eligible.length){showToast('No consented, contactable matches for this role.','err');return;}
+  showConfirm({title:'Send to '+eligible.length+' matched candidate'+(eligible.length!==1?'s':'')+'?',
+    message:'Sends an individual SMS to each of the '+eligible.length+' matched, opted in candidates.'+(skipped?' '+skipped+' match'+(skipped!==1?'es':'')+' will be skipped for consent.':''),
+    confirmLabel:'Send'},function(){
+    var sentCount=0,failCount=0,total=eligible.length;
+    eligible.forEach(function(c){
+      var text=msgPromoText(role,c,msgPromoOpts);
+      sendMessage(c.id,text).then(function(r){
+        if(r.error)failCount++;else sentCount++;
+        if(sentCount+failCount===total){
+          showToast('Sent to '+sentCount+' of '+total+(skipped?', '+skipped+' skipped for consent':'')+'.');
+          if(curPage==='messages')renderMessagesHub();
+        }
+      });
+    });
+  });
 }
 // ── SMS templates ────────────────────────────────────────────────────────
 var smsTemplates=[];
@@ -5553,59 +5912,11 @@ function tplInsert(id){
   box.focus();
   showToast('Template inserted and merged.');
 }
-function tplRowClick(id,e){
-  // stopPropagation first, unconditionally, before anything else runs. Do
-  // not rely on the popover wrapper's own stopPropagation to guard this: once
-  // tplClosePopover detaches that wrapper mid dispatch, its handler can no
-  // longer be trusted to still block the bubble to document, and the click
-  // then re-triggers tplClosePopoverOnce right after insert, wiping the box.
-  if(e)e.stopPropagation();
-  tplClosePopover();
-  tplInsert(id);
-}
-var tplPopoverOpen=false,tplManageView='list',tplEditState=null;
+var tplManageView='list',tplEditState=null;
 var TPL_TOKENS=['first_name','full_name','specialty','facility','start_date','state','consultant'];
-function tplTogglePopover(e){
-  if(e)e.stopPropagation();
-  tplPopoverOpen=!tplPopoverOpen;
-  msgRefreshUI();
-  if(tplPopoverOpen)setTimeout(function(){document.addEventListener('click',tplClosePopoverOnce);},0);
-}
-function tplClosePopover(){
-  // Remove only the popover node. #msgBox, and anything the user has typed
-  // or an insert just set into it, must not be touched by closing this.
-  document.removeEventListener('click',tplClosePopoverOnce);
-  tplPopoverOpen=false;
-  var wrap=document.getElementById('tpl-pop-wrap');
-  if(wrap)wrap.remove();
-}
-function tplClosePopoverOnce(e){
-  var wrap=document.getElementById('tpl-pop-wrap');
-  if(wrap&&wrap.contains(e.target))return;
-  tplClosePopover();
-}
-function tplPopRowHtml(t,c){
-  var preview=mergeTemplate(t.body,c);
-  return '<div class="tpl-pop-row" onclick="tplRowClick(&apos;'+jsAttrEsc(t.id)+'&apos;,event)">'
-    +'<div class="tpl-pop-nm">'+esc(t.name)+'</div>'
-    +'<div class="tpl-pop-pv">'+esc(preview)+'</div>'
-    +'</div>';
-}
-function tplPopoverHtml(c){
-  var mine=tplMine(),team=tplTeam();
-  var mineHtml=mine.length?mine.map(function(t){return tplPopRowHtml(t,c);}).join(''):'<div class="tpl-pop-empty">No personal templates yet.</div>';
-  var teamHtml=team.length?team.map(function(t){return tplPopRowHtml(t,c);}).join(''):'<div class="tpl-pop-empty">No team templates yet.</div>';
-  return '<div class="tpl-pop" id="tpl-pop-wrap" onclick="event.stopPropagation()">'
-    +'<div class="tpl-pop-sec">MY TEMPLATES</div>'+mineHtml
-    +'<div class="tpl-pop-sec">TEAM TEMPLATES</div>'+teamHtml
-    +'<div class="tpl-pop-manage" onclick="tplManageOpen()">Manage templates</div>'
-    +'</div>';
-}
 // Editor modal, personal template CRUD. Reuses the shared #mo modal shell,
 // same as the other entity editors (openUserModal and so on).
 function tplManageOpen(){
-  tplPopoverOpen=false;
-  msgRefreshUI();
   tplManageView='list';
   tplEditState=null;
   document.getElementById('modal').style.maxWidth='480px';
@@ -6793,7 +7104,7 @@ function renderCandPage(){
     tabContent=renderCpCv(c);
   } else if(_tab==='messages'){
     tabContent='<div style="display:flex;justify-content:center;padding:8px 0">'
-      +'<div style="width:100%;max-width:400px;height:640px">'+renderMsgThread(c)+'</div>'
+      +'<div style="width:100%;max-width:390px;height:660px">'+renderMsgThread(c)+'</div>'
       +'</div>';
   } else {
     tabContent=cpSec('overview','Overview',cpEditing==='overview'?ovEdit:ovView)

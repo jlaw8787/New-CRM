@@ -11696,15 +11696,23 @@ function woNext(){
     cancelLabel:'Leave as is',
     confirmLabel:currentWards.length?'Reassign':'OK',
     danger:false,
-    onCancel:woAdvance
+    onCancel:woAdvanceAsync
   },function(){
-    if(currentWards.length){
-      var sel=document.getElementById('wo-select');
-      var newName=sel&&sel.value;
-      if(newName)wardOrphanReassign(_woFacId,item.name,newName,item.count);
-    }
-    woAdvance();
+    var sel=currentWards.length&&document.getElementById('wo-select');
+    var newName=sel&&sel.value;
+    if(newName)wardOrphanReassign(_woFacId,item.name,newName,item.count).then(woAdvanceAsync);
+    else woAdvanceAsync();
   });
+}
+// The confirm dialog closing (for this item) and reopening (for the next)
+// were landing in the same synchronous tick, close then immediately reopen,
+// which the confirm-ov focus MutationObserver only ever sees as one settled
+// state and treats as no transition at all. A setTimeout tick between them
+// gives the close its own turn before the next prompt opens, which is also
+// where "wait for the Supabase write to finish first" naturally belongs,
+// woAdvanceAsync is only called once reassignment, if any, has settled.
+function woAdvanceAsync(){
+  setTimeout(woAdvance,0);
 }
 function woAdvance(){
   _woQueue.shift();
@@ -11715,7 +11723,9 @@ function woAdvance(){
 // against the matched rows, so it either fully lands or fully fails, if it
 // fails, only that table's records are reverted back to oldName in memory
 // and re-rendered, with a toast naming which table failed, so memory and the
-// database never end up disagreeing without the operator being told.
+// database never end up disagreeing without the operator being told. Returns
+// a promise that settles once all three tables have, so the caller can hold
+// off on the next orphan prompt until this one is actually done.
 function wardOrphanReassign(facId,oldName,newName,count){
   var matchedRoles=roles.filter(function(r){return r.facilityId===facId&&r.ward===oldName;});
   var matchedSubs=[],matchedContracts=[];
@@ -11727,21 +11737,21 @@ function wardOrphanReassign(facId,oldName,newName,count){
   matchedSubs.forEach(function(s){s.ward=newName;});
   matchedContracts.forEach(function(k){k.ward=newName;});
   renderPage();
-  sb.from('roles').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
+  var pRoles=sb.from('roles').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
     if(r.error){
       matchedRoles.forEach(function(x){x.ward=oldName;});renderPage();
       showToast('Ward reassign failed for roles, reverted: '+r.error.message,'err');
       console.error('[DB] ward reassign roles',r.error);
     }
   });
-  sb.from('submissions').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
+  var pSubs=sb.from('submissions').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
     if(r.error){
       matchedSubs.forEach(function(x){x.ward=oldName;});renderPage();
       showToast('Ward reassign failed for submissions, reverted: '+r.error.message,'err');
       console.error('[DB] ward reassign submissions',r.error);
     }
   });
-  sb.from('contracts').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
+  var pContracts=sb.from('contracts').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
     if(r.error){
       matchedContracts.forEach(function(x){x.ward=oldName;});renderPage();
       showToast('Ward reassign failed for contracts, reverted: '+r.error.message,'err');
@@ -11749,6 +11759,7 @@ function wardOrphanReassign(facId,oldName,newName,count){
     }
   });
   showToast('Moved '+count+' record'+(count!==1?'s':'')+' to "'+newName+'"');
+  return Promise.all([pRoles,pSubs,pContracts]);
 }
 function saveFac(){
   if(!EF.name){showToast("Name required","err");return;}

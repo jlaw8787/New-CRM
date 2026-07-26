@@ -16,6 +16,7 @@
   var POLL_MS = 900;                      // how often we check if the login screen is still up
 
   var CLIPS = [
+    { name: 'idle', src: 'assets/mascot/mascot-idle.mp4' },
     { name: 'wave', src: 'assets/mascot/mascot-wave.mp4' },
     { name: 'stethoscope', src: 'assets/mascot/mascot-stethoscope.mp4' }
   ];
@@ -288,7 +289,6 @@
   /* ---------- pause / resume ---------- */
 
   function shouldPause() {
-    if (window.localStorage && localStorage.getItem('mascotForceVisible') === '1') return false;
     return document.hidden || (mql && mql.matches);
   }
 

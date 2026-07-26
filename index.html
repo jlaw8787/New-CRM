@@ -6687,11 +6687,34 @@ function openFlightAddModal(cid){
   document.getElementById('mo').style.display='flex';
 }
 function saveFlightAdd(){
-  // A later stage will wire this up to a real insert (flights.id is
-  // GENERATED ALWAYS AS IDENTITY — plain .insert() with no id sent, same
-  // safe pattern the delete-then-reinsert sync path already uses for this
-  // table). Deliberately a no-op for now — Stage 1 only confirms the form
-  // opens, shows the right candidate, and displays correctly.
+  var cand=candidates.find(function(x){return x.id===EFlightCandId;});
+  if(!cand){showToast('Candidate not found','err');return;}
+  var payload={candidate_id:cand.id,
+    airline:EFlight.airline||null,flight_no:EFlight.flightNo||null,
+    from_loc:EFlight.from||null,to_loc:EFlight.to||null,
+    depart_date:EFlight.departDate||null,return_date:EFlight.returnDate||null,
+    booking_ref:EFlight.bookingRef||null,cost:EFlight.cost||null,
+    notes:EFlight.notes||null};
+  // flights.id is GENERATED ALWAYS AS IDENTITY, plain .insert() with no id
+  // sent, same safe pattern mpSaveFlight already uses for this table. No
+  // contract_id here, this entry point is candidate wide, not tied to one
+  // contract, and contract_id is nullable for exactly that reason.
+  sb.from('flights').insert(payload).select().single().then(function(r){
+    if(r.error){showToast('Save error: '+r.error.message,'err');console.error('[DB] flight add insert',r.error);return;}
+    var newRec={id:r.data.id,contractId:r.data.contract_id||null,airline:r.data.airline||'',flightNo:r.data.flight_no||'',
+      from:r.data.from_loc||'',to:r.data.to_loc||'',
+      departDate:r.data.depart_date||'',returnDate:r.data.return_date||'',
+      bookingRef:r.data.booking_ref||'',cost:r.data.cost||'',
+      status:r.data.status||null,
+      approvalStatus:r.data.approval_status||'Pending',approvedBy:r.data.approved_by||'',
+      notes:r.data.notes||'',docUrl:r.data.doc_url||'',
+      docAddedBy:r.data.doc_added_by||'',docAddedAt:r.data.doc_added_at||''};
+    if(!cand.travel)cand.travel={flights:[],accommodation:[],carHire:[],expenses:[]};
+    if(!cand.travel.flights)cand.travel.flights=[];
+    cand.travel.flights.push(newRec);
+    showToast('Flight saved');
+    closeModal();renderPage();
+  });
 }
 
 // ── Activity section ──────────────────────────────────────────────────────────

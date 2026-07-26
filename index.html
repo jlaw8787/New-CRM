@@ -7855,6 +7855,97 @@ function renderFacComplianceRequirements(f,isAdminOps){
     +'</div>';
 }
 
+// Per ward rollup: open roles, active placements and ward scoped compliance,
+// read only. Wards themselves are still edited from the facility modal
+// (openFacModal), this only surfaces what already exists against f.wards.
+function facWardRowHtml(f,w,idx,isAdminOps,wRoles,wCons,wReqs){
+  var isOpen=!!facWardOpen[f.id+'|'+idx];
+  var nurseTypes=w.nurseTypes||[];
+  var chipsHtml=nurseTypes.length
+    ?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">'+nurseTypes.map(function(nt){return '<span class="badge b-pu">'+esc(nt)+'</span>';}).join('')+'</div>'
+    :'';
+  var rolesHtml=wRoles.length
+    ?wRoles.map(function(r){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="min-width:0"><div style="font-size:12px;color:var(--t1)">'+esc(r.ward)+'</div><div style="font-size:10px;color:var(--t3)">'+esc(r.nurseType)+'</div></div>'
+          +'<div style="font-size:10px;color:var(--t3);text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums">'+(r.startDate?'From '+fmt(r.startDate):'Dates TBC')+(r.endDate?' to '+fmt(r.endDate):'')+'</div>'
+          +'</div>';
+      }).join('')
+    :'<div style="font-size:11px;color:var(--t3);margin-top:4px">No open roles at this ward right now.</div>';
+  var consHtml=wCons.length
+    ?wCons.map(function(k){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">'
+          +'<span style="font-size:12px;color:var(--t1)">'+esc(k.cn)+'</span>'
+          +'<span style="font-size:10px;color:var(--t3);font-variant-numeric:tabular-nums">Ends '+fmt(k.endDate)+'</span>'
+          +'</div>';
+      }).join('')
+    :'<div style="font-size:11px;color:var(--t3);margin-top:4px">No active placements at this ward.</div>';
+  var reqsHtml=wReqs.length
+    ?'<div style="background:var(--bg);border-radius:10px;overflow:hidden;margin-top:4px">'+wReqs.map(function(r){return crReqRowHtml(r,isAdminOps,f.id);}).join('')+'</div>'
+    :'<div style="font-size:11px;color:var(--t3);margin-top:4px">This ward inherits the facility and state requirements only.</div>';
+  var body='<div class="cp-lbl">Nurse types</div>'
+    +(nurseTypes.length?'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;margin-bottom:14px">'+nurseTypes.map(function(nt){return '<span class="badge b-pu">'+esc(nt)+'</span>';}).join('')+'</div>':'<div style="font-size:11px;color:var(--t3);margin:4px 0 14px">Not specified.</div>')
+    +'<div class="cp-lbl">Open roles at this ward</div><div style="margin-bottom:14px">'+rolesHtml+'</div>'
+    +'<div class="cp-lbl">Active placements at this ward</div><div style="margin-bottom:14px">'+consHtml+'</div>'
+    +'<div class="cp-lbl">Compliance requirements</div>'+reqsHtml;
+  return '<div class="cp-sec'+(isOpen?'':' cp-closed')+'" style="margin-bottom:8px">'
+    +'<div class="cp-sec-hdr" onclick="facWardToggle('+f.id+','+idx+')">'
+    +'<div style="min-width:0"><div style="font-size:13px;font-weight:500;color:var(--t1)">'+esc(w.name)+'</div>'+chipsHtml+'</div>'
+    +'<div class="cp-sec-acts"><span style="font-size:10px;color:var(--t3);font-variant-numeric:tabular-nums;white-space:nowrap">'+wRoles.length+' open &middot; '+wCons.length+' active</span><span class="cp-arr">&#9660;</span></div>'
+    +'</div>'
+    +'<div class="cp-sec-body">'+body+'</div>'
+    +'</div>';
+}
+function renderFacWards(f,isAdminOps){
+  var wards=f.wards||[];
+  if(!wards.length){
+    return '<div class="empty-st">'+I.hosp+'<b>No wards configured</b><p>Add wards to '+esc(f.name)+' to see per ward roles, placements and compliance.</p>'+(isAdminOps?'<button class="btn btn-p btn-sm" onclick="openFacModal('+f.id+')">Add wards</button>':'')+'</div>';
+  }
+  var facRoles=roles.filter(function(r){return r.facilityId===f.id;});
+  var openRoles=facRoles.filter(function(r){return r.status==='Open'||r.status==='Likely';});
+  var allCons=candidates.reduce(function(a,c){
+    return a.concat(c.contracts.filter(function(k){return k.facilityId===f.id;}).map(function(k){return Object.assign({},k,{cn:c.name,cid:c.id});}));
+  },[]);
+  var activeCons=allCons.filter(function(k){return k.status==='Active';});
+  var resolved=resolveFacilityRequirements(f);
+  var wardNames={};
+  wards.forEach(function(w){wardNames[w.name]=true;});
+
+  var rowsHtml=wards.map(function(w,idx){
+    var wRoles=openRoles.filter(function(r){return r.ward===w.name;});
+    var wCons=activeCons.filter(function(k){return k.ward===w.name;});
+    var wReqs=resolved.ward.filter(function(r){return r.ward===w.name;});
+    return facWardRowHtml(f,w,idx,isAdminOps,wRoles,wCons,wReqs);
+  }).join('');
+
+  // Ward text on roles/contracts is free typed and may not match a listed
+  // ward exactly. Exact match only, no fuzzy matching, so anything left over
+  // is surfaced here rather than silently dropped.
+  var otherRoles=openRoles.filter(function(r){return r.ward&&!wardNames[r.ward];});
+  var otherCons=activeCons.filter(function(k){return k.ward&&!wardNames[k.ward];});
+  var otherHtml='';
+  if(otherRoles.length||otherCons.length){
+    otherHtml='<div style="margin-top:6px">'
+      +'<div class="cp-lbl">Other wards</div>'
+      +'<div style="font-size:10px;color:var(--t3);margin:2px 0 8px">Ward text here does not match a listed ward name.</div>'
+      +otherRoles.map(function(r){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">'
+          +'<span style="font-size:12px;color:var(--t1)">'+esc(r.ward)+'<span style="font-size:10px;color:var(--t3)"> &middot; open role, '+esc(r.nurseType)+'</span></span>'
+          +'<span style="font-size:10px;color:var(--t3);font-variant-numeric:tabular-nums">'+(r.startDate?'From '+fmt(r.startDate):'Dates TBC')+'</span>'
+          +'</div>';
+      }).join('')
+      +otherCons.map(function(k){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">'
+          +'<span style="font-size:12px;color:var(--t1)">'+esc(k.ward)+'<span style="font-size:10px;color:var(--t3)"> &middot; '+esc(k.cn)+'</span></span>'
+          +'<span style="font-size:10px;color:var(--t3);font-variant-numeric:tabular-nums">Ends '+fmt(k.endDate)+'</span>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+  }
+
+  return rowsHtml+otherHtml;
+}
+
 function reqItemKeyFromLabel(label){
   return (label||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||('item_'+Date.now());
 }
@@ -8103,6 +8194,7 @@ function renderFacPage(){
     +'<div class="cp-nav" style="display:flex;flex-direction:column;gap:1px">'
     +facNavA('overview','Overview')
     +facNavA('roles','Roles'+(openRoles?' ('+openRoles+' open)':''))
+    +facNavA('wards','Wards'+(f.wards&&f.wards.length?' ('+f.wards.length+')':''))
     +facNavA('submissions','Submissions'+(allSubs.length?' ('+allSubs.length+')':''))
     +facNavA('contracts','Contracts'+(allCons.length?' ('+allCons.length+')':''))
     +facNavA('checklist','Submission checklist')
@@ -8118,6 +8210,13 @@ function renderFacPage(){
     +facSec('roles','Roles',renderFacRoles(f,isAdminOps),
       isAdminOps?'<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openRoleModal(null)" style="font-size:10px;padding:4px 8px">+ Add role</button>':'',
       facRoles.length+' total')
+    +facSec('wards','Wards',renderFacWards(f,isAdminOps),
+      isAdminOps?'<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openFacModal('+f.id+')" style="font-size:10px;padding:4px 8px">Manage wards</button>':'',
+      (function(){
+        var hs=f.healthAuthority||f.region||f.state||'';
+        var n=f.wards&&f.wards.length?f.wards.length+' wards':'';
+        return [n,hs?esc(hs):''].filter(Boolean).join(' &middot; ');
+      })())
     +facSec('submissions','Submissions',renderFacSubmissions(f),'',allSubs.length+' total')
     +facSec('contracts','Contracts',renderFacContracts(f),'',allCons.length+' total')
     +facSec('checklist','Submission checklist',renderFacChecklist(f,isAdminOps),
@@ -8193,8 +8292,19 @@ var sfReqSatisfiedBy={},sfReqAttachOpen={},sfPackCollapseOpen={};
 
 // ── FACILITY FULL PAGE STATE ───────────────────────────────────────────────
 var curFacId=null,facEditing=null,facEditData=null;
-var facOpen={overview:true,roles:false,submissions:false,contracts:false,checklist:false,compliance:true,contacts:false,documents:false,activity:false};
+var facOpen={overview:true,roles:false,wards:false,submissions:false,contracts:false,checklist:false,compliance:true,contacts:false,documents:false,activity:false};
 var facilityContacts=[],facActivityCache={},facActType='Note',facFilesLoaded={};
+// Per ward expand state, keyed by facility id plus the ward's position in
+// f.wards, not its name. Two facilities sharing a ward name (ICU is common)
+// should not bleed into each other, and a single facility can have two wards
+// with the same name in the data (seen in seed data), which a name only key
+// would collapse into one shared state. Persists across renderFacPage the
+// same way facOpen does.
+var facWardOpen={};
+function facWardToggle(fid,idx){
+  facWardOpen[fid+'|'+idx]=!facWardOpen[fid+'|'+idx];
+  renderFacPage();
+}
 
 // ── EXPLAINABLE MATCH SCORE ─────────────────────────────────────────────────
 // Score out of 100, broken into named factors so a consultant can always see

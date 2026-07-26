@@ -388,13 +388,26 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .msg-note .h svg{width:11px;height:11px;stroke-width:2.5}
 .msg-note .b2{font-size:12.5px;line-height:1.5;color:#8A5510;white-space:pre-wrap}
 .msg-note .m{font-size:10.5px;color:#B08430;margin-top:5px}
+.msg-note-del{margin-left:auto;color:var(--a11);opacity:.55;background:none;border:none;cursor:pointer;display:flex;padding:2px;border-radius:5px;transition:.14s var(--e)}
+.msg-note-del:hover{opacity:1;background:rgba(161,92,7,.12)}
+.msg-note-del svg{width:11px;height:11px;stroke-width:2.2}
 .msg-blocked{flex-shrink:0;padding:12px 14px;background:var(--r3);display:flex;gap:9px;align-items:flex-start;box-shadow:inset 0 .5px 0 rgba(0,0,0,.07)}
 .msg-blocked svg{width:15px;height:15px;stroke-width:2.2;color:var(--r11);margin-top:1px;flex-shrink:0}
 .msg-blocked .t{font-size:12px;font-weight:600;color:var(--r11)}
 .msg-blocked .s{font-size:11.5px;color:#A8484C;margin-top:2px;line-height:1.45}
 .msg-cmp{flex-shrink:0;padding:9px 10px 10px;display:flex;flex-direction:column;gap:6px;background:var(--panel2);box-shadow:inset 0 .5px 0 rgba(0,0,0,.06)}
+.msg-cmp-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .msg-note-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3);cursor:pointer;user-select:none}
 .msg-note-toggle input{margin:0}
+.msg-emoji-anchor{position:relative;display:flex}
+.msg-emoji-btn{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;cursor:pointer;background:none;border:none;transition:.14s var(--e)}
+.msg-emoji-btn:hover{background:var(--panel3)}
+.msg-emoji-panel{position:absolute;bottom:30px;right:0;width:236px;max-height:220px;overflow-y:auto;background:var(--panel);border-radius:12px;box-shadow:var(--sh-2);padding:10px;z-index:20}
+.msg-emoji-grp{font-size:9.5px;font-weight:650;letter-spacing:.06em;color:var(--ink4);margin:8px 0 5px;text-transform:uppercase}
+.msg-emoji-grp:first-child{margin-top:0}
+.msg-emoji-row{display:flex;flex-wrap:wrap;gap:2px}
+.msg-emoji-row button{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;cursor:pointer;background:none;border:none;transition:.12s var(--e)}
+.msg-emoji-row button:hover{background:var(--v3)}
 .msg-cmpr{display:flex;align-items:flex-end;gap:8px}
 .msg-box{flex:1;display:flex;align-items:flex-end;border-radius:17px;box-shadow:0 0 0 1px var(--line2);padding:6px 6px 6px 12px;background:#fff;transition:.18s var(--e)}
 .msg-box:focus-within{box-shadow:0 0 0 1.5px var(--v9)}
@@ -473,11 +486,32 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .mt-sl{font-size:10px;font-weight:650;letter-spacing:.08em;color:var(--ink4);margin:16px 0 8px;display:flex;align-items:center;justify-content:space-between}
 .mt-sl:first-child{margin-top:0}
 .mt-sl button{font-size:11px;font-weight:600;color:var(--v11)}
-.mt-ctx{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px}
+/* stage 6.2, rows expand: .mt-ctx wraps a clickable .mt-ctx-row summary and
+   an optional .mt-ctx-detail dropdown, one open at a time. */
+.mt-ctx{border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px;overflow:hidden}
+.mt-ctx-row{display:flex;align-items:center;gap:10px;padding:9px 11px;cursor:pointer}
 .mt-ctx-ic{width:25px;height:25px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mt-ctx-ic svg{width:12.5px;height:12.5px;stroke-width:2.4}
 .mt-ctx-n{font-size:12.5px;font-weight:500;flex:1}
 .mt-ctx-d{font-size:11.5px;color:var(--ink4);font-variant-numeric:tabular-nums}
+.mt-ctx-chev{color:var(--ink5);display:flex;flex-shrink:0;transition:transform .15s var(--e)}
+.mt-ctx-chev svg{width:11px;height:11px;stroke-width:2.4}
+.mt-ctx.open .mt-ctx-chev{transform:rotate(90deg)}
+.mt-ctx-detail{padding:0 11px 11px;box-shadow:inset 0 1px 0 var(--line)}
+/* stage 6.3, outstanding compliance items inside the compliance row's detail */
+.mt-out{display:flex;align-items:center;gap:8px;padding:8px 0;box-shadow:inset 0 -1px 0 var(--line)}
+.mt-out:last-child{box-shadow:none;padding-bottom:0}
+.mt-out:first-child{padding-top:9px}
+.mt-out-bd{flex:1;min-width:0;font-size:12px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mt-out-chip{font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:5px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.mt-out-chip.r{background:var(--r3);color:var(--r11)}
+.mt-out-chip.a{background:var(--a3);color:var(--a11)}
+.mt-out-chip.gy{background:var(--panel3);color:var(--ink3)}
+.mt-out-chase{font-size:10.5px;font-weight:600;color:var(--v11);padding:3px 8px;border-radius:6px;flex-shrink:0;background:none;border:none;cursor:pointer;transition:.14s var(--e)}
+.mt-out-chase:hover{background:var(--v4)}
+.mt-out-plain{font-size:11.5px;color:var(--ink3);line-height:1.5;padding-top:9px}
+.mt-out-link{font-size:11px;font-weight:600;color:var(--v11);margin-top:6px;background:none;border:none;cursor:pointer;padding:0;display:block}
+.mt-out-link:hover{text-decoration:underline}
 .mt-note{background:var(--a3);border-radius:9px;padding:11px 12px;box-shadow:inset 0 0 0 1px rgba(245,165,36,.2);margin-bottom:6px}
 .mt-note-h{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--a11);margin-bottom:5px;text-transform:uppercase}
 .mt-note-h svg{width:11px;height:11px;stroke-width:2.5}
@@ -524,8 +558,12 @@ textarea.mt-inp{resize:vertical;min-height:78px;line-height:1.5}
 .mt-job.on{box-shadow:0 0 0 1.5px var(--v9);background:var(--v3)}
 .mt-job-t{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .mt-job-m{font-size:11.5px;color:var(--ink3);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap}
-.mt-job-m .sp{color:var(--ink5)}
+.mt-job-m .sp,.mt-promo-sel-m .sp{color:var(--ink5)}
 .mt-jmatch{font-size:10px;font-weight:650;padding:2px 7px;border-radius:5px;background:var(--g3);color:var(--g11)}
+/* stage 6.1, the compact selected-role header shown above the compose panel */
+.mt-promo-sel{padding:10px 11px;border-radius:9px;box-shadow:0 0 0 1.5px var(--v9);background:var(--v3);margin-bottom:6px}
+.mt-promo-sel-t{font-size:12.5px;font-weight:600}
+.mt-promo-sel-m{font-size:11.5px;color:var(--ink3);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
 .mt-opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .mt-opt{font-size:11.5px;font-weight:500;padding:5px 10px;border-radius:7px;cursor:pointer;transition:.14s var(--e);box-shadow:var(--sh-b);background:var(--panel2);color:var(--ink3);border:none}
 .mt-opt.on{background:var(--v4);color:var(--v11);box-shadow:0 0 0 1px var(--v6);font-weight:600}
@@ -2078,7 +2116,8 @@ var I={
   photo:_svg('<rect x="3.75" y="4.5" width="16.5" height="15" rx="1.5"/><circle cx="8.25" cy="9" r="1.25"/><path d="M20.25 15.75l-4.5-4.5-3.75 3.75-2.25-2.25-4.5 4.5"/>'),
   archive:_svg('<rect x="3.75" y="4.5" width="16.5" height="4.5" rx="1"/><path d="M5.25 9v9a1.5 1.5 0 001.5 1.5h10.5a1.5 1.5 0 001.5-1.5V9M9.75 13.5h4.5"/>'),
   case:_svg('<rect x="3" y="7.5" width="18" height="12" rx="1.5"/><path d="M8.25 7.5V6a1.5 1.5 0 011.5-1.5h4.5A1.5 1.5 0 0115.75 6v1.5"/><path d="M3 12.75h18"/>'),
-  msg:_svg('<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>')
+  msg:_svg('<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>'),
+  trash:_svg('<path d="M14.74 9l-.346 9m-4.788 0L9.26 9M19.228 5.79c.339.049.68.101 1.02.157m-1.02-.157L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.6.223c.34-.059.68-.114 1.02-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>')
 };
 function ico(svg,px,color){var st='width:'+(px||14)+'px;height:'+(px||14)+'px'+(color?';stroke:'+color:'')+';flex-shrink:0;vertical-align:middle';return svg.replace('<svg ','<svg style="'+st+'" ');}
 // Shared metric-tile renderer (style pass) -- one definition used by
@@ -5340,7 +5379,26 @@ function downloadCvPdf(){
 
 // ── Messages ───────────────────────────────────────────────────────────────
 // Sending is stubbed this round, there is no SMS provider connected yet.
-function msgSegments(n){return n<=0?1:(n<=160?1:Math.ceil(n/153));}
+// GSM 03.38 default alphabet plus the extension table (each extension char
+// still costs one alphabet slot for encoding purposes, it is the SMS layer
+// that spends two septets on it). Any character outside this set forces the
+// whole message to UCS-2, which is what actually happens to a text carrying
+// an emoji, so segment length must be computed from the text, not just its
+// character count.
+var GSM7_BASIC="@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
+var GSM7_EXT="^{}\\[~]|€";
+function isGsmChar(ch){return GSM7_BASIC.indexOf(ch)!==-1||GSM7_EXT.indexOf(ch)!==-1;}
+function isGsmText(s){
+  for(var i=0;i<s.length;i++){if(!isGsmChar(s.charAt(i)))return false;}
+  return true;
+}
+function msgSegments(text){
+  text=String(text||'');
+  var n=text.length;
+  if(n===0)return 1;
+  if(isGsmText(text))return n<=160?1:Math.ceil(n/153);
+  return n<=70?1:Math.ceil(n/67);
+}
 function msgRefreshUI(){
   if(curPage==='candidateprofile')renderCandPage();
   else if(curPage==='messages')renderMessagesHub();
@@ -5356,7 +5414,7 @@ function sendMessage(candidateId,body){
   if(!body)return Promise.resolve({error:{message:'Message is empty'}});
   var localId='tmp-'+Date.now();
   var msg={id:localId,direction:'out',body:body,status:'pending',author:CU.name,
-    createdAt:new Date().toISOString(),readAt:'',segments:msgSegments(body.length),_synced:false};
+    createdAt:new Date().toISOString(),readAt:'',segments:msgSegments(body),_synced:false};
   if(!c.messages)c.messages=[];
   c.messages.push(msg);
   msgRefreshUI();
@@ -5403,6 +5461,7 @@ function addNote(candidateId,body){
       return r;
     }
     msg.id=r.data.id;msg._synced=true;
+    msgRefreshUI();
     return{data:msg};
   });
 }
@@ -5453,13 +5512,16 @@ function msgStatusLabel(m){
   if(m.status==='failed')return 'Not delivered';
   return m.status||'';
 }
-function msgNoteHtml(m){
+function msgNoteHtml(cid,m){
   var meta=(m.author||'Staff')+(m.createdAt?', '+msgDayLabel(m.createdAt).toLowerCase():'');
-  return '<div class="msg-note"><div class="h">'+I.pencil+'Not visible to candidate</div>'
+  return '<div class="msg-note"><div class="h">'+I.pencil+'Not visible to candidate'
+    +'<button type="button" class="msg-note-del" title="Delete note" onclick="event.stopPropagation();msgDeleteNote('+cid+',&apos;'+jsAttrEsc(m.id)+'&apos;)">'+I.trash+'</button>'
+    +'</div>'
     +'<div class="b2">'+esc(m.body)+'</div>'
     +'<div class="m">'+esc(meta)+'</div></div>';
 }
-function msgThreadBody(msgs){
+function msgThreadBody(c){
+  var msgs=c.messages||[];
   if(!msgs.length)return '';
   var html='',lastDay='';
   msgs.forEach(function(m,i){
@@ -5468,7 +5530,7 @@ function msgThreadBody(msgs){
       html+='<div class="msg-tstamp"><b>'+esc(msgDayLabel(m.createdAt))+'</b></div>';
       lastDay=day;
     }
-    if(m.direction==='note'){html+=msgNoteHtml(m);return;}
+    if(m.direction==='note'){html+=msgNoteHtml(c.id,m);return;}
     var isOut=m.direction==='out';
     var next=msgs[i+1];
     var nextDay=next&&next.createdAt?next.createdAt.slice(0,10):null;
@@ -5494,10 +5556,80 @@ function msgBlockedHtml(c){
     +action
     +'</div></div>';
 }
+// Emoji picker, stage 5. Native unicode only, no external asset or library.
+// A handful of curated groups is enough, inserted at the cursor rather than
+// appended, so it works mid sentence in either the SMS or the note composer
+// (same textarea, id msgBox, either way).
+var MSG_EMOJI={
+  'Smileys':['😀','😁','😂','🙂','😉','😊','😍','😘','😜','🤔','😐','😴','😢','😭','😅','😎','🥳','😇','😬','😳'],
+  'Gestures':['👍','👎','👏','🙌','🙏','👋','✌️','🤝','💪','👌','🤞','✊','👊','🤙','☝️'],
+  'Hearts':['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💕','💗','💖','💔'],
+  'Objects':['📅','⏰','📍','📎','📞','✉️','📱','💼','🏥','🚗','✈️','⭐','🔥','✅','❌','⚠️']
+};
+var msgEmojiOpen=false;
+function msgEmojiReset(){
+  document.removeEventListener('click',msgEmojiOutsideClick);
+  document.removeEventListener('keydown',msgEmojiEscClose);
+  msgEmojiOpen=false;
+}
+function msgToggleEmoji(e){
+  if(e)e.stopPropagation();
+  msgEmojiOpen=!msgEmojiOpen;
+  msgRenderEmojiPanel();
+  if(msgEmojiOpen){
+    setTimeout(function(){
+      document.addEventListener('click',msgEmojiOutsideClick);
+      document.addEventListener('keydown',msgEmojiEscClose);
+    },0);
+  }else{
+    document.removeEventListener('click',msgEmojiOutsideClick);
+    document.removeEventListener('keydown',msgEmojiEscClose);
+  }
+}
+function msgCloseEmoji(){
+  document.removeEventListener('click',msgEmojiOutsideClick);
+  document.removeEventListener('keydown',msgEmojiEscClose);
+  if(!msgEmojiOpen)return;
+  msgEmojiOpen=false;
+  msgRenderEmojiPanel();
+}
+function msgEmojiOutsideClick(e){
+  var panel=document.getElementById('msgEmojiPanel');
+  var btn=document.getElementById('msgEmojiBtn');
+  if(panel&&(panel.contains(e.target)||(btn&&btn.contains(e.target))))return;
+  msgCloseEmoji();
+}
+function msgEmojiEscClose(e){if(e.key==='Escape')msgCloseEmoji();}
+function msgRenderEmojiPanel(){
+  var wrap=document.getElementById('msgEmojiWrap');
+  if(!wrap)return;
+  if(!msgEmojiOpen){wrap.innerHTML='';return;}
+  var html='<div class="msg-emoji-panel" id="msgEmojiPanel">'+Object.keys(MSG_EMOJI).map(function(g){
+    return '<div class="msg-emoji-grp">'+esc(g)+'</div><div class="msg-emoji-row">'
+      +MSG_EMOJI[g].map(function(em){return '<button type="button" onclick="msgInsertEmoji(&apos;'+em+'&apos;)">'+em+'</button>';}).join('')
+      +'</div>';
+  }).join('')+'</div>';
+  wrap.innerHTML=html;
+}
+function msgInsertEmoji(ch){
+  var box=document.getElementById('msgBox');
+  if(!box)return;
+  var start=box.selectionStart==null?box.value.length:box.selectionStart;
+  var end=box.selectionEnd==null?box.value.length:box.selectionEnd;
+  box.value=box.value.slice(0,start)+ch+box.value.slice(end);
+  var pos=start+ch.length;
+  box.focus();
+  box.setSelectionRange(pos,pos);
+  msgCnt();
+}
 function msgComposerHtml(c){
   var noteMode=msgMode==='note';
+  msgEmojiReset();
   return '<div class="msg-cmp">'
+    +'<div class="msg-cmp-top">'
     +'<label class="msg-note-toggle"><input type="checkbox" '+(noteMode?'checked':'')+' onchange="msgToggleMode('+c.id+')">Internal note</label>'
+    +'<div class="msg-emoji-anchor"><button type="button" class="msg-emoji-btn" id="msgEmojiBtn" title="Insert emoji" onclick="msgToggleEmoji(event)">&#128578;</button><div id="msgEmojiWrap"></div></div>'
+    +'</div>'
     +'<div class="msg-cmpr">'
     +'<div class="msg-box" style="'+(noteMode?'background:var(--a3);box-shadow:inset 0 0 0 1px rgba(245,165,36,.3)':'')+'">'
     +'<textarea id="msgBox" rows="1" placeholder="'+(noteMode?'Internal note, not visible to the candidate':'Text message')+'" oninput="msgCnt('+c.id+')" onkeydown="msgKeydown(event,'+c.id+')"></textarea>'
@@ -5530,8 +5662,7 @@ function msgBannerHtml(){
     +'<div class="msg-banner-tx"><div class="msg-banner-a" id="msgBannerA"></div><div class="msg-banner-b" id="msgBannerB"></div></div></div>';
 }
 function renderMsgThread(c){
-  var msgs=c.messages||[];
-  var body=msgThreadBody(msgs)||'<div class="cvb-pend" style="margin:16px">No messages yet.</div>';
+  var body=msgThreadBody(c)||'<div class="cvb-pend" style="margin:16px">No messages yet.</div>';
   var composer=c.smsConsent?msgComposerHtml(c):msgBlockedHtml(c);
   var devTool=(CU&&CU.role==='ops')
     ?'<div class="msg-dev"><button type="button" onclick="msgSimulateInbound('+c.id+')">Dev: simulate inbound reply</button></div>'
@@ -5551,7 +5682,7 @@ function msgCnt(cid){
       cntsEl.textContent='Internal note, not sent by SMS';
       cntsEl.classList.remove('warn');
     }else{
-      var segs=msgSegments(n);
+      var segs=msgSegments(v);
       cntsEl.textContent=n+' chars, '+segs+' segment'+(segs>1?'s':'');
       cntsEl.classList.toggle('warn',segs>1);
     }
@@ -5572,6 +5703,23 @@ function msgSend(cid){
   var fn=noteMode?addNote:sendMessage;
   fn(cid,v).then(function(r){
     if(r.error)showToast((noteMode?'Could not save note: ':'Could not send message: ')+r.error.message,'err');
+  });
+}
+// Notes only, stage 5. Outbound and inbound SMS stay an immutable log of what
+// was actually sent or received, so there is no delete path for those here.
+function msgDeleteNote(cid,mid){
+  var c=candidates.find(function(x){return x.id===cid;});
+  if(!c)return;
+  var msg=(c.messages||[]).find(function(m){return m.direction==='note'&&String(m.id)===String(mid);});
+  if(!msg)return;
+  showConfirm({title:'Delete this note?',message:'This cannot be undone.',confirmLabel:'Delete'},function(){
+    c.messages=c.messages.filter(function(m){return m!==msg;});
+    msgRefreshUI();
+    if(typeof msg.id==='number'){
+      sb.from('messages').delete().eq('id',msg.id).then(function(r){
+        if(r.error){showToast('Could not delete note: '+r.error.message,'err');console.error('[DB] note delete',r.error);}
+      });
+    }
   });
 }
 
@@ -5643,6 +5791,7 @@ function msgHubPick(id){
   var freshIn=c?msgLastUnreadIn(c):null;
   if(c)msgMarkThreadRead(c);
   msgMode='message';
+  mtCtxOpen=null;
   renderMessagesHub();
   if(c&&freshIn)msgShowBanner(c,freshIn);
 }
@@ -5711,19 +5860,100 @@ function mtRenderAll(){
   document.getElementById('mt-tpl').innerHTML=mtTplHtml(c);
   document.getElementById('mt-promo').innerHTML=mtPromoHtml(c);
 }
-function mtCtxRowHtml(iconSvg,bg,fg,label,val){
-  return '<div class="mt-ctx"><div class="mt-ctx-ic" style="background:'+bg+';color:'+fg+'">'+iconSvg+'</div><div class="mt-ctx-n">'+label+'</div><div class="mt-ctx-d">'+val+'</div></div>';
+// Stage 6.2: rows are expandable, one open at a time, click again (or click
+// another row) to collapse. The collapsed row keeps its summary value so the
+// rail stays glanceable either way.
+var mtCtxOpen=null;
+function mtCtxToggle(key){
+  mtCtxOpen=(mtCtxOpen===key)?null:key;
+  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+  if(!c)return;
+  var el=document.getElementById('mt-ctx');
+  if(el)el.innerHTML=mtCtxHtml(c);
+}
+function mtCtxRowHtml(key,iconSvg,bg,fg,label,val,detailHtml){
+  var open=mtCtxOpen===key;
+  return '<div class="mt-ctx'+(open?' open':'')+'">'
+    +'<div class="mt-ctx-row" onclick="mtCtxToggle(&apos;'+key+'&apos;)">'
+    +'<div class="mt-ctx-ic" style="background:'+bg+';color:'+fg+'">'+iconSvg+'</div>'
+    +'<div class="mt-ctx-n">'+label+'</div><div class="mt-ctx-d">'+val+'</div>'
+    +'<div class="mt-ctx-chev">'+I.chevron+'</div>'
+    +'</div>'
+    +(open?'<div class="mt-ctx-detail" onclick="event.stopPropagation()">'+detailHtml+'</div>':'')
+    +'</div>';
+}
+// Stage 6.3, the flagship no double handling fix. Reuses the same compliance
+// breakdown model the Compliance tab runs on (getCmpItems / compItemDone /
+// ddiff), it does not reinvent it, just filters down to what still needs
+// attention: anything not done, or done but expiring inside the same 60 day
+// window getAutos already warns on.
+function mtCtxOutstanding(c){
+  var items=(c.compliance&&c.compliance.items)||{};
+  return getCmpItems(c).map(function(ci){
+    var it=items[ci.key]||{};
+    var done=compItemDone(it);
+    var d=it.expiry?ddiff(it.expiry):null;
+    var expired=d!==null&&d<0;
+    var expiringSoon=d!==null&&d>=0&&d<=60;
+    if(done&&!expired&&!expiringSoon)return null;
+    return{key:ci.key,label:ci.label,status:it.status||'Not Started',expiry:it.expiry||null,expired:expired,expiringSoon:expiringSoon,days:d};
+  }).filter(Boolean);
+}
+function mtCtxOutChipHtml(o){
+  if(o.expired)return '<span class="mt-out-chip r">Expired '+Math.abs(o.days)+'d ago</span>';
+  if(o.expiringSoon)return '<span class="mt-out-chip a">Expires '+fmt(o.expiry)+'</span>';
+  return '<span class="mt-out-chip gy">'+esc(o.status)+'</span>';
+}
+function mtCtxOutRowHtml(c,o){
+  return '<div class="mt-out">'
+    +'<div class="mt-out-bd">'+esc(o.label)+'</div>'
+    +mtCtxOutChipHtml(o)
+    +'<button class="mt-out-chase" onclick="event.stopPropagation();mtCtxChase('+c.id+',&apos;'+jsAttrEsc(o.key)+'&apos;)">Chase</button>'
+    +'</div>';
+}
+// One click chase, stage 6.3's inline action. Forces message mode (a chase is
+// an SMS to the candidate, never a note) and inserts straight into the
+// composer, same insert-and-focus pattern tplInsert already uses.
+function mtCtxChase(cid,key){
+  var c=candidates.find(function(x){return x.id===cid;});
+  if(!c)return;
+  var item=getCmpItems(c).find(function(i){return i.key===key;});
+  var label=item?item.label:'credential';
+  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
+  msgMode='message';
+  msgRefreshUI();
+  var box=document.getElementById('msgBox');
+  if(!box)return;
+  box.value='Hi '+first+', your '+label+' needs sorting before we can place you. Can you send the updated document through this week?';
+  msgCnt(cid);
+  box.focus();
+  showToast('Chase for '+label+' inserted.');
+}
+function smsConsentSummaryLine(c){
+  var acts=(c.activity||[]).filter(function(a){return /^SMS consent/.test(a.content||'');});
+  var lastAct=acts.length?acts[acts.length-1]:null;
+  var byName=lastAct?lastAct.author:null;
+  if(c.smsConsent)return 'Consent given '+fmt(c.smsConsentAt)+(byName?' by '+byName:'');
+  if(c.smsOptedOutAt)return 'Opted out '+fmt(c.smsOptedOutAt);
+  return 'No SMS consent recorded yet';
 }
 function mtCtxHtml(c){
   var sc=cmpScore(c);
   var compBg=sc>=90?'var(--g3)':sc>=75?'var(--a3)':'var(--r3)';
   var compFg=sc>=90?'var(--g11)':sc>=75?'var(--a11)':'var(--r11)';
   var states=(c.statesOpen&&c.statesOpen.length)?c.statesOpen.join(', '):(c.state||'Not set');
+  var outstanding=mtCtxOutstanding(c);
   var h='<div class="mt-sl">CANDIDATE</div>';
-  h+=mtCtxRowHtml(I.person,'var(--v4)','var(--v11)',esc(c.classification||'Classification not set'),esc(states));
-  h+=mtCtxRowHtml(I.chk,compBg,compFg,'Compliance',sc+'%');
-  h+=mtCtxRowHtml(I.cal,'var(--g3)','var(--g11)','Available',c.availableFrom?fmt(c.availableFrom):'Not set');
-  h+=mtCtxRowHtml(I.chk,c.smsConsent?'var(--g3)':'var(--r3)',c.smsConsent?'var(--g11)':'var(--r11)','SMS consent',c.smsConsent?'Opted in':'Opted out');
+  h+=mtCtxRowHtml('candidate',I.person,'var(--v4)','var(--v11)',esc(c.classification||'Classification not set'),esc(states),
+    '<div class="mt-out-plain">'+esc(c.classification||'Classification not set')+', open to '+esc(states)+'.</div>'
+    +'<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">View full profile</button>');
+  h+=mtCtxRowHtml('compliance',I.chk,compBg,compFg,'Compliance',sc+'%'+(outstanding.length?' &middot; '+outstanding.length+' outstanding':''),
+    outstanding.length?outstanding.map(function(o){return mtCtxOutRowHtml(c,o);}).join(''):'<div class="mt-out-plain">All requirements verified.</div>');
+  h+=mtCtxRowHtml('available',I.cal,'var(--g3)','var(--g11)','Available',c.availableFrom?fmt(c.availableFrom):'Not set',
+    '<div class="mt-out-plain">'+candGridAvailHtml(c)+'</div>');
+  h+=mtCtxRowHtml('consent',I.chk,c.smsConsent?'var(--g3)':'var(--r3)',c.smsConsent?'var(--g11)':'var(--r11)','SMS consent',c.smsConsent?'Opted in':'Opted out',
+    '<div class="mt-out-plain">'+esc(smsConsentSummaryLine(c))+'</div>'
+    +'<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">Manage on profile</button>');
   var note=msgLastNote(c);
   if(note){
     h+='<div class="mt-sl">INTERNAL NOTE</div><div class="mt-note"><div class="mt-note-h">'+I.pencil+'NOT VISIBLE TO CANDIDATE</div>'
@@ -5795,30 +6025,42 @@ function mtPromoTogglesHtml(role){
     return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;)"')+'>'+o[1]+'</span>';
   }).join('')+'</div>';
 }
+// Stage 6.1: with a role picked, the compose panel (toggles, preview, counter,
+// send buttons) renders at the top of the tab, not appended after the full
+// role list. With ten or more open roles the appended panel used to land
+// below the fold, so clicking a role looked like it did nothing.
 function mtPromoHtml(c){
   var openRoles=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';});
   var first=(c.name||'').split(' ')[0]||'this candidate';
-  var h='<div class="mt-sl">PICK A ROLE</div>';
-  if(!openRoles.length)return h+'<div class="mt-empty">No open roles yet. Add roles via the Job Board.</div>';
+  if(!openRoles.length)return '<div class="mt-sl">PICK A ROLE</div><div class="mt-empty">No open roles yet. Add roles via the Job Board.</div>';
+  var role=msgPromoRoleId?roles.find(function(r){return r.id===msgPromoRoleId;}):null;
+  if(role){
+    var fac=facilities.find(function(f){return f.id===role.facilityId;});
+    var dates=role.startDate?(fmt(role.startDate)+' to '+(role.endDate?fmt(role.endDate):'TBC')):'Dates TBC';
+    var h='<div class="mt-sl">JOB PROMO<button onclick="msgPromoPick(null)">Pick a different role</button></div>';
+    h+='<div class="mt-promo-sel"><div class="mt-promo-sel-t">'+esc(fac&&fac.name?fac.name:'Facility TBC')+'</div>'
+      +'<div class="mt-promo-sel-m">'+esc(role.ward||'Ward TBC')+'<span class="sp">&middot;</span>'+esc(dates)+(fac&&fac.state?'<span class="sp">&middot;</span>'+esc(fac.state):'')+'</div></div>';
+    h+='<div class="mt-sl">INCLUDE</div>'+mtPromoTogglesHtml(role);
+    var txt=msgPromoText(role,c,msgPromoOpts);
+    var n=txt.length,segs=msgSegments(txt);
+    h+='<div class="mt-prev"><div class="mt-prev-lb">SMS PREVIEW</div>'+esc(txt)+'</div>';
+    h+='<div class="mt-cnts"><span class="num">'+n+'</span> chars<div class="mt-strk"><div class="mt-sfil'+(segs>1?' warn':'')+'" style="width:'+Math.min(100,(n%160||(n?160:0))/160*100)+'%"></div></div><span class="num">'+segs+'</span> segment'+(segs>1?'s':'')
+      +(segs>1?'<span style="color:var(--a11);font-weight:600;margin-left:4px">costs '+segs+'x</span>':'')+'</div>';
+    var matchCount=roleMatchList(vc(),role).length;
+    h+='<div class="mt-btnrow"><button class="mt-btn p" style="flex:1" '+(c.smsConsent?'':'disabled')+' onclick="msgPromoSendOne('+role.id+')">Send to '+esc(first)+'</button>'
+      +'<button class="mt-btn s" onclick="msgPromoSendGroup('+role.id+')">Group ('+matchCount+')</button></div>';
+    if(!c.smsConsent)h+='<div style="font-size:11px;color:var(--r11);margin-top:9px;line-height:1.5">Blocked: '+esc(first)+' has opted out of SMS.</div>';
+    return h;
+  }
+  var h2='<div class="mt-sl">PICK A ROLE</div>';
   var tagged=openRoles.map(function(r){return{r:r,m:matchScore(c,r).score>0};});
   tagged.sort(function(a,b){return (b.m?1:0)-(a.m?1:0);});
-  h+=tagged.map(function(x){
+  h2+=tagged.map(function(x){
     var fac=facilities.find(function(f){return f.id===x.r.facilityId;});
     return mtPromoJobRowHtml(x.r,x.m,fac);
   }).join('');
-  var role=msgPromoRoleId?roles.find(function(r){return r.id===msgPromoRoleId;}):null;
-  if(!role)return h+'<div class="mt-empty">Pick a role to build a promo SMS. Roles matching '+esc(first)+"'s profile are tagged.</div>";
-  h+='<div class="mt-sl">INCLUDE</div>'+mtPromoTogglesHtml(role);
-  var txt=msgPromoText(role,c,msgPromoOpts);
-  var n=txt.length,segs=msgSegments(n);
-  h+='<div class="mt-prev"><div class="mt-prev-lb">SMS PREVIEW</div>'+esc(txt)+'</div>';
-  h+='<div class="mt-cnts"><span class="num">'+n+'</span> chars<div class="mt-strk"><div class="mt-sfil'+(segs>1?' warn':'')+'" style="width:'+Math.min(100,(n%160||(n?160:0))/160*100)+'%"></div></div><span class="num">'+segs+'</span> segment'+(segs>1?'s':'')
-    +(segs>1?'<span style="color:var(--a11);font-weight:600;margin-left:4px">costs '+segs+'x</span>':'')+'</div>';
-  var matchCount=roleMatchList(vc(),role).length;
-  h+='<div class="mt-btnrow"><button class="mt-btn p" style="flex:1" '+(c.smsConsent?'':'disabled')+' onclick="msgPromoSendOne('+role.id+')">Send to '+esc(first)+'</button>'
-    +'<button class="mt-btn s" onclick="msgPromoSendGroup('+role.id+')">Group ('+matchCount+')</button></div>';
-  if(!c.smsConsent)h+='<div style="font-size:11px;color:var(--r11);margin-top:9px;line-height:1.5">Blocked: '+esc(first)+' has opted out of SMS.</div>';
-  return h;
+  h2+='<div style="font-size:11.5px;color:var(--ink4);margin-top:14px;line-height:1.55">Pick a role to build a promo SMS. Roles matching '+esc(first)+"'s profile are tagged.</div>";
+  return h2;
 }
 function mtRenderPromo(){
   var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
@@ -5991,7 +6233,7 @@ function tplUpdatePreview(){
   if(prevEl)prevEl.textContent=merged||'Nothing to preview yet.';
   var cntEl=document.getElementById('tplCnt');
   if(cntEl){
-    var segs=msgSegments(merged.length);
+    var segs=msgSegments(merged);
     cntEl.textContent=merged.length+' chars, '+segs+' segment'+(segs>1?'s':'');
     cntEl.classList.toggle('warn',segs>1);
   }

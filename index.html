@@ -1040,9 +1040,10 @@ textarea.tpl-input{resize:vertical;min-height:70px;line-height:1.4}
 <div id="confirm-ov" style="display:none;position:fixed;inset:0;background:rgba(10,10,20,.55);z-index:4000;align-items:center;justify-content:center" onclick="if(event.target===this)cancelConfirm()">
   <div id="confirm-box" style="background:#fff;border-radius:10px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div id="confirm-title" style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:8px"></div>
-    <div id="confirm-msg" style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:20px"></div>
+    <div id="confirm-msg" style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:20px;font-variant-numeric:tabular-nums"></div>
+    <div id="confirm-extra"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px">
-      <button class="btn btn-g" onclick="cancelConfirm()">Cancel</button>
+      <button id="confirm-cancel-btn" class="btn btn-g" onclick="cancelConfirm()">Cancel</button>
       <button id="confirm-btn" class="btn btn-d" onclick="confirmYes()">Delete</button>
     </div>
   </div>
@@ -1582,18 +1583,39 @@ Object.keys(_OVERLAY_CONTAINERS).forEach(function(id){
 });
 
 // ── CONFIRM DIALOG ──────────────────────────────────────────────────────────
-var _confirmCallback=null;
+var _confirmCallback=null,_confirmCancelCallback=null;
+// opts.extraHtml and opts.cancelLabel/opts.onCancel are optional, every
+// existing call site that omits them gets the exact old behaviour, plain
+// title, message, Cancel button that does nothing, and the danger/confirm
+// button. Added for the ward orphan reassign prompt so it can inject a
+// dropdown and run a callback when the operator picks "leave as is",
+// without every other confirm dialog in the file having to know about that.
 function showConfirm(opts,onYes){
   _confirmCallback=onYes;
+  _confirmCancelCallback=opts.onCancel||null;
   document.getElementById('confirm-title').textContent=opts.title||'Are you sure?';
   document.getElementById('confirm-msg').textContent=opts.message||'';
+  var extra=document.getElementById('confirm-extra');
+  extra.innerHTML=opts.extraHtml||'';
+  extra.style.marginBottom=opts.extraHtml?'16px':'0';
+  document.getElementById('confirm-cancel-btn').textContent=opts.cancelLabel||'Cancel';
   var btn=document.getElementById('confirm-btn');
   btn.textContent=opts.confirmLabel||'Delete';
   btn.className='btn '+(opts.danger===false?'btn-p':'btn-d');
   document.getElementById('confirm-ov').style.display='flex';
 }
-function cancelConfirm(){document.getElementById('confirm-ov').style.display='none';_confirmCallback=null;}
-function confirmYes(){var cb=_confirmCallback;document.getElementById('confirm-ov').style.display='none';_confirmCallback=null;if(cb)cb();}
+function cancelConfirm(){
+  var cb=_confirmCancelCallback;
+  document.getElementById('confirm-ov').style.display='none';
+  _confirmCallback=null;_confirmCancelCallback=null;
+  if(cb)cb();
+}
+function confirmYes(){
+  var cb=_confirmCallback;
+  document.getElementById('confirm-ov').style.display='none';
+  _confirmCallback=null;_confirmCancelCallback=null;
+  if(cb)cb();
+}
 
 // ── RECENTLY VIEWED ─────────────────────────────────────────────────────────
 var recentlyViewed=[],recentMenuOpen=false;
@@ -11622,6 +11644,112 @@ function delCand(){
     EC=null;ECid=null;
   });
 }
+// Ward rename/reassign cascade, Build B part 2. Wards have no stable id, a
+// rename and a delete-then-add look identical, so this does not try to tell
+// them apart. Instead, once saveFac has written the new ward list, it scans
+// this facility's roles, submissions and contracts for any ward string that
+// no longer matches a current ward name, those are orphans, and asks per
+// distinct orphaned name whether to reassign every record holding it to a
+// current ward, or leave the string as is.
+var _woQueue=[],_woFacId=null;
+function checkWardOrphans(facId){
+  var fac=facilities.find(function(f){return f.id===facId;});
+  if(!fac)return;
+  var wardNames={};
+  (fac.wards||[]).forEach(function(w){wardNames[w.name]=true;});
+  var counts={};
+  roles.forEach(function(r){
+    if(r.facilityId===facId&&r.ward&&!wardNames[r.ward])counts[r.ward]=(counts[r.ward]||0)+1;
+  });
+  candidates.forEach(function(c){
+    (c.submissions||[]).forEach(function(s){
+      if(s.facilityId===facId&&s.ward&&!wardNames[s.ward])counts[s.ward]=(counts[s.ward]||0)+1;
+    });
+    (c.contracts||[]).forEach(function(k){
+      if(k.facilityId===facId&&k.ward&&!wardNames[k.ward])counts[k.ward]=(counts[k.ward]||0)+1;
+    });
+  });
+  var names=Object.keys(counts).sort();
+  if(!names.length)return;
+  _woFacId=facId;
+  _woQueue=names.map(function(n){return{name:n,count:counts[n]};});
+  woNext();
+}
+// Runs the queue through the shared confirm dialog, one at a time. "Leave as
+// is" reuses the dialog's Cancel path via onCancel, so both the button and
+// clicking outside the overlay land on the same safe no-op, then advance.
+function woNext(){
+  if(!_woQueue.length)return;
+  var item=_woQueue[0];
+  var fac=facilities.find(function(f){return f.id===_woFacId;})||{wards:[]};
+  var currentWards=fac.wards||[];
+  var extraHtml=currentWards.length
+    ?'<div class="fg" style="margin-bottom:0"><label>Reassign to</label>'
+      +'<select id="wo-select" style="border:none;box-shadow:var(--sh-b)">'
+      +currentWards.map(function(w){return '<option value="'+esc(w.name)+'">'+esc(w.name)+'</option>';}).join('')
+      +'</select></div>'
+    :'';
+  showConfirm({
+    title:'"'+item.name+'" is no longer a ward here',
+    message:item.count+' record'+(item.count!==1?'s':'')+' use it.',
+    extraHtml:extraHtml,
+    cancelLabel:'Leave as is',
+    confirmLabel:currentWards.length?'Reassign':'OK',
+    danger:false,
+    onCancel:woAdvance
+  },function(){
+    if(currentWards.length){
+      var sel=document.getElementById('wo-select');
+      var newName=sel&&sel.value;
+      if(newName)wardOrphanReassign(_woFacId,item.name,newName,item.count);
+    }
+    woAdvance();
+  });
+}
+function woAdvance(){
+  _woQueue.shift();
+  woNext();
+}
+// Local state is written first so the page reflects the move right away, no
+// manual refresh needed. Each table's Supabase update is a single statement
+// against the matched rows, so it either fully lands or fully fails, if it
+// fails, only that table's records are reverted back to oldName in memory
+// and re-rendered, with a toast naming which table failed, so memory and the
+// database never end up disagreeing without the operator being told.
+function wardOrphanReassign(facId,oldName,newName,count){
+  var matchedRoles=roles.filter(function(r){return r.facilityId===facId&&r.ward===oldName;});
+  var matchedSubs=[],matchedContracts=[];
+  candidates.forEach(function(c){
+    (c.submissions||[]).forEach(function(s){if(s.facilityId===facId&&s.ward===oldName)matchedSubs.push(s);});
+    (c.contracts||[]).forEach(function(k){if(k.facilityId===facId&&k.ward===oldName)matchedContracts.push(k);});
+  });
+  matchedRoles.forEach(function(r){r.ward=newName;});
+  matchedSubs.forEach(function(s){s.ward=newName;});
+  matchedContracts.forEach(function(k){k.ward=newName;});
+  renderPage();
+  sb.from('roles').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
+    if(r.error){
+      matchedRoles.forEach(function(x){x.ward=oldName;});renderPage();
+      showToast('Ward reassign failed for roles, reverted: '+r.error.message,'err');
+      console.error('[DB] ward reassign roles',r.error);
+    }
+  });
+  sb.from('submissions').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
+    if(r.error){
+      matchedSubs.forEach(function(x){x.ward=oldName;});renderPage();
+      showToast('Ward reassign failed for submissions, reverted: '+r.error.message,'err');
+      console.error('[DB] ward reassign submissions',r.error);
+    }
+  });
+  sb.from('contracts').update({ward:newName}).eq('facility_id',facId).eq('ward',oldName).then(function(r){
+    if(r.error){
+      matchedContracts.forEach(function(x){x.ward=oldName;});renderPage();
+      showToast('Ward reassign failed for contracts, reverted: '+r.error.message,'err');
+      console.error('[DB] ward reassign contracts',r.error);
+    }
+  });
+  showToast('Moved '+count+' record'+(count!==1?'s':'')+' to "'+newName+'"');
+}
 function saveFac(){
   if(!EF.name){showToast("Name required","err");return;}
   var dupe=facilities.find(function(f){return f.id!==EF.id&&f.name.toLowerCase().trim()===EF.name.toLowerCase().trim();});
@@ -11654,7 +11782,9 @@ function saveFac(){
         if(r.error){console.error('[DB] saveFac update',r.error);return Promise.reject(r.error);}
         return EFid;
       });
+    var savedFacId=null;
     writeFac.then(function(facId){
+      savedFacId=facId;
       return sb.from('wards').delete().eq('facility_id',facId).then(function(r){
         if(r.error){console.error('[DB] saveFac wards del',r.error);return;}
         if(!EF.wards||!EF.wards.length)return;
@@ -11665,6 +11795,7 @@ function saveFac(){
     }).then(function(r){
       if(r&&r.error)console.error('[DB] saveFac wards ins',r.error);
       showToast(EF.name+" saved");
+      if(savedFacId!=null)checkWardOrphans(savedFacId);
     }).catch(function(e){showToast("Save error","err");console.error('[DB] saveFac',e);});
     closeModal();renderPage();
   }

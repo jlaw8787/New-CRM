@@ -508,9 +508,9 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .mt-out-chip.r{background:var(--r3);color:var(--r11)}
 .mt-out-chip.a{background:var(--a3);color:var(--a11)}
 .mt-out-chip.gy{background:var(--panel3);color:var(--ink3)}
-.mt-out-chase{font-size:10.5px;font-weight:600;color:var(--v11);padding:3px 8px;border-radius:6px;flex-shrink:0;background:none;border:none;cursor:pointer;transition:.14s var(--e)}
-.mt-out-chase:hover{background:var(--v4)}
-.mt-out-chase:disabled{opacity:.4;cursor:not-allowed;background:none}
+.mt-out-cb{display:flex;align-items:center;flex-shrink:0}
+.mt-out-cb input{margin:0;width:14px;height:14px;cursor:pointer;accent-color:var(--v9)}
+.mt-out-cb input:disabled{cursor:not-allowed;opacity:.5}
 .mt-out-plain{font-size:11.5px;color:var(--ink3);line-height:1.5;padding-top:9px}
 .mt-out-link{font-size:11px;font-weight:600;color:var(--v11);margin-top:6px;background:none;border:none;cursor:pointer;padding:0;display:block}
 .mt-out-link:hover{text-decoration:underline}
@@ -5856,6 +5856,7 @@ function msgHubPick(id){
   if(c)msgMarkThreadRead(c);
   msgMode='message';
   mtCtxOpen=null;
+  mtChaseSel={};
   renderMessagesHub();
   mtPromoSyncComposer();
   if(c&&freshIn)msgShowBanner(c,freshIn);
@@ -5993,48 +5994,74 @@ function mtCtxOutChipHtml(o){
   if(o.expiringSoon)return '<span class="mt-out-chip a">Expires '+fmt(o.expiry)+'</span>';
   return '<span class="mt-out-chip gy">'+esc(o.status)+'</span>';
 }
-function mtCtxOutRowHtml(c,o,canChase){
-  return '<div class="mt-out">'
-    +'<div class="mt-out-bd">'+esc(o.label)+'</div>'
-    +mtCtxOutChipHtml(o)
-    +'<button class="mt-out-chase" '+(canChase?'':'disabled')+' onclick="event.stopPropagation();mtCtxChase('+c.id+',&apos;'+jsAttrEsc(o.key)+'&apos;)">Chase</button>'
-    +'</div>';
+// Selection persists across a rail re-render the same way mtCtxOpen does, a
+// plain module var scoped to whichever candidate's thread is open, cleared
+// on candidate switch in msgHubPick.
+var mtChaseSel={};
+function mtChaseToggleSel(key){
+  if(mtChaseSel[key])delete mtChaseSel[key];else mtChaseSel[key]=true;
+  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+  if(!c)return;
+  var el=document.getElementById('mt-ctx');
+  if(el)el.innerHTML=mtCtxHtml(c);
 }
-function mtCtxChaseText(c,label){
-  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
-  return 'Hi '+first+', your '+label+' needs sorting before we can place you. Can you send the updated document through this week?';
-}
-function mtCtxChaseAllText(c,labels){
-  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
-  var joined=labels.length>1?(labels.slice(0,-1).join(', ')+' and '+labels[labels.length-1]):labels[0];
-  return 'Hi '+first+', we still need '+joined+' before we can place you. Can you send these through this week?';
-}
-// One click chase, stage 6.3's inline action, same one composer draft path
-// the job promo panel uses (msgFillDraft), so it never clobbers a hand typed
-// message either.
-function mtCtxChase(cid,key){
+function mtChaseSelectAllToggle(cid){
   var c=candidates.find(function(x){return x.id===cid;});
   if(!c)return;
-  if(!c.smsConsent||c.doNotContact){showToast('No SMS consent, chase by call or an internal note instead.','err');return;}
-  var item=getCmpItems(c).find(function(i){return i.key===key;});
-  if(!item)return;
-  if(msgFillDraft(cid,mtCtxChaseText(c,item.label)))showToast('Chase for '+item.label+' inserted.');
+  var outstanding=mtCtxOutstanding(c);
+  var selCount=outstanding.filter(function(o){return mtChaseSel[o.key];}).length;
+  if(selCount>0&&selCount===outstanding.length)mtChaseSel={};
+  else outstanding.forEach(function(o){mtChaseSel[o.key]=true;});
+  var el=document.getElementById('mt-ctx');
+  if(el)el.innerHTML=mtCtxHtml(c);
 }
-function mtCtxChaseAll(cid){
+function mtCtxOutRowHtml(c,o,canChase){
+  var checked=!!mtChaseSel[o.key];
+  return '<div class="mt-out">'
+    +'<span class="mt-out-cb"><input type="checkbox" '+(checked?'checked ':'')+(canChase?'':'disabled ')+'onchange="mtChaseToggleSel(&apos;'+jsAttrEsc(o.key)+'&apos;)"></span>'
+    +'<div class="mt-out-bd">'+esc(o.label)+'</div>'
+    +mtCtxOutChipHtml(o)
+    +'</div>';
+}
+// Where a ticked item has an expiry, name the actual reason to chase it
+// (expired or expiring, with the date) rather than just the label, since
+// that is the useful part of the message.
+function mtChaseItemPhrase(o){
+  if(o.expired)return o.label+' (expired '+fmt(o.expiry)+')';
+  if(o.expiringSoon)return o.label+' (expiring '+fmt(o.expiry)+')';
+  return o.label;
+}
+function mtCtxChaseSelectedText(c,items){
+  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
+  var phrases=items.map(mtChaseItemPhrase);
+  var joined=phrases.length>1?(phrases.slice(0,-1).join(', ')+' and '+phrases[phrases.length-1]):phrases[0];
+  return 'Hi '+first+', we still need '+joined+' before we can place you. Can you send '+(items.length>1?'these':'this')+' through this week?';
+}
+// One build action for whatever is ticked, same one composer draft path the
+// job promo panel uses (msgFillDraft), so it never clobbers a hand typed
+// message either. Clears the selection once the draft actually lands.
+function mtCtxChaseSelected(cid){
   var c=candidates.find(function(x){return x.id===cid;});
   if(!c)return;
   if(!c.smsConsent||c.doNotContact){showToast('No SMS consent, chase by call or an internal note instead.','err');return;}
   var outstanding=mtCtxOutstanding(c);
-  if(!outstanding.length)return;
-  var labels=outstanding.map(function(o){return o.label;});
-  if(msgFillDraft(cid,mtCtxChaseAllText(c,labels)))showToast('Chase for '+outstanding.length+' items inserted.');
+  var selected=outstanding.filter(function(o){return mtChaseSel[o.key];});
+  if(!selected.length)return;
+  if(msgFillDraft(cid,mtCtxChaseSelectedText(c,selected))){
+    showToast('Chase for '+selected.length+' item'+(selected.length!==1?'s':'')+' inserted.');
+    mtChaseSel={};
+    var el=document.getElementById('mt-ctx');
+    if(el)el.innerHTML=mtCtxHtml(c);
+  }
 }
 function mtCtxComplianceDetailHtml(c,outstanding){
   if(!outstanding.length)return '<div class="mt-out-plain">All required items are complete.</div>';
   var canChase=c.smsConsent&&!c.doNotContact;
-  var h='';
-  if(outstanding.length>1)h+='<button class="mt-out-link" '+(canChase?'':'disabled')+' onclick="event.stopPropagation();mtCtxChaseAll('+c.id+')" style="margin-bottom:2px">Chase all ('+outstanding.length+')</button>';
+  var selCount=outstanding.filter(function(o){return mtChaseSel[o.key];}).length;
+  var allSelected=selCount>0&&selCount===outstanding.length;
+  var h='<button class="mt-out-link" '+(canChase?'':'disabled')+' onclick="event.stopPropagation();mtChaseSelectAllToggle('+c.id+')" style="margin-bottom:2px">'+(allSelected?'Clear selection':'Select all')+'</button>';
   h+=outstanding.map(function(o){return mtCtxOutRowHtml(c,o,canChase);}).join('');
+  h+='<button class="mt-btn p" style="margin-top:10px" '+((canChase&&selCount)?'':'disabled')+' onclick="event.stopPropagation();mtCtxChaseSelected('+c.id+')">Chase selected ('+selCount+')</button>';
   if(!canChase)h+='<div class="mt-out-plain">Opted out of SMS, chase by call or an internal note instead.</div>';
   return h;
 }
@@ -6101,9 +6128,29 @@ function mtTplHtml(c){
 // that whole namespace (promoIntro, renderPromoPanel, promoFactSheetOf, and
 // so on). Reuses promoFactSheetOf() for the real fact sheet link and
 // matchScore() (the same engine roleMatchList calls) for the MATCH tag.
-var msgPromoRoleId=null,msgPromoOpts={dates:true,rate:true,ward:true,link:true};
-function msgPromoPick(id){msgPromoRoleId=id;mtRenderPromo();mtPromoSyncComposer();}
+var msgPromoRoleId=null,msgPromoFacId=null,msgPromoQ='',
+  msgPromoOpts={dates:true,rate:true,ward:true,link:true,state:true,wards:true};
+function msgPromoPick(id){msgPromoRoleId=id;msgPromoFacId=null;mtRenderPromo();mtPromoSyncComposer();}
 function msgPromoToggle(key){msgPromoOpts[key]=!msgPromoOpts[key];mtRenderPromo();mtPromoSyncComposer();}
+// Facility only promo, no live role attached. Same lazy document fetch
+// promoPickFacility already uses on the email promo panel, so a facility
+// that has never been opened this session still resolves its real fact
+// sheet instead of silently looking like it has none.
+function msgPromoPickFac(id){
+  msgPromoFacId=id;msgPromoRoleId=null;
+  var fac=facilities.find(function(f){return f.id===id;});
+  if(fac&&sb&&!facFilesLoaded[fac.id]){
+    facFilesLoaded[fac.id]=true;
+    sb.from('documents').select('*').eq('facility_id',fac.id).then(function(r){
+      if(!r.error){
+        fac.documents=(r.data||[]).map(mapDocRow);
+        if(msgPromoFacId===fac.id){mtRenderPromo();mtPromoSyncComposer();}
+      }
+    });
+  }
+  mtRenderPromo();
+  mtPromoSyncComposer();
+}
 // Stage 6, the rail proposes, the composer sends. Loads the built promo text
 // into #msgBox as an editable draft rather than sending blind from the rail.
 // Goes through msgFillDraft so it never overwrites a hand typed message, and
@@ -6111,10 +6158,16 @@ function msgPromoToggle(key){msgPromoOpts[key]=!msgPromoOpts[key];mtRenderPromo(
 // composer to load into for them (msgBlockedHtml renders instead).
 function mtPromoSyncComposer(){
   var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
-  if(!c||!msgPromoRoleId||!c.smsConsent)return;
-  var role=roles.find(function(r){return r.id===msgPromoRoleId;});
-  if(!role)return;
-  msgFillDraft(c.id,msgPromoText(role,c,msgPromoOpts));
+  if(!c||!c.smsConsent)return;
+  if(msgPromoRoleId){
+    var role=roles.find(function(r){return r.id===msgPromoRoleId;});
+    if(role)msgFillDraft(c.id,msgPromoText(role,c,msgPromoOpts));
+    return;
+  }
+  if(msgPromoFacId){
+    var fac=facilities.find(function(f){return f.id===msgPromoFacId;});
+    if(fac)msgFillDraft(c.id,msgPromoFacText(fac,c,msgPromoOpts));
+  }
 }
 function msgPromoText(role,c,opts){
   var fac=facilities.find(function(f){return f.id===role.facilityId;})||{};
@@ -6131,6 +6184,25 @@ function msgPromoText(role,c,opts){
   t+=' Interested? Reply YES. Reply STOP to opt out.';
   return t;
 }
+// Facility only promo, no live role: no dates, no rate, since there is
+// nothing booked. State, a short ward summary and the fact sheet link (only
+// if the facility actually has one) are the optional inclusions instead.
+function msgPromoFacText(fac,c,opts){
+  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
+  var t='Hi '+first+', wanted to flag '+(fac.name||'a facility we work with');
+  if(opts.state&&fac.state)t+=', '+fac.state;
+  t+='.';
+  if(opts.wards){
+    var wardNames=(fac.wards||[]).map(function(w){return w.name;}).filter(Boolean);
+    if(wardNames.length)t+=' Wards there: '+wardNames.join(', ')+'.';
+  }
+  if(opts.link){
+    var fs=promoFactSheetOf(fac);
+    if(fs)t+=' Fact sheet: '+fs.fileUrl;
+  }
+  t+=' Want me to keep you in mind for roles there? Reply STOP to opt out.';
+  return t;
+}
 function mtPromoJobRowHtml(role,isMatch,fac){
   var dates=role.startDate?(fmt(role.startDate)+' to '+(role.endDate?fmt(role.endDate):'TBC')):'Dates TBC';
   return '<div class="mt-job'+(msgPromoRoleId===role.id?' on':'')+'" onclick="msgPromoPick('+role.id+')">'
@@ -6138,11 +6210,28 @@ function mtPromoJobRowHtml(role,isMatch,fac){
     +'<div class="mt-job-m">'+esc(role.ward||'Ward TBC')+'<span class="sp">&middot;</span>'+esc(dates)+(fac&&fac.state?'<span class="sp">&middot;</span>'+esc(fac.state):'')+'</div>'
     +'</div>';
 }
+// Facility search result row, no role attached. Picking it starts the
+// facility only promo below, same click-to-select pattern as a role row.
+function mtPromoFacRowHtml(fac){
+  var wardNames=(fac.wards||[]).map(function(w){return w.name;}).filter(Boolean);
+  return '<div class="mt-job'+(msgPromoFacId===fac.id?' on':'')+'" onclick="msgPromoPickFac('+fac.id+')">'
+    +'<div class="mt-job-t">'+esc(fac.name)+'</div>'
+    +'<div class="mt-job-m">'+(wardNames.length?esc(wardNames.join(', ')):'Wards TBC')+(fac.state?'<span class="sp">&middot;</span>'+esc(fac.state):'')+'</div>'
+    +'</div>';
+}
 function mtPromoTogglesHtml(role){
   var hasRate=!!role.rate;
   var defs=[['ward','Ward'],['dates','Dates'],['rate','Rate'],['link','Fact sheet link']];
   return '<div class="mt-opts">'+defs.map(function(o){
     var key=o[0],disabled=key==='rate'&&!hasRate,on=msgPromoOpts[key]&&!disabled;
+    return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;)"')+'>'+o[1]+'</span>';
+  }).join('')+'</div>';
+}
+function mtPromoFacTogglesHtml(fac){
+  var hasFactSheet=!!promoFactSheetOf(fac);
+  var defs=[['state','State'],['wards','Wards'],['link','Fact sheet link']];
+  return '<div class="mt-opts">'+defs.map(function(o){
+    var key=o[0],disabled=key==='link'&&!hasFactSheet,on=msgPromoOpts[key]&&!disabled;
     return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;)"')+'>'+o[1]+'</span>';
   }).join('')+'</div>';
 }
@@ -6155,17 +6244,23 @@ function mtPromoTogglesHtml(role){
 // loads the draft into the composer (mtPromoSyncComposer), the operator edits
 // and sends from there. Group send stays here, a bulk send is a genuine rail
 // level action that has nowhere else to live.
+// Search box, added on top of stage 6.1/6.4: candidates get asked about a
+// facility whether or not it has a live role right now, so the tab needs to
+// find any facility, not just ones with an open role. facAliasMatch is the
+// same alias aware match the Facilities page search already uses. No search
+// typed keeps the old behaviour, matched open roles tagged MATCH. Typing a
+// search shows matching facilities (mtPromoFacRowHtml), plus any open roles
+// at those facilities surfaced right under them.
 function mtPromoHtml(c){
-  var openRoles=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';});
   var first=(c.name||'').split(' ')[0]||'this candidate';
-  if(!openRoles.length)return '<div class="mt-sl">PICK A ROLE</div><div class="mt-empty">No open roles yet. Add roles via the Job Board.</div>';
   var role=msgPromoRoleId?roles.find(function(r){return r.id===msgPromoRoleId;}):null;
+  var fac=(!role&&msgPromoFacId)?facilities.find(function(f){return f.id===msgPromoFacId;}):null;
   if(role){
-    var fac=facilities.find(function(f){return f.id===role.facilityId;});
+    var facR=facilities.find(function(f){return f.id===role.facilityId;});
     var dates=role.startDate?(fmt(role.startDate)+' to '+(role.endDate?fmt(role.endDate):'TBC')):'Dates TBC';
     var h='<div class="mt-sl">JOB PROMO<button onclick="msgPromoPick(null)">Pick a different role</button></div>';
-    h+='<div class="mt-promo-sel"><div class="mt-promo-sel-t">'+esc(fac&&fac.name?fac.name:'Facility TBC')+'</div>'
-      +'<div class="mt-promo-sel-m">'+esc(role.ward||'Ward TBC')+'<span class="sp">&middot;</span>'+esc(dates)+(fac&&fac.state?'<span class="sp">&middot;</span>'+esc(fac.state):'')+'</div></div>';
+    h+='<div class="mt-promo-sel"><div class="mt-promo-sel-t">'+esc(facR&&facR.name?facR.name:'Facility TBC')+'</div>'
+      +'<div class="mt-promo-sel-m">'+esc(role.ward||'Ward TBC')+'<span class="sp">&middot;</span>'+esc(dates)+(facR&&facR.state?'<span class="sp">&middot;</span>'+esc(facR.state):'')+'</div></div>';
     h+='<div class="mt-sl">INCLUDE</div>'+mtPromoTogglesHtml(role);
     var matchCount=roleMatchList(vc(),role).length;
     if(c.smsConsent){
@@ -6178,15 +6273,64 @@ function mtPromoHtml(c){
     h+='<div class="mt-btnrow"><button class="mt-btn p" style="flex:1" onclick="msgPromoSendGroup('+role.id+')">Group ('+matchCount+')</button></div>';
     return h;
   }
-  var h2='<div class="mt-sl">PICK A ROLE</div>';
+  if(fac){
+    var wardNames=(fac.wards||[]).map(function(w){return w.name;}).filter(Boolean);
+    var h='<div class="mt-sl">JOB PROMO<button onclick="msgPromoPick(null)">Pick a different facility</button></div>';
+    h+='<div class="mt-promo-sel"><div class="mt-promo-sel-t">'+esc(fac.name)+'</div>'
+      +'<div class="mt-promo-sel-m">'+(fac.state?esc(fac.state):'State TBC')+(wardNames.length?'<span class="sp">&middot;</span>'+esc(wardNames.join(', ')):'')+'</div></div>';
+    h+='<div class="mt-sl">INCLUDE</div>'+mtPromoFacTogglesHtml(fac);
+    if(c.smsConsent){
+      h+='<div class="mt-empty">Draft loaded into the composer below. Edit it there, then send.</div>';
+    }else{
+      var txt=msgPromoFacText(fac,c,msgPromoOpts);
+      h+='<div class="mt-prev"><div class="mt-prev-lb">SMS PREVIEW</div>'+esc(txt)+'</div>';
+      h+='<div class="mt-empty">'+esc(first)+' has not given SMS consent, there is no composer to load a draft into for them.</div>';
+    }
+    return h;
+  }
+  // Results render into their own container, kept separate from the search
+  // input itself. msgPromoSearch only ever touches #mt-promo-results, never
+  // the input's own DOM node, or the browser drops focus (and the rest of
+  // whatever the operator is typing) the moment the first keystroke re-renders
+  // the field it is sitting in.
+  return '<div class="mt-sl">JOB PROMO</div>'
+    +'<div class="msghub-search" style="margin-bottom:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>'
+    +'<input placeholder="Search any facility" value="'+esc(msgPromoQ||'')+'" oninput="msgPromoSearch(this.value)"></div>'
+    +'<div id="mt-promo-results">'+mtPromoResultsHtml(c)+'</div>';
+}
+function mtPromoResultsHtml(c){
+  var first=(c.name||'').split(' ')[0]||'this candidate';
+  var q=(msgPromoQ||'').trim().toLowerCase();
+  var openRoles=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';});
+  if(q){
+    var matchedFacs=facilities.filter(function(f){return facAliasMatch(f,q);});
+    if(!matchedFacs.length)return '<div class="mt-empty">No facilities match &quot;'+esc(msgPromoQ)+'&quot;.</div>';
+    return matchedFacs.map(function(f){
+      var row=mtPromoFacRowHtml(f);
+      var facRoles=openRoles.filter(function(r){return r.facilityId===f.id;});
+      row+=facRoles.map(function(r){return mtPromoJobRowHtml(r,matchScore(c,r).score>0,f);}).join('');
+      return row;
+    }).join('');
+  }
+  if(!openRoles.length)return '<div class="mt-empty">No open roles yet. Search a facility above, or add roles via the Job Board.</div>';
   var tagged=openRoles.map(function(r){return{r:r,m:matchScore(c,r).score>0};});
   tagged.sort(function(a,b){return (b.m?1:0)-(a.m?1:0);});
-  h2+=tagged.map(function(x){
-    var fac=facilities.find(function(f){return f.id===x.r.facilityId;});
-    return mtPromoJobRowHtml(x.r,x.m,fac);
+  var h=tagged.map(function(x){
+    var facT=facilities.find(function(f){return f.id===x.r.facilityId;});
+    return mtPromoJobRowHtml(x.r,x.m,facT);
   }).join('');
-  h2+='<div style="font-size:11.5px;color:var(--ink4);margin-top:14px;line-height:1.55">Pick a role to build a promo SMS. Roles matching '+esc(first)+"'s profile are tagged.</div>";
-  return h2;
+  h+='<div style="font-size:11.5px;color:var(--ink4);margin-top:14px;line-height:1.55">Pick a role to build a promo SMS. Roles matching '+esc(first)+"'s profile are tagged.</div>";
+  return h;
+}
+// Bound to the search input's oninput. Only replaces the results container,
+// never the input, so the field keeps focus and the cursor position through
+// every keystroke.
+function msgPromoSearch(v){
+  msgPromoQ=v;
+  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+  if(!c)return;
+  var el=document.getElementById('mt-promo-results');
+  if(el)el.innerHTML=mtPromoResultsHtml(c);
 }
 function mtRenderPromo(){
   var c=candidates.find(function(x){return x.id===msgHubSelectedId;});

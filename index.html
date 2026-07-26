@@ -8,10 +8,10 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:13px}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#F7F7FB;color:#1A1A2E;min-height:100vh;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#F4F4F2;color:#14140F;min-height:100vh;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
 input,select,textarea,button{font-family:inherit;font-size:inherit}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#c8cad1;border-radius:3px}
-input:focus,select:focus,textarea:focus{outline:none;border-color:#26215C!important;box-shadow:0 0 0 3px rgba(38,33,92,.1)}
+input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(105,54,184,.15)!important}
 :root{
   --brand:#26215C;--brand-mid:#534AB7;--brand-d:#1c1846;--brand-l:#EEEDFE;--brand-pale:#F7F6FE;
   --brand-grad:linear-gradient(135deg,#26215C,#534AB7);
@@ -21,10 +21,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#26215C!import
   --danger:#993C1D;--danger-l:#FAECE7;
   --teal:#0a7a72;--teal-l:#e3f5f3;
   --border:#e5e4ee;--border-s:#c8cad1;
-  --bg:#F7F7FB;--surface:#ffffff;
-  --t1:#1A1A2E;--t2:#5a5f7a;--t3:#9397ae;--t4:#c8cad1;
+  /* Direction C, Phase 1: page background and ink promoted to shared tokens,
+     so every screen using --bg/--t1/--t2/--t3 inherits the calm palette at
+     once. --surface was already white, matching the new card colour, no
+     change needed there. Semantic colours (ok/warn/danger/accent/brand)
+     stay as they were this phase, badges/chips are updated per class
+     instead, buttons, sidebar and nav highlighting are a later phase. */
+  --bg:#F4F4F2;--surface:#ffffff;
+  --t1:#14140F;--t2:#54544E;--t3:#8F8D84;--t4:#c8cad1;
   --sb:#ffffff;
-  --shadow-card:0 2px 6px rgba(38,33,92,.05),0 16px 32px -22px rgba(38,33,92,.4);
+  --shadow-card:0 2px 8px rgba(0,0,0,.05);
 
   /* Captain Contract v2 design tokens, additive, for new components only.
      --bg intentionally omitted, the existing --bg above stays authoritative. */
@@ -176,8 +182,11 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .kpi-onlight.kpi-neutral .kpi-ico{background:var(--bg)}
 .kpi-onlight.kpi-neutral .kpi-val{color:var(--t1)}
 
-/* DASHBOARD, DIRECTION C, calm premium redesign, scoped under .dcv2 so
-   nothing else in the app changes. Tokens live in CAPTAIN-CONTRACT-DESIGN.md. */
+/* DIRECTION C tokens. Started scoped to the Dashboard under .dcv2, Phase 1
+   of the platform rollout now also feeds these into shared components
+   (.card, .tbl, badges, .fg fields) via the --bg/--t1/--t2/--t3/--shadow-card
+   tokens above and the rules below, so most screens pick up the calm look
+   without being hand restyled. Tokens live in CAPTAIN-CONTRACT-DESIGN.md. */
 :root{
   --dc-bg:#F4F4F2; --dc-card:#FFFFFF; --dc-tile:#F4F4F2;
   --dc-t1:#14140F; --dc-t2:#54544E; --dc-t3:#8F8D84;
@@ -190,6 +199,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
   --dc-r-card:14px; --dc-r-control:10px; --dc-r-pill:20px;
   --dc-shadow-card:0 2px 8px rgba(0,0,0,.05);
   --dc-shadow-row:inset 0 -1px 0 rgba(0,0,0,.05);
+  --dc-shadow-field:0 0 0 1px rgba(0,0,0,.08);
 }
 /* .page already pads 16px 20px, this wrapper cancels that so the calm grey
    page background can bleed edge to edge, then repads inside itself. */
@@ -237,10 +247,10 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .dcv2-card .tbl tbody tr.r-alert td{background:var(--dc-red-soft)}
 
 /* CARDS */
-.card{background:var(--surface);border-radius:16px;border:0.5px solid var(--border);box-shadow:var(--shadow-card)}
-.card>.tbl:first-child th:first-child{border-top-left-radius:15px}
-.card>.tbl:first-child th:last-child{border-top-right-radius:15px}
-.card-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card{background:var(--surface);border-radius:14px;border:none;box-shadow:var(--shadow-card)}
+.card>.tbl:first-child th:first-child{border-top-left-radius:14px}
+.card>.tbl:first-child th:last-child{border-top-right-radius:14px}
+.card-hd{padding:14px 18px;box-shadow:var(--dc-shadow-row);display:flex;align-items:center;justify-content:space-between}
 .card-title{font-size:12px;font-weight:500;color:var(--t1);display:flex;align-items:center;gap:6px}
 .card-title svg{width:13px;height:13px;stroke:var(--t3);fill:none}
 
@@ -253,10 +263,10 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .stat-tf{height:100%;border-radius:2px;transition:width .4s}
 
 /* TABLE */
-.tbl{width:100%;border-collapse:collapse}
-.tbl th{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:8px 12px;background:#f7f8fc;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;position:sticky;top:50px;z-index:2}
-.tbl td{padding:9px 12px;border-bottom:1px solid #f0f1f5;font-size:12px;vertical-align:middle;color:var(--t1)}
-.tbl tr:last-child td{border-bottom:none}
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.tbl th{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:8px 12px;background:#f7f8fc;text-align:left;box-shadow:inset 0 -2px 0 rgba(0,0,0,.05);white-space:nowrap;position:sticky;top:50px;z-index:2}
+.tbl td{padding:9px 12px;box-shadow:var(--dc-shadow-row);font-size:12px;vertical-align:middle;color:var(--t1)}
+.tbl tr:last-child td{box-shadow:none}
 .tbl tbody tr{cursor:pointer;transition:background .12s}
 .tbl tbody tr:hover td{background:var(--brand-pale)}
 .tbl tbody tr.r-alert td{background:#fff8f8}
@@ -264,9 +274,9 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 
 /* BADGES */
 .badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:500;padding:2px 7px;border-radius:6px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-.b-pu{background:var(--brand-l);color:var(--brand)}.b-bl{background:var(--accent-l);color:var(--accent)}
-.b-tl{background:var(--teal-l);color:var(--teal)}.b-gn{background:var(--ok-l);color:var(--ok)}
-.b-am{background:var(--warn-l);color:var(--warn)}.b-rd{background:var(--danger-l);color:var(--danger)}
+.b-pu{background:var(--dc-purple-soft);color:var(--dc-purple)}.b-bl{background:var(--accent-l);color:var(--accent)}
+.b-tl{background:var(--teal-l);color:var(--teal)}.b-gn{background:var(--dc-green-soft);color:var(--dc-green)}
+.b-am{background:var(--dc-amber-soft);color:var(--dc-amber)}.b-rd{background:var(--dc-red-soft);color:var(--dc-red)}
 .match-pill{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
 .match-strong{background:var(--ok-l);color:var(--ok)}.match-poss{background:var(--warn-l);color:var(--warn)}
 .sla-chip{display:inline-flex;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;white-space:nowrap}
@@ -746,7 +756,7 @@ textarea.tpl-input{resize:vertical;min-height:70px;line-height:1.4}
 .f1{grid-template-columns:1fr}.f2{grid-template-columns:1fr 1fr}.f3{grid-template-columns:1fr 1fr 1fr}.f4{grid-template-columns:repeat(4,1fr)}
 .fg{display:flex;flex-direction:column;gap:3px}
 .fg label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)}
-.fg input,.fg select,.fg textarea{padding:7px 9px;border:1px solid var(--border);border-radius:4px;font-size:12px;color:var(--t1);background:var(--surface);width:100%}
+.fg input,.fg select,.fg textarea{padding:7px 9px;border:none;box-shadow:var(--dc-shadow-field);border-radius:var(--dc-r-control);font-size:12px;color:var(--t1);background:var(--surface);width:100%}
 .fg textarea{resize:vertical;font-family:inherit;min-height:58px}
 .req{color:var(--danger)}
 .sh{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin:15px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)}

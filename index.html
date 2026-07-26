@@ -8525,16 +8525,76 @@ function renderMatchRow(c,role,checkItems,mo){
     +'</div>';
 }
 
+// Ward picker, Build B part 1. One shared implementation for the role form,
+// contract create and contract edit, so there is one picker, not three
+// copies. setExpr is a plain bound-field path like 'ER.ward', embedded as
+// literal JS in the generated onchange, exactly how every other inline
+// handler in this file already works, that is what makes a single generic
+// helper possible without a callback per form.
+// Falls back to the existing free text input whenever there is no facility
+// yet or the facility has no wards configured, so nothing is ever blocked.
+// The bound field always stays a plain string, callers read and save it
+// exactly as before, this only changes how it gets typed in.
+function wardPickerSetValue(setExpr,value){
+  new Function('v',setExpr+'=v;')(value);
+}
+// forceOther is set explicitly when the operator just picked "Other" from
+// the select, since an empty currentValue (a brand new record) would
+// otherwise look identical to "nothing chosen yet" and the picker would
+// snap straight back to the plain select, never revealing the text input.
+// Auto-detected drift (a saved value that matches no listed ward) does not
+// need it, that already falls out of the currentValue/matched check below.
+function wardPickerInnerHtml(id,facilityId,currentValue,setExpr,forceOther){
+  var f=facilityId?facilities.find(function(x){return x.id===facilityId;}):null;
+  var wardList=(f&&f.wards)||[];
+  if(!wardList.length){
+    return '<input value="'+esc(currentValue||'')+'" oninput="'+setExpr+'=this.value" placeholder="e.g. ICU, Theatre, ED">';
+  }
+  var matched=wardList.some(function(w){return w.name===currentValue;});
+  var isOther=forceOther||!!(currentValue&&!matched);
+  return '<select onchange="wardPickerOnSelect(&apos;'+id+'&apos;,'+(facilityId||'null')+',&apos;'+setExpr+'&apos;,'+setExpr+',this.value)">'
+    +'<option value=""'+(!currentValue&&!isOther?' selected':'')+'>Select ward...</option>'
+    +wardList.map(function(w){return '<option value="'+esc(w.name)+'"'+(!isOther&&currentValue===w.name?' selected':'')+'>'+esc(w.name)+'</option>';}).join('')
+    +'<option value="__other__"'+(isOther?' selected':'')+'>Other (type a ward)</option>'
+    +'</select>'
+    +(isOther?'<input style="margin-top:6px;width:100%;box-sizing:border-box" value="'+esc(currentValue||'')+'" oninput="'+setExpr+'=this.value" placeholder="Type a ward">':'');
+}
+function wardPickerHtml(id,facilityId,currentValue,setExpr){
+  return '<span id="'+id+'">'+wardPickerInnerHtml(id,facilityId,currentValue,setExpr)+'</span>';
+}
+// currentValue here is the bound field's value from just before this change,
+// passed in live from the onchange attribute rather than re-read, so picking
+// Other never has to guess what the field held, it just keeps it and reveals
+// the text input under it.
+function wardPickerOnSelect(id,facilityId,setExpr,currentValue,newValue){
+  if(newValue==='__other__'){
+    var el0=document.getElementById(id);
+    if(el0)el0.innerHTML=wardPickerInnerHtml(id,facilityId,currentValue,setExpr,true);
+    return;
+  }
+  wardPickerSetValue(setExpr,newValue);
+  var el=document.getElementById(id);
+  if(el)el.innerHTML=wardPickerInnerHtml(id,facilityId,newValue,setExpr);
+}
+// Called from a form's own facility <select> onchange, after it has already
+// set the bound facilityId, so the picker rebuilds against the newly chosen
+// facility's ward list. A ward value that does not belong to the new
+// facility is kept, not wiped, it just now renders under Other.
+function wardPickerOnFacilityChange(id,facilityId,currentValue,setExpr){
+  var el=document.getElementById(id);
+  if(el)el.innerHTML=wardPickerInnerHtml(id,facilityId,currentValue,setExpr);
+}
+
 function openRoleModal(roleId){
   ER=roleId?JSON.parse(JSON.stringify(roles.find(function(r){return r.id===roleId;})||{})):{facilityId:null,ward:'',nurseType:'RN',startDate:'',endDate:'',positionsAvailable:1,description:'',status:'Open'};
   var isNew=!ER.id;
   document.getElementById('m-ttl').textContent=isNew?'Add Role':'Edit Role';
   document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
   document.getElementById('m-body').innerHTML='<div style="padding:16px">'
-    +'<div class="fg"><label>Facility</label><select onchange="ER.facilityId=+this.value"><option value="">Select facility...</option>'
+    +'<div class="fg"><label>Facility</label><select onchange="ER.facilityId=+this.value;wardPickerOnFacilityChange(&apos;er-ward-pick&apos;,ER.facilityId,ER.ward,&apos;ER.ward&apos;)"><option value="">Select facility...</option>'
     +facilities.map(function(f){return'<option value="'+f.id+'"'+(ER.facilityId===f.id?' selected':'')+'>'+esc(f.name)+' ('+f.state+')</option>';}).join('')+'</select></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-    +'<div class="fg"><label>Ward / Specialty</label><input value="'+esc(ER.ward||'')+'" oninput="ER.ward=this.value" placeholder="e.g. ICU, Theatre, ED"></div>'
+    +'<div class="fg"><label>Ward / Specialty</label>'+wardPickerHtml('er-ward-pick',ER.facilityId,ER.ward,'ER.ward')+'</div>'
     +'<div class="fg"><label>Nurse Type</label><select onchange="ER.nurseType=this.value">'+['RN','EN','Midwife','Scrub','Anaesthetic','NP'].map(function(t){return'<option '+(ER.nurseType===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'
     +'<div class="fg"><label>Start Date</label><input type="date" value="'+(ER.startDate||'')+'" oninput="ER.startDate=this.value"></div>'
     +'<div class="fg"><label>End Date</label><input type="date" value="'+(ER.endDate||'')+'" oninput="ER.endDate=this.value"></div>'
@@ -8590,10 +8650,10 @@ function openContractModal(subId){
   document.getElementById('m-ttl').textContent='Create Contract — '+esc(cand.name);
   document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
   document.getElementById('m-body').innerHTML='<div style="padding:16px">'
-    +'<div class="fg"><label>Facility</label><select onchange="EK.facilityId=+this.value"><option value="">Select facility...</option>'
+    +'<div class="fg"><label>Facility</label><select onchange="EK.facilityId=+this.value;wardPickerOnFacilityChange(&apos;ek-ward-pick&apos;,EK.facilityId,EK.ward,&apos;EK.ward&apos;)"><option value="">Select facility...</option>'
     +facilities.map(function(f){return'<option value="'+f.id+'"'+(EK.facilityId===f.id?' selected':'')+'>'+esc(f.name)+' ('+f.state+')</option>';}).join('')+'</select></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-    +'<div class="fg"><label>Ward / Specialty</label><input value="'+esc(EK.ward||'')+'" oninput="EK.ward=this.value"></div>'
+    +'<div class="fg"><label>Ward / Specialty</label>'+wardPickerHtml('ek-ward-pick',EK.facilityId,EK.ward,'EK.ward')+'</div>'
     +'<div class="fg"><label>Rate Type</label><select onchange="EK.rateType=this.value">'+['Casual','PAYG','ABN Contractor','Salaried'].map(function(t){return'<option '+(EK.rateType===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'
     +'<div class="fg"><label>Start Date *</label><input type="date" value="'+(EK.startDate||'')+'" oninput="EK.startDate=this.value"></div>'
     +'<div class="fg"><label>End Date *</label><input type="date" value="'+(EK.endDate||'')+'" oninput="EK.endDate=this.value"></div>'
@@ -8686,10 +8746,10 @@ function openContractEditModal(contractId){
   document.getElementById('m-ttl').textContent='Edit Contract — '+esc(cand.name);
   document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
   document.getElementById('m-body').innerHTML='<div style="padding:16px">'
-    +'<div class="fg"><label>Facility</label><select onchange="ECT.facilityId=+this.value"><option value="">Select facility...</option>'
+    +'<div class="fg"><label>Facility</label><select onchange="ECT.facilityId=+this.value;wardPickerOnFacilityChange(&apos;ect-ward-pick&apos;,ECT.facilityId,ECT.ward,&apos;ECT.ward&apos;)"><option value="">Select facility...</option>'
     +facilities.map(function(f){return'<option value="'+f.id+'"'+(ECT.facilityId===f.id?' selected':'')+'>'+esc(f.name)+' ('+f.state+')</option>';}).join('')+'</select></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-    +'<div class="fg"><label>Ward / Specialty</label><input value="'+esc(ECT.ward)+'" oninput="ECT.ward=this.value"></div>'
+    +'<div class="fg"><label>Ward / Specialty</label>'+wardPickerHtml('ect-ward-pick',ECT.facilityId,ECT.ward,'ECT.ward')+'</div>'
     +'<div class="fg"><label>Rate Type</label><select onchange="ECT.rateType=this.value">'+['Casual','PAYG','ABN Contractor','Salaried'].map(function(t){return'<option '+(ECT.rateType===t?'selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'
     +'<div class="fg"><label>Start Date</label><input type="date" value="'+ECT.startDate+'" oninput="ECT.startDate=this.value"></div>'
     +'<div class="fg"><label>End Date</label><input type="date" value="'+ECT.endDate+'" oninput="ECT.endDate=this.value"></div>'

@@ -490,6 +490,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
    an optional .mt-ctx-detail dropdown, one open at a time. */
 .mt-ctx{border-radius:9px;box-shadow:var(--sh-b);background:var(--panel2);margin-bottom:6px;overflow:hidden}
 .mt-ctx-row{display:flex;align-items:center;gap:10px;padding:9px 11px;cursor:pointer}
+.mt-ctx.flat .mt-ctx-row{cursor:default}
 .mt-ctx-ic{width:25px;height:25px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mt-ctx-ic svg{width:12.5px;height:12.5px;stroke-width:2.4}
 .mt-ctx-n{font-size:12.5px;font-weight:500;flex:1}
@@ -509,9 +510,11 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .mt-out-chip.gy{background:var(--panel3);color:var(--ink3)}
 .mt-out-chase{font-size:10.5px;font-weight:600;color:var(--v11);padding:3px 8px;border-radius:6px;flex-shrink:0;background:none;border:none;cursor:pointer;transition:.14s var(--e)}
 .mt-out-chase:hover{background:var(--v4)}
+.mt-out-chase:disabled{opacity:.4;cursor:not-allowed;background:none}
 .mt-out-plain{font-size:11.5px;color:var(--ink3);line-height:1.5;padding-top:9px}
 .mt-out-link{font-size:11px;font-weight:600;color:var(--v11);margin-top:6px;background:none;border:none;cursor:pointer;padding:0;display:block}
 .mt-out-link:hover{text-decoration:underline}
+.mt-out-link:disabled{opacity:.4;cursor:not-allowed;text-decoration:none}
 .mt-note{background:var(--a3);border-radius:9px;padding:11px 12px;box-shadow:inset 0 0 0 1px rgba(245,165,36,.2);margin-bottom:6px}
 .mt-note-h{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:650;letter-spacing:.05em;color:var(--a11);margin-bottom:5px;text-transform:uppercase}
 .mt-note-h svg{width:11px;height:11px;stroke-width:2.5}
@@ -5379,29 +5382,84 @@ function downloadCvPdf(){
 
 // ── Messages ───────────────────────────────────────────────────────────────
 // Sending is stubbed this round, there is no SMS provider connected yet.
-// GSM 03.38 default alphabet plus the extension table (each extension char
-// still costs one alphabet slot for encoding purposes, it is the SMS layer
-// that spends two septets on it). Any character outside this set forces the
-// whole message to UCS-2, which is what actually happens to a text carrying
-// an emoji, so segment length must be computed from the text, not just its
-// character count.
+// GSM 03.38 default alphabet plus the extension table, used for encoding
+// aware segment counting. See msgSegments below.
 var GSM7_BASIC="@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
 var GSM7_EXT="^{}\\[~]|€";
-function isGsmChar(ch){return GSM7_BASIC.indexOf(ch)!==-1||GSM7_EXT.indexOf(ch)!==-1;}
-function isGsmText(s){
-  for(var i=0;i<s.length;i++){if(!isGsmChar(s.charAt(i)))return false;}
-  return true;
+function gsmCharUnits(ch){
+  if(GSM7_BASIC.indexOf(ch)!==-1)return 1;
+  if(GSM7_EXT.indexOf(ch)!==-1)return 2;
+  return 0;
 }
+// Returns {chars, units, encoding, segments}. chars is the visible code point
+// count, units is what the segment math actually runs on: GSM alphabet slots
+// (a basic char costs 1, an extension char costs 2), or UTF-16 code units once
+// any character forces the whole message to Unicode (an emoji is a surrogate
+// pair, so 2 units on its own).
 function msgSegments(text){
   text=String(text||'');
-  var n=text.length;
-  if(n===0)return 1;
-  if(isGsmText(text))return n<=160?1:Math.ceil(n/153);
-  return n<=70?1:Math.ceil(n/67);
+  var pts=Array.from(text);
+  var chars=pts.length,isGsm=true,gsmUnits=0;
+  for(var i=0;i<pts.length;i++){
+    var u=gsmCharUnits(pts[i]);
+    if(u===0){isGsm=false;break;}
+    gsmUnits+=u;
+  }
+  var encoding=isGsm?'GSM':'Unicode';
+  var units=isGsm?gsmUnits:text.length;
+  var singleLimit=isGsm?160:70,partLimit=isGsm?153:67;
+  var segments=units===0?1:(units<=singleLimit?1:Math.ceil(units/partLimit));
+  return{chars:chars,units:units,encoding:encoding,segments:segments};
 }
+function msgCntLabel(r){return r.chars+' chars, '+r.segments+' segment'+(r.segments!==1?'s':'')+(r.encoding==='Unicode'?', Unicode':'');}
+function msgCntWarn(r){return r.segments>1||r.encoding==='Unicode';}
 function msgRefreshUI(){
   if(curPage==='candidateprofile')renderCandPage();
   else if(curPage==='messages')renderMessagesHub();
+}
+// Stage 6, one composer one send path. The rail (job promo, compliance chase)
+// proposes text, the composer is where it gets edited and sent. msgBoxIsDraft
+// tracks whether #msgBox currently holds a generated draft (true) or text the
+// operator typed themselves (false), so a rail refresh never clobbers a hand
+// typed message. Only msgFillDraft sets it true. Everything that represents a
+// real edit, a real keystroke, a template insert, an emoji insert, a send,
+// clears it back to false.
+var msgBoxIsDraft=false;
+// Bound to the textarea's oninput, not called by any programmatic filler, so
+// it only ever fires on a real keystroke.
+function msgOnInput(cid){msgBoxIsDraft=false;msgCnt(cid);}
+// Chrome quirk, not obvious: a plain box.value='x' assignment updates what
+// the DOM reports, but not the textarea's internal edit history, so the very
+// next time the operator focuses that field Chrome can snap the value back
+// to what it was before the assignment, silently. execCommand('insertText')
+// goes through the real editing path so it sticks, with the raw property
+// setter as a fallback for browsers where execCommand is unavailable.
+function msgSetBoxText(box,text){
+  box.focus();
+  box.select();
+  if(document.execCommand&&document.execCommand('insertText',false,text))return;
+  var setter=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;
+  setter.call(box,text);
+  box.dispatchEvent(new Event('input',{bubbles:true}));
+}
+// Shared by the job promo rail and the compliance chase action. Refuses to
+// overwrite text the operator typed by hand, only fills when the box is
+// empty or still holds a draft this same mechanism put there.
+function msgFillDraft(cid,text){
+  if(msgMode!=='message'){msgMode='message';msgRefreshUI();}
+  var box=document.getElementById('msgBox');
+  if(!box)return false;
+  if(box.value.trim()&&!msgBoxIsDraft){
+    showToast('Composer has an unsent draft, clear it first.','err');
+    return false;
+  }
+  msgSetBoxText(box,text);
+  msgBoxIsDraft=true;
+  msgCnt(cid);
+  box.focus();
+  var len=box.value.length;
+  box.setSelectionRange(len,len);
+  return true;
 }
 function sendMessage(candidateId,body){
   var c=candidates.find(function(x){return x.id===candidateId;});
@@ -5414,7 +5472,7 @@ function sendMessage(candidateId,body){
   if(!body)return Promise.resolve({error:{message:'Message is empty'}});
   var localId='tmp-'+Date.now();
   var msg={id:localId,direction:'out',body:body,status:'pending',author:CU.name,
-    createdAt:new Date().toISOString(),readAt:'',segments:msgSegments(body),_synced:false};
+    createdAt:new Date().toISOString(),readAt:'',segments:msgSegments(body).segments,_synced:false};
   if(!c.messages)c.messages=[];
   c.messages.push(msg);
   msgRefreshUI();
@@ -5614,17 +5672,22 @@ function msgRenderEmojiPanel(){
 function msgInsertEmoji(ch){
   var box=document.getElementById('msgBox');
   if(!box)return;
-  var start=box.selectionStart==null?box.value.length:box.selectionStart;
-  var end=box.selectionEnd==null?box.value.length:box.selectionEnd;
-  box.value=box.value.slice(0,start)+ch+box.value.slice(end);
-  var pos=start+ch.length;
   box.focus();
-  box.setSelectionRange(pos,pos);
+  if(!(document.execCommand&&document.execCommand('insertText',false,ch))){
+    var start=box.selectionStart==null?box.value.length:box.selectionStart;
+    var end=box.selectionEnd==null?box.value.length:box.selectionEnd;
+    var setter=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;
+    setter.call(box,box.value.slice(0,start)+ch+box.value.slice(end));
+    var pos=start+ch.length;
+    box.setSelectionRange(pos,pos);
+  }
+  msgBoxIsDraft=false;
   msgCnt();
 }
 function msgComposerHtml(c){
   var noteMode=msgMode==='note';
   msgEmojiReset();
+  msgBoxIsDraft=false;
   return '<div class="msg-cmp">'
     +'<div class="msg-cmp-top">'
     +'<label class="msg-note-toggle"><input type="checkbox" '+(noteMode?'checked':'')+' onchange="msgToggleMode('+c.id+')">Internal note</label>'
@@ -5632,7 +5695,7 @@ function msgComposerHtml(c){
     +'</div>'
     +'<div class="msg-cmpr">'
     +'<div class="msg-box" style="'+(noteMode?'background:var(--a3);box-shadow:inset 0 0 0 1px rgba(245,165,36,.3)':'')+'">'
-    +'<textarea id="msgBox" rows="1" placeholder="'+(noteMode?'Internal note, not visible to the candidate':'Text message')+'" oninput="msgCnt('+c.id+')" onkeydown="msgKeydown(event,'+c.id+')"></textarea>'
+    +'<textarea id="msgBox" rows="1" placeholder="'+(noteMode?'Internal note, not visible to the candidate':'Text message')+'" oninput="msgOnInput('+c.id+')" onkeydown="msgKeydown(event,'+c.id+')"></textarea>'
     +'</div>'
     +'<button class="msg-snd" id="msgSendBtn" onclick="msgSend('+c.id+')"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>'
     +'</div>'
@@ -5673,7 +5736,7 @@ function renderMsgThread(c){
 function msgToggleMode(cid){msgMode=msgMode==='note'?'message':'note';msgRefreshUI();}
 function msgCnt(cid){
   var box=document.getElementById('msgBox');if(!box)return;
-  var v=box.value,n=v.length;
+  var v=box.value;
   var btn=document.getElementById('msgSendBtn');
   if(btn)btn.classList.toggle('live',!!v.trim());
   var cntsEl=document.getElementById('msgCnts');
@@ -5682,9 +5745,9 @@ function msgCnt(cid){
       cntsEl.textContent='Internal note, not sent by SMS';
       cntsEl.classList.remove('warn');
     }else{
-      var segs=msgSegments(v);
-      cntsEl.textContent=n+' chars, '+segs+' segment'+(segs>1?'s':'');
-      cntsEl.classList.toggle('warn',segs>1);
+      var r=msgSegments(v);
+      cntsEl.textContent=msgCntLabel(r);
+      cntsEl.classList.toggle('warn',msgCntWarn(r));
     }
   }
   box.style.height='auto';box.style.height=Math.min(80,box.scrollHeight)+'px';
@@ -5699,7 +5762,8 @@ function msgSend(cid){
   var box=document.getElementById('msgBox');if(!box)return;
   var v=box.value.trim();if(!v)return;
   var noteMode=msgMode==='note';
-  box.value='';msgCnt(cid);
+  msgSetBoxText(box,'');msgBoxIsDraft=false;msgCnt(cid);
+  msgCloseEmoji();
   var fn=noteMode?addNote:sendMessage;
   fn(cid,v).then(function(r){
     if(r.error)showToast((noteMode?'Could not save note: ':'Could not send message: ')+r.error.message,'err');
@@ -5793,6 +5857,7 @@ function msgHubPick(id){
   msgMode='message';
   mtCtxOpen=null;
   renderMessagesHub();
+  mtPromoSyncComposer();
   if(c&&freshIn)msgShowBanner(c,freshIn);
 }
 function msgHubSearchInput(v){msgHubSearch=v;renderMessagesHub();}
@@ -5862,7 +5927,9 @@ function mtRenderAll(){
 }
 // Stage 6.2: rows are expandable, one open at a time, click again (or click
 // another row) to collapse. The collapsed row keeps its summary value so the
-// rail stays glanceable either way.
+// rail stays glanceable either way. Passing a falsy detailHtml renders a flat
+// row, no chevron, nothing to click, since a row with nothing extra to show
+// should not pretend to be a workspace.
 var mtCtxOpen=null;
 function mtCtxToggle(key){
   mtCtxOpen=(mtCtxOpen===key)?null:key;
@@ -5872,24 +5939,46 @@ function mtCtxToggle(key){
   if(el)el.innerHTML=mtCtxHtml(c);
 }
 function mtCtxRowHtml(key,iconSvg,bg,fg,label,val,detailHtml){
-  var open=mtCtxOpen===key;
-  return '<div class="mt-ctx'+(open?' open':'')+'">'
-    +'<div class="mt-ctx-row" onclick="mtCtxToggle(&apos;'+key+'&apos;)">'
+  var hasDetail=!!detailHtml;
+  var open=hasDetail&&mtCtxOpen===key;
+  return '<div class="mt-ctx'+(open?' open':'')+(hasDetail?'':' flat')+'">'
+    +'<div class="mt-ctx-row"'+(hasDetail?' onclick="mtCtxToggle(&apos;'+key+'&apos;)"':'')+'>'
     +'<div class="mt-ctx-ic" style="background:'+bg+';color:'+fg+'">'+iconSvg+'</div>'
     +'<div class="mt-ctx-n">'+label+'</div><div class="mt-ctx-d">'+val+'</div>'
-    +'<div class="mt-ctx-chev">'+I.chevron+'</div>'
+    +(hasDetail?'<div class="mt-ctx-chev">'+I.chevron+'</div>':'')
     +'</div>'
     +(open?'<div class="mt-ctx-detail" onclick="event.stopPropagation()">'+detailHtml+'</div>':'')
     +'</div>';
 }
+function mtCtxCandidateDetailHtml(c){
+  var states=(c.statesOpen&&c.statesOpen.length)?c.statesOpen.join(', '):(c.state||'Not set');
+  var h='<div class="mt-out-plain">'+esc(c.classification||'Classification not set')+', open to '+esc(states)+'.</div>';
+  if(c.regions&&c.regions.length)h+='<div class="mt-out-plain">Preferred regions: '+esc(c.regions.join(', '))+'.</div>';
+  if(c.phone)h+='<div class="mt-out-plain">Phone: <a href="tel:'+esc(c.phone)+'" style="color:var(--v11)">'+esc(c.phone)+'</a></div>';
+  if(c.preferences&&c.preferences.trim())h+='<div class="mt-out-plain">'+esc(c.preferences)+'</div>';
+  h+='<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">View full profile</button>';
+  return h;
+}
+// Available only gets a chevron when there is genuinely more than the flat
+// summary already shows, an end date or travel notes. A candidate with just
+// an open ended start date has nothing extra to expand into.
+function mtCtxAvailHasExtra(c){return !!(c.availableTo||(c.travelNotes&&c.travelNotes.trim()));}
+function mtCtxAvailDetailHtml(c){
+  var h='';
+  if(c.availableFrom&&c.availableTo)h+='<div class="mt-out-plain">'+fmt(c.availableFrom)+' to '+fmt(c.availableTo)+'.</div>';
+  else if(c.availableFrom)h+='<div class="mt-out-plain">From '+fmt(c.availableFrom)+', ongoing.</div>';
+  if(c.travelNotes&&c.travelNotes.trim())h+='<div class="mt-out-plain">'+esc(c.travelNotes)+'</div>';
+  return h;
+}
 // Stage 6.3, the flagship no double handling fix. Reuses the same compliance
 // breakdown model the Compliance tab runs on (getCmpItems / compItemDone /
-// ddiff), it does not reinvent it, just filters down to what still needs
-// attention: anything not done, or done but expiring inside the same 60 day
-// window getAutos already warns on.
+// ddiff), it does not reinvent it. Scoped to required items only, plus a
+// required item that is done but expiring inside the same 60 day window
+// getAutos already warns on, since a soon to lapse credential still needs
+// chasing even though compItemDone calls it complete today.
 function mtCtxOutstanding(c){
   var items=(c.compliance&&c.compliance.items)||{};
-  return getCmpItems(c).map(function(ci){
+  return getCmpItems(c).filter(function(ci){return ci.req;}).map(function(ci){
     var it=items[ci.key]||{};
     var done=compItemDone(it);
     var d=it.expiry?ddiff(it.expiry):null;
@@ -5904,30 +5993,50 @@ function mtCtxOutChipHtml(o){
   if(o.expiringSoon)return '<span class="mt-out-chip a">Expires '+fmt(o.expiry)+'</span>';
   return '<span class="mt-out-chip gy">'+esc(o.status)+'</span>';
 }
-function mtCtxOutRowHtml(c,o){
+function mtCtxOutRowHtml(c,o,canChase){
   return '<div class="mt-out">'
     +'<div class="mt-out-bd">'+esc(o.label)+'</div>'
     +mtCtxOutChipHtml(o)
-    +'<button class="mt-out-chase" onclick="event.stopPropagation();mtCtxChase('+c.id+',&apos;'+jsAttrEsc(o.key)+'&apos;)">Chase</button>'
+    +'<button class="mt-out-chase" '+(canChase?'':'disabled')+' onclick="event.stopPropagation();mtCtxChase('+c.id+',&apos;'+jsAttrEsc(o.key)+'&apos;)">Chase</button>'
     +'</div>';
 }
-// One click chase, stage 6.3's inline action. Forces message mode (a chase is
-// an SMS to the candidate, never a note) and inserts straight into the
-// composer, same insert-and-focus pattern tplInsert already uses.
+function mtCtxChaseText(c,label){
+  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
+  return 'Hi '+first+', your '+label+' needs sorting before we can place you. Can you send the updated document through this week?';
+}
+function mtCtxChaseAllText(c,labels){
+  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
+  var joined=labels.length>1?(labels.slice(0,-1).join(', ')+' and '+labels[labels.length-1]):labels[0];
+  return 'Hi '+first+', we still need '+joined+' before we can place you. Can you send these through this week?';
+}
+// One click chase, stage 6.3's inline action, same one composer draft path
+// the job promo panel uses (msgFillDraft), so it never clobbers a hand typed
+// message either.
 function mtCtxChase(cid,key){
   var c=candidates.find(function(x){return x.id===cid;});
   if(!c)return;
+  if(!c.smsConsent||c.doNotContact){showToast('No SMS consent, chase by call or an internal note instead.','err');return;}
   var item=getCmpItems(c).find(function(i){return i.key===key;});
-  var label=item?item.label:'credential';
-  var first=(c.name||'').trim().split(/\s+/)[0]||'there';
-  msgMode='message';
-  msgRefreshUI();
-  var box=document.getElementById('msgBox');
-  if(!box)return;
-  box.value='Hi '+first+', your '+label+' needs sorting before we can place you. Can you send the updated document through this week?';
-  msgCnt(cid);
-  box.focus();
-  showToast('Chase for '+label+' inserted.');
+  if(!item)return;
+  if(msgFillDraft(cid,mtCtxChaseText(c,item.label)))showToast('Chase for '+item.label+' inserted.');
+}
+function mtCtxChaseAll(cid){
+  var c=candidates.find(function(x){return x.id===cid;});
+  if(!c)return;
+  if(!c.smsConsent||c.doNotContact){showToast('No SMS consent, chase by call or an internal note instead.','err');return;}
+  var outstanding=mtCtxOutstanding(c);
+  if(!outstanding.length)return;
+  var labels=outstanding.map(function(o){return o.label;});
+  if(msgFillDraft(cid,mtCtxChaseAllText(c,labels)))showToast('Chase for '+outstanding.length+' items inserted.');
+}
+function mtCtxComplianceDetailHtml(c,outstanding){
+  if(!outstanding.length)return '<div class="mt-out-plain">All required items are complete.</div>';
+  var canChase=c.smsConsent&&!c.doNotContact;
+  var h='';
+  if(outstanding.length>1)h+='<button class="mt-out-link" '+(canChase?'':'disabled')+' onclick="event.stopPropagation();mtCtxChaseAll('+c.id+')" style="margin-bottom:2px">Chase all ('+outstanding.length+')</button>';
+  h+=outstanding.map(function(o){return mtCtxOutRowHtml(c,o,canChase);}).join('');
+  if(!canChase)h+='<div class="mt-out-plain">Opted out of SMS, chase by call or an internal note instead.</div>';
+  return h;
 }
 function smsConsentSummaryLine(c){
   var acts=(c.activity||[]).filter(function(a){return /^SMS consent/.test(a.content||'');});
@@ -5943,14 +6052,14 @@ function mtCtxHtml(c){
   var compFg=sc>=90?'var(--g11)':sc>=75?'var(--a11)':'var(--r11)';
   var states=(c.statesOpen&&c.statesOpen.length)?c.statesOpen.join(', '):(c.state||'Not set');
   var outstanding=mtCtxOutstanding(c);
+  var availExtra=mtCtxAvailHasExtra(c);
   var h='<div class="mt-sl">CANDIDATE</div>';
   h+=mtCtxRowHtml('candidate',I.person,'var(--v4)','var(--v11)',esc(c.classification||'Classification not set'),esc(states),
-    '<div class="mt-out-plain">'+esc(c.classification||'Classification not set')+', open to '+esc(states)+'.</div>'
-    +'<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">View full profile</button>');
+    mtCtxCandidateDetailHtml(c));
   h+=mtCtxRowHtml('compliance',I.chk,compBg,compFg,'Compliance',sc+'%'+(outstanding.length?' &middot; '+outstanding.length+' outstanding':''),
-    outstanding.length?outstanding.map(function(o){return mtCtxOutRowHtml(c,o);}).join(''):'<div class="mt-out-plain">All requirements verified.</div>');
+    mtCtxComplianceDetailHtml(c,outstanding));
   h+=mtCtxRowHtml('available',I.cal,'var(--g3)','var(--g11)','Available',c.availableFrom?fmt(c.availableFrom):'Not set',
-    '<div class="mt-out-plain">'+candGridAvailHtml(c)+'</div>');
+    availExtra?mtCtxAvailDetailHtml(c):null);
   h+=mtCtxRowHtml('consent',I.chk,c.smsConsent?'var(--g3)':'var(--r3)',c.smsConsent?'var(--g11)':'var(--r11)','SMS consent',c.smsConsent?'Opted in':'Opted out',
     '<div class="mt-out-plain">'+esc(smsConsentSummaryLine(c))+'</div>'
     +'<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">Manage on profile</button>');
@@ -5993,8 +6102,20 @@ function mtTplHtml(c){
 // so on). Reuses promoFactSheetOf() for the real fact sheet link and
 // matchScore() (the same engine roleMatchList calls) for the MATCH tag.
 var msgPromoRoleId=null,msgPromoOpts={dates:true,rate:true,ward:true,link:true};
-function msgPromoPick(id){msgPromoRoleId=id;mtRenderPromo();}
-function msgPromoToggle(key){msgPromoOpts[key]=!msgPromoOpts[key];mtRenderPromo();}
+function msgPromoPick(id){msgPromoRoleId=id;mtRenderPromo();mtPromoSyncComposer();}
+function msgPromoToggle(key){msgPromoOpts[key]=!msgPromoOpts[key];mtRenderPromo();mtPromoSyncComposer();}
+// Stage 6, the rail proposes, the composer sends. Loads the built promo text
+// into #msgBox as an editable draft rather than sending blind from the rail.
+// Goes through msgFillDraft so it never overwrites a hand typed message, and
+// is a no-op when the open candidate has no SMS consent, since there is no
+// composer to load into for them (msgBlockedHtml renders instead).
+function mtPromoSyncComposer(){
+  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+  if(!c||!msgPromoRoleId||!c.smsConsent)return;
+  var role=roles.find(function(r){return r.id===msgPromoRoleId;});
+  if(!role)return;
+  msgFillDraft(c.id,msgPromoText(role,c,msgPromoOpts));
+}
 function msgPromoText(role,c,opts){
   var fac=facilities.find(function(f){return f.id===role.facilityId;})||{};
   var first=(c.name||'').trim().split(/\s+/)[0]||'there';
@@ -6025,10 +6146,15 @@ function mtPromoTogglesHtml(role){
     return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;)"')+'>'+o[1]+'</span>';
   }).join('')+'</div>';
 }
-// Stage 6.1: with a role picked, the compose panel (toggles, preview, counter,
-// send buttons) renders at the top of the tab, not appended after the full
-// role list. With ten or more open roles the appended panel used to land
-// below the fold, so clicking a role looked like it did nothing.
+// Stage 6.1: with a role picked, the compose panel (toggles, then the draft
+// sync, then the send buttons) renders at the top of the tab, not appended
+// after the full role list. With ten or more open roles the appended panel
+// used to land below the fold, so clicking a role looked like it did nothing.
+// Stage 6.4: the rail no longer has its own preview or its own individual
+// send, the composer is the preview now. Picking a role or changing a toggle
+// loads the draft into the composer (mtPromoSyncComposer), the operator edits
+// and sends from there. Group send stays here, a bulk send is a genuine rail
+// level action that has nowhere else to live.
 function mtPromoHtml(c){
   var openRoles=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';});
   var first=(c.name||'').split(' ')[0]||'this candidate';
@@ -6041,15 +6167,15 @@ function mtPromoHtml(c){
     h+='<div class="mt-promo-sel"><div class="mt-promo-sel-t">'+esc(fac&&fac.name?fac.name:'Facility TBC')+'</div>'
       +'<div class="mt-promo-sel-m">'+esc(role.ward||'Ward TBC')+'<span class="sp">&middot;</span>'+esc(dates)+(fac&&fac.state?'<span class="sp">&middot;</span>'+esc(fac.state):'')+'</div></div>';
     h+='<div class="mt-sl">INCLUDE</div>'+mtPromoTogglesHtml(role);
-    var txt=msgPromoText(role,c,msgPromoOpts);
-    var n=txt.length,segs=msgSegments(txt);
-    h+='<div class="mt-prev"><div class="mt-prev-lb">SMS PREVIEW</div>'+esc(txt)+'</div>';
-    h+='<div class="mt-cnts"><span class="num">'+n+'</span> chars<div class="mt-strk"><div class="mt-sfil'+(segs>1?' warn':'')+'" style="width:'+Math.min(100,(n%160||(n?160:0))/160*100)+'%"></div></div><span class="num">'+segs+'</span> segment'+(segs>1?'s':'')
-      +(segs>1?'<span style="color:var(--a11);font-weight:600;margin-left:4px">costs '+segs+'x</span>':'')+'</div>';
     var matchCount=roleMatchList(vc(),role).length;
-    h+='<div class="mt-btnrow"><button class="mt-btn p" style="flex:1" '+(c.smsConsent?'':'disabled')+' onclick="msgPromoSendOne('+role.id+')">Send to '+esc(first)+'</button>'
-      +'<button class="mt-btn s" onclick="msgPromoSendGroup('+role.id+')">Group ('+matchCount+')</button></div>';
-    if(!c.smsConsent)h+='<div style="font-size:11px;color:var(--r11);margin-top:9px;line-height:1.5">Blocked: '+esc(first)+' has opted out of SMS.</div>';
+    if(c.smsConsent){
+      h+='<div class="mt-empty">Draft loaded into the composer below. Edit it there, then send.</div>';
+    }else{
+      var txt=msgPromoText(role,c,msgPromoOpts);
+      h+='<div class="mt-prev"><div class="mt-prev-lb">SMS PREVIEW</div>'+esc(txt)+'</div>';
+      h+='<div class="mt-empty">'+esc(first)+' has not given SMS consent, there is no composer to load a draft into for them. You can still send this to the matched group.</div>';
+    }
+    h+='<div class="mt-btnrow"><button class="mt-btn p" style="flex:1" onclick="msgPromoSendGroup('+role.id+')">Group ('+matchCount+')</button></div>';
     return h;
   }
   var h2='<div class="mt-sl">PICK A ROLE</div>';
@@ -6067,17 +6193,6 @@ function mtRenderPromo(){
   if(!c)return;
   var el=document.getElementById('mt-promo');
   if(el)el.innerHTML=mtPromoHtml(c);
-}
-function msgPromoSendOne(roleId){
-  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
-  var role=roles.find(function(r){return r.id===roleId;});
-  if(!c||!role)return;
-  if(!c.smsConsent){showToast('Candidate has not given SMS consent','err');return;}
-  var text=msgPromoText(role,c,msgPromoOpts);
-  sendMessage(c.id,text).then(function(r){
-    if(r.error){showToast('Could not send: '+r.error.message,'err');return;}
-    showToast('Promo sent to '+((c.name||'candidate').split(' ')[0])+'.');
-  });
 }
 function msgPromoSendGroup(roleId){
   var role=roles.find(function(r){return r.id===roleId;});
@@ -6149,7 +6264,8 @@ function tplInsert(id){
   var box=document.getElementById('msgBox');
   var c=tplCurrentCand();
   if(!t||!box||!c)return;
-  box.value=mergeTemplate(t.body,c);
+  msgSetBoxText(box,mergeTemplate(t.body,c));
+  msgBoxIsDraft=false;
   msgCnt(c.id);
   box.focus();
   showToast('Template inserted and merged.');
@@ -6233,9 +6349,9 @@ function tplUpdatePreview(){
   if(prevEl)prevEl.textContent=merged||'Nothing to preview yet.';
   var cntEl=document.getElementById('tplCnt');
   if(cntEl){
-    var segs=msgSegments(merged);
-    cntEl.textContent=merged.length+' chars, '+segs+' segment'+(segs>1?'s':'');
-    cntEl.classList.toggle('warn',segs>1);
+    var r=msgSegments(merged);
+    cntEl.textContent=msgCntLabel(r);
+    cntEl.classList.toggle('warn',msgCntWarn(r));
   }
 }
 function tplEditFootHtml(){

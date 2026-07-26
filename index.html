@@ -176,6 +176,66 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .kpi-onlight.kpi-neutral .kpi-ico{background:var(--bg)}
 .kpi-onlight.kpi-neutral .kpi-val{color:var(--t1)}
 
+/* DASHBOARD, DIRECTION C, calm premium redesign, scoped under .dcv2 so
+   nothing else in the app changes. Tokens live in CAPTAIN-CONTRACT-DESIGN.md. */
+:root{
+  --dc-bg:#F4F4F2; --dc-card:#FFFFFF; --dc-tile:#F4F4F2;
+  --dc-t1:#14140F; --dc-t2:#54544E; --dc-t3:#8F8D84;
+  --dc-purple:#6936B8; --dc-purple-mid:#7F77DD; --dc-purple-deep:#534AB7; --dc-purple-soft:#EEEDFE;
+  --dc-green:#158060; --dc-green-soft:#E1F5EE; --dc-green-deep:#0B5A45;
+  --dc-amber:#9C6212; --dc-amber-soft:#FAEEDA; --dc-amber-deep:#6E4109; --dc-amber-ring:#EDC987;
+  --dc-red:#A32D2D; --dc-red-soft:#FCEBEB;
+  --dc-blue:#185FA5; --dc-blue-soft:#E6F1FB;
+  --dc-grey:#8F8D84;
+  --dc-r-card:14px; --dc-r-control:10px; --dc-r-pill:20px;
+  --dc-shadow-card:0 2px 8px rgba(0,0,0,.05);
+  --dc-shadow-row:inset 0 -1px 0 rgba(0,0,0,.05);
+}
+/* .page already pads 16px 20px, this wrapper cancels that so the calm grey
+   page background can bleed edge to edge, then repads inside itself. */
+.dcv2-wrap{background:var(--dc-bg);margin:-16px -20px;padding:24px}
+.dcv2-greet{margin-bottom:20px}
+.dcv2-greet-name{font-size:20px;font-weight:500;color:var(--dc-t1);margin-bottom:4px}
+.dcv2-greet-date{font-size:13px;color:var(--dc-t2)}
+.dcv2-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.dcv2-tile{background:var(--dc-card);border-radius:var(--dc-r-card);box-shadow:var(--dc-shadow-card);padding:18px 20px;cursor:pointer;transition:box-shadow .18s ease}
+.dcv2-tile:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.dcv2-tile-ico{width:34px;height:34px;border-radius:var(--dc-r-control);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.dcv2-tile-label{font-size:12px;font-weight:500;color:var(--dc-t2);margin-bottom:4px}
+.dcv2-tile-num{font-size:31px;font-weight:500;color:var(--dc-t1);line-height:1;font-variant-numeric:tabular-nums}
+.dcv2-hue-green .dcv2-tile-ico{background:var(--dc-green-soft);color:var(--dc-green)}
+.dcv2-hue-blue .dcv2-tile-ico{background:var(--dc-blue-soft);color:var(--dc-blue)}
+.dcv2-hue-purple .dcv2-tile-ico{background:var(--dc-purple-soft);color:var(--dc-purple)}
+.dcv2-hue-amber .dcv2-tile-ico{background:var(--dc-amber-soft);color:var(--dc-amber)}
+/* Attention state, the only tile allowed to go loud, amber fill plus an
+   inset ring, both shadows, never a border line. */
+.dcv2-tile.dcv2-attn{background:var(--dc-amber-soft);box-shadow:var(--dc-shadow-card),inset 0 0 0 1.5px var(--dc-amber-ring)}
+.dcv2-tile.dcv2-attn .dcv2-tile-ico{background:var(--dc-amber);color:#fff}
+.dcv2-tile.dcv2-attn .dcv2-tile-label,.dcv2-tile.dcv2-attn .dcv2-tile-num{color:var(--dc-amber-deep)}
+.dcv2-card{background:var(--dc-card);border-radius:var(--dc-r-card);box-shadow:var(--dc-shadow-card);margin-bottom:22px;overflow:hidden}
+.dcv2-card-hd{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:var(--dc-shadow-row)}
+.dcv2-card-title{font-size:13px;font-weight:500;color:var(--dc-t1);display:flex;align-items:center;gap:8px}
+.dcv2-row{display:flex;align-items:center;gap:12px;padding:12px 20px;box-shadow:var(--dc-shadow-row);cursor:pointer;transition:background .12s}
+.dcv2-row:last-child{box-shadow:none}
+.dcv2-row:hover{background:var(--dc-tile)}
+.dcv2-row-ico{flex-shrink:0;width:32px;height:32px;border-radius:var(--dc-r-control);display:flex;align-items:center;justify-content:center}
+.dcv2-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dcv2-row-title{font-size:13px;font-weight:500;color:var(--dc-t1);font-variant-numeric:tabular-nums}
+.dcv2-row-sub{font-size:12px;color:var(--dc-t2);margin-top:2px}
+.dcv2-empty{padding:24px 20px;text-align:center;color:var(--dc-t3);font-size:13px}
+.dcv2-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;background:var(--dc-purple-soft)}
+.dcv2-cta-label{font-size:13px;font-weight:500;color:var(--dc-purple-deep);display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.dcv2-btn-purple{background:var(--dc-purple);color:#fff;border:none;border-radius:var(--dc-r-control);padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit}
+.dcv2-btn-ghost{background:none;border:none;color:var(--dc-t2);font-size:12px;cursor:pointer;font-family:inherit}
+.dcv2-btn-ghost:hover{color:var(--dc-purple)}
+/* Scoped overrides so the shared .tbl used for My candidates picks up the
+   calm palette here only, every other screen using .tbl is untouched. */
+.dcv2-card .tbl th{background:var(--dc-tile);color:var(--dc-t3)}
+.dcv2-card .tbl td{border-bottom:none;box-shadow:var(--dc-shadow-row);color:var(--dc-t1);font-variant-numeric:tabular-nums}
+.dcv2-card .tbl tr:last-child td{box-shadow:none}
+.dcv2-card .tbl tbody tr:hover td{background:var(--dc-purple-soft)}
+.dcv2-card .tbl tbody tr.r-alert td{background:var(--dc-red-soft)}
+
 /* CARDS */
 .card{background:var(--surface);border-radius:16px;border:0.5px solid var(--border);box-shadow:var(--shadow-card)}
 .card>.tbl:first-child th:first-child{border-top-left-radius:15px}
@@ -2235,7 +2295,7 @@ function mbBuildPriorities(cands){
   if(comp.length){
     rows.push({key:"comp",icon:I.warn,color:comp[0].d<0?"var(--danger)":"#d4900a",badge:comp[0].d<0?"b-rd":"b-am",
       title:comp.length+" compliance item"+(comp.length!==1?"s":"")+" expiring within 14 days",
-      detail:"Most urgent: "+comp[0].label+" — "+(comp[0].d<0?"expired "+Math.abs(comp[0].d)+"d ago":"expires in "+comp[0].d+"d")+" ("+comp[0].cname+")",
+      detail:"Most urgent: "+comp[0].label+", "+(comp[0].d<0?"expired "+Math.abs(comp[0].d)+"d ago":"expires in "+comp[0].d+"d")+" ("+comp[0].cname+")",
       count:comp.length,actionLabel:mbCompExpanded?"Hide list":"Open",onclick:"mbToggleComp()",expandable:true});
   }
   var chk=mbOverdueCheckins(cands);
@@ -2243,14 +2303,14 @@ function mbBuildPriorities(cands){
     var top=chk[0],dchk=ddiff(top.lastCheckin);
     rows.push({key:"checkin",icon:I.person,color:"var(--danger)",badge:"b-rd",
       title:chk.length+" candidate"+(chk.length!==1?"s":"")+" overdue for check-in (14+ days)",
-      detail:"Most overdue: "+top.name+" — "+(dchk===null?"never contacted":Math.abs(dchk)+"d since last contact"),
+      detail:"Most overdue: "+top.name+", "+(dchk===null?"never contacted":Math.abs(dchk)+"d since last contact"),
       count:chk.length,actionLabel:mbCheckinExpanded?"Hide list":"Log check-in",onclick:"mbToggleCheckin()",expandable:true});
   }
   var fu=mbFollowups(cands);
   if(fu.length){
     rows.push({key:"followup",icon:I.phone,color:"var(--danger)",badge:"b-rd",
       title:fu.length+" submission"+(fu.length!==1?"s":"")+" awaiting follow-up",
-      detail:"Most urgent: "+fu[0].facility+" — "+fu[0].label+", "+fu[0].hrs+"h overdue ("+fu[0].cname+")",
+      detail:"Most urgent: "+fu[0].facility+", "+fu[0].label+", "+fu[0].hrs+"h overdue ("+fu[0].cname+")",
       count:fu.length,actionLabel:mbFollowupExpanded?"Hide list":"Follow up",onclick:"mbToggleFollowup()",expandable:true});
   }
   var workload=rows.reduce(function(a,r){return a+r.count;},0);
@@ -2279,24 +2339,35 @@ function mbStartDay(){
   if(mbOverdueCheckins(cands).length){mbGoCheckin();return;}
   if(mbFollowups(cands).length){mbGoFollowup();return;}
 }
-// One expanded-list line, full width, stacked (not a chip) — same shell as
-// the "Other reminders" rows on this page (dim-hover, icon tile, bold
-// primary line, muted subline, hairline border-bottom separator).
-function mbListRowHtml(icon,color,tileBg,onclick,primary,secondary){
-  return '<div class="dim-hover" onclick="'+onclick+'" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">'
-    +'<div style="flex-shrink:0;width:32px;height:32px;border-radius:9px;background:'+tileBg+';color:'+color+';display:flex;align-items:center;justify-content:center">'+ico(icon,17)+'</div>'
+// Maps this page's existing severity colour variables onto the calm soft
+// status set, red urgent, amber warning, green good, grey inactive. Kept
+// separate from mbBuildPriorities so that function's colour choices (used
+// elsewhere for nothing but this mapping) do not need to change.
+function dcv2Status(oldColor){
+  if(oldColor==='var(--danger)')return{dot:'var(--dc-red)',text:'var(--dc-red)',soft:'var(--dc-red-soft)'};
+  if(oldColor==='#d4900a'||oldColor==='#8a3800'||oldColor==='var(--warn)')return{dot:'var(--dc-amber)',text:'var(--dc-amber)',soft:'var(--dc-amber-soft)'};
+  if(oldColor==='var(--t3)')return{dot:'var(--dc-grey)',text:'var(--dc-grey)',soft:'var(--dc-tile)'};
+  return{dot:'var(--dc-green)',text:'var(--dc-green)',soft:'var(--dc-green-soft)'};
+}
+// One expanded-list line, full width, stacked, not a chip, same paper-card
+// row shell as the "Other reminders" rows on this page.
+function mbListRowHtml(icon,oldColor,onclick,primary,secondary){
+  var st=dcv2Status(oldColor);
+  return '<div class="dcv2-row" onclick="'+onclick+'">'
+    +'<span class="dcv2-dot" style="background:'+st.dot+'"></span>'
+    +'<div class="dcv2-row-ico" style="background:'+st.soft+';color:'+st.text+'">'+ico(icon,17)+'</div>'
     +'<div style="flex:1;min-width:0">'
-    +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(primary)+'</div>'
-    +(secondary?'<div style="font-size:10px;color:var(--t2);margin-top:2px">'+esc(secondary)+'</div>':'')
+    +'<div class="dcv2-row-title">'+esc(primary)+'</div>'
+    +(secondary?'<div class="dcv2-row-sub">'+esc(secondary)+'</div>':'')
     +'</div></div>';
 }
 function mbRowHtml(r){
   var expandBody="";
-  var tileBg=r.color.indexOf('var(--')===0?r.color.slice(0,-1)+'-l)':'rgba(212,144,10,.15)';
+  var st=dcv2Status(r.color);
   if(r.key==="avail"&&mbAvailExpanded){
     var avail=mbAvailSoon(vc());
     expandBody=avail.map(function(c){
-      return mbListRowHtml(r.icon,r.color,tileBg,'openCandPage('+c.id+')',c.name,fmt(c.availableFrom));
+      return mbListRowHtml(r.icon,r.color,'openCandPage('+c.id+')',c.name,fmt(c.availableFrom));
     }).join('');
   } else if(r.key==="roles"&&mbRolesExpanded){
     var roleM=mbTopRoleMatches(vc());
@@ -2304,37 +2375,38 @@ function mbRowHtml(r){
       var role=x.role||{};
       var fac=role.facilityId?facilities.find(function(f){return f.id===role.facilityId;}):null;
       var facName=fac?fac.name:'Unknown facility';
-      var primary=facName+(role.ward?' — '+role.ward:'');
-      var secondary=x.strong+' match'+(x.strong!==1?'es':'')+' — '+fmt(role.startDate);
-      return mbListRowHtml(r.icon,r.color,tileBg,'selectedRoleId='+(role.id||'null')+';nav(\'jobboard\')',primary,secondary);
+      var primary=facName+(role.ward?', '+role.ward:'');
+      var secondary=x.strong+' match'+(x.strong!==1?'es':'')+', '+(role.startDate?fmt(role.startDate):'start date TBC');
+      return mbListRowHtml(r.icon,r.color,'selectedRoleId='+(role.id||'null')+';nav(\'jobboard\')',primary,secondary);
     }).join('');
   } else if(r.key==="comp"&&mbCompExpanded){
     var comp=mbComplianceExpiring(vc());
     expandBody=comp.map(function(it){
-      var secondary=it.label+' — '+(it.d<0?'expired '+Math.abs(it.d)+'d ago':'expires in '+it.d+'d');
-      return mbListRowHtml(r.icon,r.color,tileBg,'openCandAtComp('+it.cid+',\''+it.key+'\')',it.cname,secondary);
+      var secondary=it.label+', '+(it.d<0?'expired '+Math.abs(it.d)+'d ago':'expires in '+it.d+'d');
+      return mbListRowHtml(r.icon,r.color,'openCandAtComp('+it.cid+',\''+it.key+'\')',it.cname,secondary);
     }).join('');
   } else if(r.key==="checkin"&&mbCheckinExpanded){
     var chkList=mbOverdueCheckins(vc());
     expandBody=chkList.map(function(c){
       var d=ddiff(c.lastCheckin);
       var secondary=d===null?'Never contacted':Math.abs(d)+'d overdue';
-      return mbListRowHtml(r.icon,r.color,tileBg,'openCandAtCheckin('+c.id+')',c.name,secondary);
+      return mbListRowHtml(r.icon,r.color,'openCandAtCheckin('+c.id+')',c.name,secondary);
     }).join('');
   } else if(r.key==="followup"&&mbFollowupExpanded){
     var fuList=mbFollowups(vc());
     expandBody=fuList.map(function(f){
-      var secondary=(f.facility||'—')+' — '+f.label+', '+f.hrs+'h overdue';
-      return mbListRowHtml(r.icon,r.color,tileBg,'openCandAtSubAlert('+f.cid+','+(f.subId||'null')+')',f.cname,secondary);
+      var secondary=(f.facility?f.facility+', ':'')+f.label+', '+f.hrs+'h overdue';
+      return mbListRowHtml(r.icon,r.color,'openCandAtSubAlert('+f.cid+','+(f.subId||'null')+')',f.cname,secondary);
     }).join('');
   }
-  return '<div id="mb-row-'+r.key+'" class="row-hover" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">'
-    +'<div style="flex-shrink:0;width:32px;height:32px;border-radius:9px;background:'+tileBg+';color:'+r.color+';display:flex;align-items:center;justify-content:center">'+ico(r.icon,17)+'</div>'
+  return '<div id="mb-row-'+r.key+'" class="dcv2-row">'
+    +'<span class="dcv2-dot" style="background:'+st.dot+'"></span>'
+    +'<div class="dcv2-row-ico" style="background:'+st.soft+';color:'+st.text+'">'+ico(r.icon,17)+'</div>'
     +'<div style="flex:1;min-width:0">'
-    +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(r.title)+'</div>'
-    +(r.detail?'<div style="font-size:10px;color:var(--t2);margin-top:2px">'+esc(r.detail)+'</div>':'')
+    +'<div class="dcv2-row-title">'+esc(r.title)+'</div>'
+    +(r.detail?'<div class="dcv2-row-sub">'+esc(r.detail)+'</div>':'')
     +'</div>'
-    +'<span class="badge '+r.badge+'" style="flex-shrink:0">'+r.count+'</span>'
+    +'<span style="flex-shrink:0;font-size:11px;font-weight:600;color:'+st.text+';background:'+st.soft+';padding:2px 8px;border-radius:10px;font-variant-numeric:tabular-nums">'+r.count+'</span>'
     +'<button class="btn btn-g btn-xs" onclick="event.stopPropagation();'+r.onclick+'">'+esc(r.actionLabel)+'</button>'
     +'</div>'
     +expandBody;
@@ -2349,43 +2421,54 @@ function mbBreakdownHtml(){
     return{id:id,name:u.name.split(" ")[0],count:cnt};
   }).filter(Boolean);
   if(!rows.length)return"";
-  return '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;border-top:1px solid var(--border)">'
-    +'<span style="font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;align-self:center;margin-right:2px">By consultant</span>'
+  return '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:12px 20px;box-shadow:var(--dc-shadow-row)">'
+    +'<span style="font-size:10px;font-weight:500;color:var(--dc-t3);text-transform:uppercase;letter-spacing:.06em;align-self:center;margin-right:2px">By consultant</span>'
     +rows.map(function(r){
       return '<button class="toggle-pill" onclick="setVC('+r.id+')" style="display:flex;align-items:center;gap:5px">'+esc(r.name)
-        +'<span class="badge '+(r.count?'b-am':'b-gn')+'" style="font-size:9px">'+r.count+'</span></button>';
+        +'<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:9px;font-variant-numeric:tabular-nums;background:'+(r.count?'var(--dc-amber-soft)':'var(--dc-green-soft)')+';color:'+(r.count?'var(--dc-amber)':'var(--dc-green)')+'">'+r.count+'</span></button>';
     }).join('')
     +'</div>';
 }
 function renderMorningBrief(cands){
   var b=mbBuildPriorities(cands);
   if(mbCollapsed){
-    return '<div class="card" style="margin-bottom:22px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="mbExpandBrief()">'
+    return '<div class="dcv2-card" style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="mbExpandBrief()">'
       +'<div style="display:flex;align-items:center;gap:10px">'
-      +'<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--brand-l);flex-shrink:0">'+ico(I.clock,15,'var(--brand)')+'</span>'
-      +'<span style="font-size:12px;font-weight:500;color:var(--t1)">Morning brief'+(b.workload?' — '+b.workload+' action'+(b.workload!==1?'s':'')+' today':' — all clear')+'</span></div>'
-      +'<button class="btn-ghost" style="font-size:11px" onclick="event.stopPropagation();mbExpandBrief()">Expand '+ico(I.chevron,11)+'</button>'
+      +'<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:var(--dc-r-control);background:var(--dc-purple-soft);flex-shrink:0">'+ico(I.clock,15,'var(--dc-purple)')+'</span>'
+      +'<span class="dcv2-row-title">Morning brief'+(b.workload?', '+b.workload+' action'+(b.workload!==1?'s':'')+' today':', all clear')+'</span></div>'
+      +'<button class="dcv2-btn-ghost" onclick="event.stopPropagation();mbExpandBrief()">Expand '+ico(I.chevron,11)+'</button>'
       +'</div>';
   }
-  return '<div class="card" style="margin-bottom:22px;overflow:hidden">'
-    +'<div class="card-hd"><div class="card-title">'+ico(I.clock,13,'var(--brand)')+' Today’s priorities</div>'
-    +'<button class="btn-ghost" style="font-size:11px" onclick="mbCollapseBrief()">Collapse</button></div>'
+  return '<div class="dcv2-card">'
+    +'<div class="dcv2-card-hd"><div class="dcv2-card-title">'+ico(I.clock,13,'var(--dc-purple)')+' Today’s priorities</div>'
+    +'<button class="dcv2-btn-ghost" onclick="mbCollapseBrief()">Collapse</button></div>'
     +(b.rows.length
       ?b.rows.map(mbRowHtml).join('')
-      :'<div style="padding:20px 16px;text-align:center;color:var(--t3);font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px">'+ico(I.chk,16)+' Nothing urgent — great day to prospect.</div>')
-    +'<div style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;background:var(--brand-grad)">'
-    +'<div style="position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);top:-60px;right:-30px;pointer-events:none"></div>'
-    +'<span style="position:relative;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:#fff">'+ico(I.clock,15,'#fff')+b.workload+' action'+(b.workload!==1?'s':'')+' today</span>'
-    +(b.rows.length?'<button class="btn btn-sm" style="position:relative;background:#fff;color:var(--brand);box-shadow:none" onclick="mbStartDay()">Start my day</button>':'')
-    +'</div>'
+      :'<div class="dcv2-empty" style="display:flex;align-items:center;justify-content:center;gap:8px">'+ico(I.chk,16)+' Nothing urgent, great day to prospect.</div>')
+    +(b.rows.length?'<div class="dcv2-cta">'
+      +'<span class="dcv2-cta-label">'+ico(I.clock,15,'var(--dc-purple-deep)')+b.workload+' action'+(b.workload!==1?'s':'')+' today</span>'
+      +'<button class="dcv2-btn-purple" onclick="mbStartDay()">Start my day</button>'
+      +'</div>':'')
     +mbBreakdownHtml()
+    +'</div>';
+}
+// One metric tile, Direction C. Calm white tile with a soft tinted icon
+// chip in its own hue by default. Pass attn:true only for a tile that
+// represents something needing attention right now, it deepens to a full
+// coloured fill with an inset ring, every other tile stays calm regardless
+// of hue.
+function dcv2Tile(opts){
+  return '<div class="dcv2-tile dcv2-hue-'+opts.hue+(opts.attn?' dcv2-attn':'')+'" onclick="'+opts.onclick+'">'
+    +'<div class="dcv2-tile-ico">'+ico(opts.icon,16)+'</div>'
+    +'<div class="dcv2-tile-label">'+esc(opts.label)+'</div>'
+    +'<div class="dcv2-tile-num">'+opts.val+'</div>'
     +'</div>';
 }
 function renderHome(){
   var firstName=CU.name.split(" ")[0];
   var dateStr=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   document.getElementById("tb-h").textContent="Dashboard";
-  document.getElementById("tb-s").textContent=dateStr+" — "+ROLES[CU.role];
+  document.getElementById("tb-s").textContent=dateStr+", "+ROLES[CU.role];
   // All Consultants toggle in topbar (admin/ops only)
   if(CU.role!=="consultant"){
     var cids=CU.role==="admin"?CU.adminFor:users.filter(function(u){return u.role==="consultant";}).map(function(u){return u.id;});
@@ -2403,45 +2486,46 @@ function renderHome(){
   // MORNING BRIEF (replaces the old Today/Action-required widgets)
   var briefHtml=renderMorningBrief(cands);
 
-  // HERO BAND — greeting + headline numbers (same stats as before, just moved
-  // into the gradient band instead of separate light-grey tiles)
+  // HERO BAND, Direction C calm treatment. Plain greeting, date line, tiles
+  // on the page background, no gradient. Compliance alerts is the one tile
+  // that deepens to a full amber fill with a ring, only when it actually
+  // has something in it.
   var placed=cands.filter(function(c){return c.phase==="On Assignment"||c.phase==="Extension/Exit";}).length;
   var totalSubs=cands.reduce(function(a,c){return a+c.submissions.length;},0);
   var activeContracts=cands.reduce(function(a,c){return a+c.contracts.filter(function(k){return k.status==="Active";}).length;},0);
   var compAlerts=autos.filter(function(a){return a.level==="red";}).length;
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:28px 32px;margin-bottom:22px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.05);bottom:-80px;right:180px;pointer-events:none"></div>'
-    +'<div style="position:relative">'
-    +'<div style="font-size:20px;font-weight:500;color:#fff;margin-bottom:4px">Welcome, '+esc(firstName)+'</div>'
-    +'<div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:22px">'+dateStr+' — '+ROLES[CU.role]+'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +kpiChip({icon:I.person,label:'Placements',val:placed,hue:'teal',onclick:"homeTileNav('placements')"})
-    +kpiChip({icon:I.mail,label:'Submissions',val:totalSubs,hue:'blue',onclick:"homeTileNav('submissions')"})
-    +kpiChip({icon:I.doc,label:'Active contracts',val:activeContracts,hue:'purple',onclick:"homeTileNav('contracts')"})
-    +kpiChip({icon:I.warn,label:'Compliance alerts',val:compAlerts,hue:'red',onclick:"homeTileNav('alerts')"})
-    +'</div></div></div>';
+  var heroHtml='<div class="dcv2-greet">'
+    +'<div class="dcv2-greet-name">Welcome, '+esc(firstName)+'</div>'
+    +'<div class="dcv2-greet-date">'+dateStr+', '+ROLES[CU.role]+'</div>'
+    +'</div>'
+    +'<div class="dcv2-tiles">'
+    +dcv2Tile({icon:I.person,label:'Placements',val:placed,hue:'green',onclick:"homeTileNav('placements')"})
+    +dcv2Tile({icon:I.mail,label:'Submissions',val:totalSubs,hue:'blue',onclick:"homeTileNav('submissions')"})
+    +dcv2Tile({icon:I.doc,label:'Active contracts',val:activeContracts,hue:'purple',onclick:"homeTileNav('contracts')"})
+    +dcv2Tile({icon:I.warn,label:'Compliance alerts',val:compAlerts,hue:'amber',attn:compAlerts>0,onclick:"homeTileNav('alerts')"})
+    +'</div>';
 
-  // OTHER REMINDERS — chase-list items not yet folded into a Morning Brief
+  // OTHER REMINDERS, chase-list items not yet folded into a Morning Brief
   // priority (interview prep, extension talk, start-date confirmation).
   // Submission follow-ups and stale check-ins now live in the brief above,
   // so they're excluded here to avoid showing the same item twice.
   var chase=buildChaseList().filter(function(a){return a.label.indexOf('Call ')!==0&&a.label.indexOf('Check in:')!==0;});
   var chaseHtml=chase.length
-    ?'<div class="card" style="margin-bottom:22px">'
-      +'<div class="card-hd"><div class="card-title" style="color:var(--warn)"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--warn-l)">'+ico(I.warn,13,'var(--warn)')+'</span> Other reminders</div>'
-      +'<button class="btn-ghost" onclick="nav(\'alerts\')" style="font-size:11px">See all &rsaquo;</button>'
+    ?'<div class="dcv2-card">'
+      +'<div class="dcv2-card-hd"><div class="dcv2-card-title" style="color:var(--dc-amber)"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:var(--dc-r-control);background:var(--dc-amber-soft)">'+ico(I.warn,13,'var(--dc-amber)')+'</span> Other reminders</div>'
+      +'<button class="dcv2-btn-ghost" onclick="nav(\'alerts\')">See all &rsaquo;</button>'
       +'</div>'
       +chase.slice(0,5).map(function(a){
-        var tileBg=a.color.indexOf('var(--')===0?a.color.slice(0,-1)+'-l)':'rgba(212,144,10,.15)';
-        return '<div class="dim-hover" onclick="openCandPage('+a.cid+')" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">'
-          +'<div style="flex-shrink:0;width:32px;height:32px;border-radius:9px;background:'+tileBg+';color:'+a.color+';display:flex;align-items:center;justify-content:center">'+ico(a.icon,17)+'</div>'
-          +'<div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(a.label)+'</div>'
-          +'<div style="font-size:10px;color:var(--t2);margin-top:4px">'+esc(a.detail)+'</div></div>'
+        var st=dcv2Status(a.color);
+        return '<div class="dcv2-row" onclick="openCandPage('+a.cid+')">'
+          +'<span class="dcv2-dot" style="background:'+st.dot+'"></span>'
+          +'<div class="dcv2-row-ico" style="background:'+st.soft+';color:'+st.text+'">'+ico(a.icon,17)+'</div>'
+          +'<div style="flex:1"><div class="dcv2-row-title">'+esc(a.label)+'</div>'
+          +'<div class="dcv2-row-sub">'+esc(a.detail)+'</div></div>'
           +(a.action?'<button class="btn btn-g btn-xs" onclick="event.stopPropagation();'+a.action+';renderHome()">'+a.actionLabel+'</button>':'')
           +'</div>';
       }).join('')
-      +(chase.length>5?'<div style="font-size:10px;color:var(--t2);padding:10px 16px">+' +(chase.length-5)+' more</div>':'')
+      +(chase.length>5?'<div style="font-size:11px;color:var(--dc-t2);padding:10px 20px;font-variant-numeric:tabular-nums">+'+(chase.length-5)+' more</div>':'')
       +'</div>'
     :'';
 
@@ -2452,15 +2536,15 @@ function renderHome(){
       +'<td><div style="display:flex;align-items:center;gap:6px">'
       +(c.hot?'<span style="color:#d4900a">'+ico(I.flame,13)+'</span>':'')
       +'<div class="cp">'+esc(c.name)+'</div></div></td>'
-      +'<td style="font-size:11px;color:var(--t2)">'+esc(c.classification)+'</td>'
+      +'<td style="font-size:11px;color:var(--dc-t2)">'+esc(c.classification)+'</td>'
       +'<td><span class="badge '+bClass(c.phase)+'">'+c.phase+'</span></td>'
       +'<td><div class="prog"><div class="prog-t" style="width:44px"><div class="prog-f" style="width:'+sc+'%;background:linear-gradient(90deg,rgba(255,255,255,.55),rgba(255,255,255,0) 70%),'+scColor(sc)+'"></div></div><span class="prog-lbl" style="color:'+scColor(sc)+';font-size:9px">'+sc+'%</span></div></td>'
       +'<td style="font-size:10px;font-weight:500;color:'+ci.color+'">'+ci.label+'</td>'
-      +'<td style="font-size:10px;color:var(--t3)">'+(c.availableFrom?fmt(c.availableFrom):'—')+'</td>'
+      +'<td style="font-size:10px;color:var(--dc-t3);font-variant-numeric:tabular-nums">'+(c.availableFrom?fmt(c.availableFrom):'')+'</td>'
       +'</tr>';
   }).join('');
-  var candCard='<div class="card" style="flex:1">'
-    +'<div class="card-hd"><div class="card-title">My candidates</div><button class="btn-ghost" onclick="nav(\'candidates\')">View all &rsaquo;</button></div>'
+  var candCard='<div class="dcv2-card" style="flex:1;margin-bottom:0">'
+    +'<div class="dcv2-card-hd"><div class="dcv2-card-title">My candidates</div><button class="dcv2-btn-ghost" onclick="nav(\'candidates\')">View all &rsaquo;</button></div>'
     +'<table class="tbl"><thead><tr><th>Candidate</th><th>Classification</th><th>Phase</th><th>Compliance</th><th>Check-in</th><th>Available</th></tr></thead>'
     +'<tbody>'+(recentRows||'<tr><td colspan="6"><div class="empty-st">'+I.person+'<b>No candidates yet</b><p>Add your first candidate to get started.</p><button class="btn btn-p btn-sm" onclick="openNewCand()">+ Add candidate</button></div></td></tr>')+'</tbody></table>'
     +'</div>';
@@ -2468,45 +2552,50 @@ function renderHome(){
   // RECENT WINS (right 40%)
   var wins=[];
   vc().forEach(function(c){
-    c.submissions.forEach(function(s){if(s.status==="Accepted")wins.push({name:c.name,detail:'Accepted at '+esc(s.facility||''),ts:s.offerDate||s.submittedDate,cid:c.id,icon:I.chk,color:'var(--ok)'});});
-    c.contracts.forEach(function(k){if(k.status==="Active"||k.status==="Signed")wins.push({name:c.name,detail:'Contracted — '+esc(k.facility||''),ts:k.startDate,cid:c.id,icon:I.doc,color:'var(--brand)'});});
+    c.submissions.forEach(function(s){if(s.status==="Accepted")wins.push({name:c.name,detail:'Accepted at '+esc(s.facility||''),ts:s.offerDate||s.submittedDate,cid:c.id,icon:I.chk,hue:'green'});});
+    c.contracts.forEach(function(k){if(k.status==="Active"||k.status==="Signed")wins.push({name:c.name,detail:'Contracted, '+esc(k.facility||''),ts:k.startDate,cid:c.id,icon:I.doc,hue:'purple'});});
   });
   wins.sort(function(a,b){return(b.ts||'').localeCompare(a.ts||'');});
-  var winsCard='<div class="card" style="flex:1">'
-    +'<div class="card-hd"><div class="card-title">Recent wins</div></div>'
+  var winsCard='<div class="dcv2-card" style="flex:1;margin-bottom:0">'
+    +'<div class="dcv2-card-hd"><div class="dcv2-card-title">Recent wins</div></div>'
     +(wins.length
-      ?wins.slice(0,6).map(function(w){var tileBg=w.color.indexOf('var(--')===0?w.color.slice(0,-1)+'-l)':'rgba(38,33,92,.1)';return'<div class="row-hover" onclick="openCandPage('+w.cid+')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">'
-        +'<span style="flex-shrink:0;width:30px;height:30px;border-radius:9px;background:'+tileBg+';color:'+w.color+';display:flex;align-items:center;justify-content:center">'+ico(w.icon,16)+'</span>'
-        +'<div><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(w.name)+'</div>'
-        +'<div style="font-size:10px;color:var(--t3);margin-top:4px">'+w.detail+'</div></div>'
+      ?wins.slice(0,6).map(function(w){
+        var soft=w.hue==='purple'?'var(--dc-purple-soft)':'var(--dc-green-soft)';
+        var text=w.hue==='purple'?'var(--dc-purple)':'var(--dc-green)';
+        return '<div class="dcv2-row" onclick="openCandPage('+w.cid+')">'
+        +'<span class="dcv2-row-ico" style="background:'+soft+';color:'+text+'">'+ico(w.icon,16)+'</span>'
+        +'<div><div class="dcv2-row-title">'+esc(w.name)+'</div>'
+        +'<div class="dcv2-row-sub">'+w.detail+'</div></div>'
         +'</div>';}).join('')
-      :'<div style="padding:24px 16px;text-align:center;color:var(--t3);font-size:12px">No recent placements — time to make it happen.</div>')
+      :'<div class="dcv2-empty">No recent placements, time to make it happen.</div>')
     +'</div>';
 
-  // JOB BOARD SNAPSHOT
+  // JOB BOARD SNAPSHOT, visual style not part of this pass, left on the
+  // previous card treatment until its own review. Em dashes still fixed,
+  // that rule is not optional on any part of this screen.
   var jbHtml='';
   if(roles&&roles.length){
     var topRoles=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';}).slice(0,5);
     if(topRoles.length){
       jbHtml='<div class="card" style="margin-top:22px">'
-        +'<div class="card-hd"><div class="card-title">Open roles — matched to your candidates</div><button class="btn-ghost" onclick="nav(\'jobboard\')">Open job board &rsaquo;</button></div>'
+        +'<div class="card-hd"><div class="card-title">Open roles, matched to your candidates</div><button class="btn-ghost" onclick="nav(\'jobboard\')">Open job board &rsaquo;</button></div>'
         +'<div style="padding:4px 0">'
         +topRoles.map(function(r){
           var fac=facilities.find(function(f){return f.id===r.facilityId;})||{};
           return '<div class="row-hover" onclick="nav(\'jobboard\')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">'
-            +'<div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(fac.name||r.facilityId)+' <span style="font-weight:400;color:var(--t3)">— '+esc(r.ward||'')+'</span></div>'
-            +'<div style="font-size:10px;color:var(--t3);margin-top:4px">'+esc(r.state||'')+' · '+esc(r.nurseType||'')+' · '+(r.startDate?fmt(r.startDate):'TBC')+'</div></div>'
-            +roleMatchPillHtml(cands,r)
+            +'<div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(fac.name||r.facilityId)+' <span style="font-weight:400;color:var(--t3)">, '+esc(r.ward||'')+'</span></div>'
+            +'<div style="font-size:10px;color:var(--t3);margin-top:4px;font-variant-numeric:tabular-nums">'+esc(r.state||'')+' · '+esc(r.nurseType||'')+' · '+(r.startDate?fmt(r.startDate):'TBC')+'</div></div>'
+            +'<span style="font-variant-numeric:tabular-nums">'+roleMatchPillHtml(cands,r)+'</span>'
             +'</div>';
         }).join('')
         +'</div></div>';
     }
   }
 
-  document.getElementById("page").innerHTML=heroHtml+briefHtml+chaseHtml
+  document.getElementById("page").innerHTML='<div class="dcv2-wrap">'+heroHtml+briefHtml+chaseHtml
     +'<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">'
     +candCard+winsCard
-    +'</div>'+jbHtml;
+    +'</div>'+jbHtml+'</div>';
 }
 function setVC(id){VCon=id;updateBadges();renderPage();}
 

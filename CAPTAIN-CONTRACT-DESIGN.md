@@ -45,6 +45,61 @@ incrementally. Do not attempt a single big-bang restyle of index.html.
 }
 ```
 
+## Direction C, calm premium (rollout in progress)
+
+Chosen visual direction for the next pass, calmer and more premium than the
+original bright KPI chips. Rolling out screen by screen, Dashboard first.
+These tokens sit alongside the set above, a migrated screen reads from these,
+everything else keeps reading from the original set until its own pass.
+
+Paper cards: white cards on a soft grey page, separated by soft shadows,
+never border lines, generous padding. One primary accent, purple, on
+buttons, active tab underlines, avatar tiles, progress bars and primary
+links. Metric tiles carry a soft colour identity each, a pale tinted icon
+chip in the tile's own colour on an otherwise white tile, calm by default. A
+tile only deepens to a full coloured fill with a faint inset ring when it
+represents something that needs attention, loud only when it matters.
+Status by colour stays soft and only shows on chips, alert dots and the one
+attention tile, not on every element. Text stays readable, a solid
+secondary grey rather than a washed out one, a full near black primary, and
+a minimum body size.
+
+```css
+:root{
+  /* surfaces */
+  --dc-bg:#F4F4F2; --dc-card:#FFFFFF; --dc-tile:#F4F4F2;
+
+  /* text, do not go lighter than secondary */
+  --dc-t1:#14140F; --dc-t2:#54544E; --dc-t3:#8F8D84;
+
+  /* purple, one accent */
+  --dc-purple:#6936B8; --dc-purple-mid:#7F77DD; --dc-purple-deep:#534AB7;
+  --dc-purple-soft:#EEEDFE;
+
+  /* status, soft by default, full fill and ring only on the tile that needs attention */
+  --dc-green:#158060; --dc-green-soft:#E1F5EE; --dc-green-deep:#0B5A45;
+  --dc-amber:#9C6212; --dc-amber-soft:#FAEEDA; --dc-amber-deep:#6E4109; --dc-amber-ring:#EDC987;
+  --dc-red:#A32D2D; --dc-red-soft:#FCEBEB;
+  --dc-blue:#185FA5; --dc-blue-soft:#E6F1FB;
+  --dc-grey:#8F8D84;
+
+  /* shape */
+  --dc-r-card:14px; --dc-r-control:10px; --dc-r-pill:20px; --dc-r-avatar:14px;
+  --dc-shadow-card:0 2px 8px rgba(0,0,0,.05);
+  --dc-shadow-row:inset 0 -1px 0 rgba(0,0,0,.05);
+}
+```
+
+Body text on these tokens is 14px minimum, small meta never smaller than
+13px. Every number, tabular-nums, no exceptions.
+
+Avatar tile: rounded square, 12 to 16px radius. Primary is `--dc-purple`
+fill with white initials. Secondary is `--dc-purple-soft` fill with
+`--dc-purple-deep` initials.
+
+Row dividers inside a paper card are a shadow, `--dc-shadow-row`, never a
+border line.
+
 ## Type
 Inter, loaded from Google Fonts, weights 400 450 500 550 600 650.
 ```css

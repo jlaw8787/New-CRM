@@ -532,6 +532,16 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .msghub-phone{width:100%;max-width:390px;height:100%;max-height:720px}
 .msghub-empty{color:var(--ink4);font-size:12.5px;text-align:center;padding:40px 20px}
 
+/* Candidate profile Messages tab, two pane layout. Same thread on the left
+   and the same .mt-rail on the right, minus the hub's conversations list.
+   Scoped under .msgprof so nothing here can reach the hub's own layout.
+   Fixed height rather than viewport height, because this sits underneath the
+   profile hero and tab bar instead of filling the whole page. */
+.msgprof{display:flex;height:660px;background:var(--panel);box-shadow:var(--sh-b);border-radius:14px;overflow:hidden}
+.msgprof-stage{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(600px 380px at 50% 8%,rgba(110,86,207,.09),transparent 62%),var(--panel2)}
+.msgprof-phone{width:100%;max-width:390px;height:100%;max-height:620px}
+@media(max-width:1180px){.msgprof{flex-direction:column;height:auto}.msgprof-phone{height:600px}.msgprof .mt-rail{width:100%;box-shadow:inset 0 1px 0 var(--line)}}
+
 /* phone screen contact header, sits above the thread scroll on both the hub
    stage and the candidate profile Messages tab, so the two match. */
 .msg-hdr{flex-shrink:0;padding:13px 16px;display:flex;align-items:center;gap:10px;background:rgba(249,249,251,.92);box-shadow:inset 0 -1px 0 rgba(0,0,0,.07);position:relative;z-index:3}
@@ -4896,7 +4906,13 @@ var cpOpen={overview:true,personal:true,professional:true,avail:false,clinical:f
 var cpTravelTab='flights';
 var cpActType='Note';
 
-function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();msgMode='message';nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c){pushRecent('candidate',id,c.name,c.classification);if(cpTab==='messages'){var freshIn=msgLastUnreadIn(c);msgMarkThreadRead(c);if(freshIn)msgShowBanner(c,freshIn);}}}
+// The profile's tools rail bucket is reset on every candidate open, the same
+// two resets msgHubPick does when the hub switches conversation. Without it a
+// compliance item ticked to chase on one candidate stays ticked on the next,
+// since chaseSel is keyed by item key and those keys repeat across people.
+// MT_STATE.profile directly, not mtS(), because curPage is still the previous
+// page at this point and mtS() would hand back the wrong bucket.
+function openCandPage(id,tab){curCandId=id;cpEditing=null;cpEditData=null;cpNAEditing=false;cpTab=tab||'overview';cpTravelTab='flights';cvResetState();msgMode='message';MT_STATE.profile.ctxOpen=null;MT_STATE.profile.chaseSel={};nav('candidateprofile');var c=candidates.find(function(x){return x.id===id;});if(c){pushRecent('candidate',id,c.name,c.classification);if(cpTab==='messages'){var freshIn=msgLastUnreadIn(c);msgMarkThreadRead(c);if(freshIn)msgShowBanner(c,freshIn);}}}
 function openCandAtSubs(candId){openCandPage(candId,'pipeline');setTimeout(function(){cpScrollTo('submissions');},120);}
 
 function flashElement(id){var el=document.getElementById(id);if(!el)return;el.classList.remove('flash-hl');void el.offsetWidth;el.classList.add('flash-hl');}
@@ -6078,10 +6094,10 @@ function msgHubPick(id){
   var freshIn=c?msgLastUnreadIn(c):null;
   if(c)msgMarkThreadRead(c);
   msgMode='message';
-  mtCtxOpen=null;
-  mtChaseSel={};
+  mtS().ctxOpen=null;
+  mtS().chaseSel={};
   renderMessagesHub();
-  mtPromoSyncComposer();
+  mtPromoSyncComposer(id);
   if(c&&freshIn)msgShowBanner(c,freshIn);
 }
 function msgHubSearchInput(v){msgHubSearch=v;renderMessagesHub();}
@@ -6119,31 +6135,57 @@ function renderMessagesHub(){
     +'<div class="msghub-stage">'+stageHtml+'</div>'
     +(selC?'<div class="mt-rail">'+mtShellHtml()+'</div>':'')
     +'</div>';
-  if(selC)mtRenderAll();
+  if(selC)mtRenderAll(selC.id);
 }
 
-// ── Tools rail, right pane of the Messages hub only. Context / Templates /
-// Job promo. Tab switching is local state, no reload. ──────────────────────
-var mtActiveTab='ctx';
+// ── Tools rail. Context / Templates / Job promo. Rendered in two places now,
+// the Messages hub and the candidate profile Messages tab, never both at once
+// since they are separate pages, so the element ids below stay unique.
+// Tab switching is local state, no reload. ─────────────────────────────────
+//
+// State is held per place rather than in shared module vars. Expanding a
+// Context row, ticking a compliance item or picking a promo role in the hub
+// must not silently change what the profile shows, and the other way round.
+// mtS() hands back the bucket belonging to whichever place is on screen.
+var MT_STATE={
+  hub:{activeTab:'ctx',ctxOpen:null,chaseSel:{},promoRoleId:null,promoFacId:null,promoQ:'',
+    promoOpts:{dates:true,rate:true,ward:true,link:true,state:true,wards:true}},
+  profile:{activeTab:'ctx',ctxOpen:null,chaseSel:{},promoRoleId:null,promoFacId:null,promoQ:'',
+    promoOpts:{dates:true,rate:true,ward:true,link:true,state:true,wards:true}}
+};
+function mtScope(){return curPage==='messages'?'hub':'profile';}
+function mtS(){return MT_STATE[mtScope()];}
+// True when the rail is drawn on the candidate profile, where a button
+// offering to open that same profile has nothing left to do.
+function mtOnProfile(){return mtScope()==='profile';}
+// Every rail helper is handed the candidate id it is acting on rather than
+// asking the hub which conversation is selected, so the same helper works
+// from either place. Falls back to the hub selection only when no id is
+// passed, which keeps any missed call site behaving as it did before.
+function mtCandFor(cid){
+  var id=(cid===undefined||cid===null)?msgHubSelectedId:cid;
+  return candidates.find(function(x){return x.id===id;});
+}
 function mtShellHtml(){
+  var at=mtS().activeTab;
   return '<div class="mt-tabs-wrap"><div class="mt-tabs">'
-    +'<div class="mt-tab'+(mtActiveTab==='ctx'?' on':'')+'" data-mt="ctx" onclick="mtSwitch(&apos;ctx&apos;)">Context</div>'
-    +'<div class="mt-tab'+(mtActiveTab==='tpl'?' on':'')+'" data-mt="tpl" onclick="mtSwitch(&apos;tpl&apos;)">Templates</div>'
-    +'<div class="mt-tab'+(mtActiveTab==='promo'?' on':'')+'" data-mt="promo" onclick="mtSwitch(&apos;promo&apos;)">Job promo</div>'
+    +'<div class="mt-tab'+(at==='ctx'?' on':'')+'" data-mt="ctx" onclick="mtSwitch(&apos;ctx&apos;)">Context</div>'
+    +'<div class="mt-tab'+(at==='tpl'?' on':'')+'" data-mt="tpl" onclick="mtSwitch(&apos;tpl&apos;)">Templates</div>'
+    +'<div class="mt-tab'+(at==='promo'?' on':'')+'" data-mt="promo" onclick="mtSwitch(&apos;promo&apos;)">Job promo</div>'
     +'</div></div>'
     +'<div class="mt-body">'
-    +'<div class="mt-view'+(mtActiveTab==='ctx'?' on':'')+'" id="mt-ctx"></div>'
-    +'<div class="mt-view'+(mtActiveTab==='tpl'?' on':'')+'" id="mt-tpl"></div>'
-    +'<div class="mt-view'+(mtActiveTab==='promo'?' on':'')+'" id="mt-promo"></div>'
+    +'<div class="mt-view'+(at==='ctx'?' on':'')+'" id="mt-ctx"></div>'
+    +'<div class="mt-view'+(at==='tpl'?' on':'')+'" id="mt-tpl"></div>'
+    +'<div class="mt-view'+(at==='promo'?' on':'')+'" id="mt-promo"></div>'
     +'</div>';
 }
 function mtSwitch(v){
-  mtActiveTab=v;
+  mtS().activeTab=v;
   document.querySelectorAll('.mt-tab').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-mt')===v);});
   document.querySelectorAll('.mt-view').forEach(function(x){x.classList.toggle('on',x.id==='mt-'+v);});
 }
-function mtRenderAll(){
-  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+function mtRenderAll(cid){
+  var c=mtCandFor(cid);
   if(!c)return;
   document.getElementById('mt-ctx').innerHTML=mtCtxHtml(c);
   document.getElementById('mt-tpl').innerHTML=mtTplHtml(c);
@@ -6154,19 +6196,19 @@ function mtRenderAll(){
 // rail stays glanceable either way. Passing a falsy detailHtml renders a flat
 // row, no chevron, nothing to click, since a row with nothing extra to show
 // should not pretend to be a workspace.
-var mtCtxOpen=null;
-function mtCtxToggle(key){
-  mtCtxOpen=(mtCtxOpen===key)?null:key;
-  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+function mtCtxToggle(key,cid){
+  var s=mtS();
+  s.ctxOpen=(s.ctxOpen===key)?null:key;
+  var c=mtCandFor(cid);
   if(!c)return;
   var el=document.getElementById('mt-ctx');
   if(el)el.innerHTML=mtCtxHtml(c);
 }
-function mtCtxRowHtml(key,iconSvg,bg,fg,label,val,detailHtml){
+function mtCtxRowHtml(key,iconSvg,bg,fg,label,val,detailHtml,cid){
   var hasDetail=!!detailHtml;
-  var open=hasDetail&&mtCtxOpen===key;
+  var open=hasDetail&&mtS().ctxOpen===key;
   return '<div class="mt-ctx'+(open?' open':'')+(hasDetail?'':' flat')+'">'
-    +'<div class="mt-ctx-row"'+(hasDetail?' onclick="mtCtxToggle(&apos;'+key+'&apos;)"':'')+'>'
+    +'<div class="mt-ctx-row"'+(hasDetail?' onclick="mtCtxToggle(&apos;'+key+'&apos;,'+cid+')"':'')+'>'
     +'<div class="mt-ctx-ic" style="background:'+bg+';color:'+fg+'">'+iconSvg+'</div>'
     +'<div class="mt-ctx-n">'+label+'</div><div class="mt-ctx-d">'+val+'</div>'
     +(hasDetail?'<div class="mt-ctx-chev">'+I.chevron+'</div>':'')
@@ -6180,7 +6222,8 @@ function mtCtxCandidateDetailHtml(c){
   if(c.regions&&c.regions.length)h+='<div class="mt-out-plain">Preferred regions: '+esc(c.regions.join(', '))+'.</div>';
   if(c.phone)h+='<div class="mt-out-plain">Phone: <a href="tel:'+esc(c.phone)+'" style="color:var(--v11)">'+esc(c.phone)+'</a></div>';
   if(c.preferences&&c.preferences.trim())h+='<div class="mt-out-plain">'+esc(c.preferences)+'</div>';
-  h+='<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">View full profile</button>';
+  // Pointless once the rail is already sitting on that profile.
+  if(!mtOnProfile())h+='<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">View full profile</button>';
   return h;
 }
 // Available only gets a chevron when there is genuinely more than the flat
@@ -6217,31 +6260,32 @@ function mtCtxOutChipHtml(o){
   if(o.expiringSoon)return '<span class="mt-out-chip a">Expires '+fmt(o.expiry)+'</span>';
   return '<span class="mt-out-chip gy">'+esc(o.status)+'</span>';
 }
-// Selection persists across a rail re-render the same way mtCtxOpen does, a
-// plain module var scoped to whichever candidate's thread is open, cleared
-// on candidate switch in msgHubPick.
-var mtChaseSel={};
-function mtChaseToggleSel(key){
-  if(mtChaseSel[key])delete mtChaseSel[key];else mtChaseSel[key]=true;
-  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+// Selection persists across a rail re-render the same way ctxOpen does. It
+// lives in the per place bucket (see MT_STATE), scoped to whichever
+// candidate's thread is open, cleared on candidate switch in msgHubPick.
+function mtChaseToggleSel(key,cid){
+  var sel=mtS().chaseSel;
+  if(sel[key])delete sel[key];else sel[key]=true;
+  var c=mtCandFor(cid);
   if(!c)return;
   var el=document.getElementById('mt-ctx');
   if(el)el.innerHTML=mtCtxHtml(c);
 }
 function mtChaseSelectAllToggle(cid){
-  var c=candidates.find(function(x){return x.id===cid;});
+  var c=mtCandFor(cid);
   if(!c)return;
+  var s=mtS();
   var outstanding=mtCtxOutstanding(c);
-  var selCount=outstanding.filter(function(o){return mtChaseSel[o.key];}).length;
-  if(selCount>0&&selCount===outstanding.length)mtChaseSel={};
-  else outstanding.forEach(function(o){mtChaseSel[o.key]=true;});
+  var selCount=outstanding.filter(function(o){return s.chaseSel[o.key];}).length;
+  if(selCount>0&&selCount===outstanding.length)s.chaseSel={};
+  else outstanding.forEach(function(o){s.chaseSel[o.key]=true;});
   var el=document.getElementById('mt-ctx');
   if(el)el.innerHTML=mtCtxHtml(c);
 }
 function mtCtxOutRowHtml(c,o,canChase){
-  var checked=!!mtChaseSel[o.key];
+  var checked=!!mtS().chaseSel[o.key];
   return '<div class="mt-out">'
-    +'<span class="mt-out-cb"><input type="checkbox" '+(checked?'checked ':'')+(canChase?'':'disabled ')+'onchange="mtChaseToggleSel(&apos;'+jsAttrEsc(o.key)+'&apos;)"></span>'
+    +'<span class="mt-out-cb"><input type="checkbox" '+(checked?'checked ':'')+(canChase?'':'disabled ')+'onchange="mtChaseToggleSel(&apos;'+jsAttrEsc(o.key)+'&apos;,'+c.id+')"></span>'
     +'<div class="mt-out-bd">'+esc(o.label)+'</div>'
     +mtCtxOutChipHtml(o)
     +'</div>';
@@ -6268,11 +6312,11 @@ function mtCtxChaseSelected(cid){
   if(!c)return;
   if(!c.smsConsent||c.doNotContact){showToast('No SMS consent, chase by call or an internal note instead.','err');return;}
   var outstanding=mtCtxOutstanding(c);
-  var selected=outstanding.filter(function(o){return mtChaseSel[o.key];});
+  var selected=outstanding.filter(function(o){return mtS().chaseSel[o.key];});
   if(!selected.length)return;
   if(msgFillDraft(cid,mtCtxChaseSelectedText(c,selected))){
     showToast('Chase for '+selected.length+' item'+(selected.length!==1?'s':'')+' inserted.');
-    mtChaseSel={};
+    mtS().chaseSel={};
     var el=document.getElementById('mt-ctx');
     if(el)el.innerHTML=mtCtxHtml(c);
   }
@@ -6280,7 +6324,7 @@ function mtCtxChaseSelected(cid){
 function mtCtxComplianceDetailHtml(c,outstanding){
   if(!outstanding.length)return '<div class="mt-out-plain">All required items are complete.</div>';
   var canChase=c.smsConsent&&!c.doNotContact;
-  var selCount=outstanding.filter(function(o){return mtChaseSel[o.key];}).length;
+  var selCount=outstanding.filter(function(o){return mtS().chaseSel[o.key];}).length;
   var allSelected=selCount>0&&selCount===outstanding.length;
   var h='<button class="mt-out-link" '+(canChase?'':'disabled')+' onclick="event.stopPropagation();mtChaseSelectAllToggle('+c.id+')" style="margin-bottom:2px">'+(allSelected?'Clear selection':'Select all')+'</button>';
   h+=outstanding.map(function(o){return mtCtxOutRowHtml(c,o,canChase);}).join('');
@@ -6305,14 +6349,15 @@ function mtCtxHtml(c){
   var availExtra=mtCtxAvailHasExtra(c);
   var h='<div class="mt-sl">CANDIDATE</div>';
   h+=mtCtxRowHtml('candidate',I.person,'var(--v4)','var(--v11)',esc(c.classification||'Classification not set'),esc(states),
-    mtCtxCandidateDetailHtml(c));
+    mtCtxCandidateDetailHtml(c),c.id);
   h+=mtCtxRowHtml('compliance',I.chk,compBg,compFg,'Compliance',sc+'%'+(outstanding.length?' &middot; '+outstanding.length+' outstanding':''),
-    mtCtxComplianceDetailHtml(c,outstanding));
+    mtCtxComplianceDetailHtml(c,outstanding),c.id);
   h+=mtCtxRowHtml('available',I.cal,'var(--g3)','var(--g11)','Available',c.availableFrom?fmt(c.availableFrom):'Not set',
-    availExtra?mtCtxAvailDetailHtml(c):null);
+    availExtra?mtCtxAvailDetailHtml(c):null,c.id);
   h+=mtCtxRowHtml('consent',I.chk,c.smsConsent?'var(--g3)':'var(--r3)',c.smsConsent?'var(--g11)':'var(--r11)','SMS consent',c.smsConsent?'Opted in':'Opted out',
     '<div class="mt-out-plain">'+esc(smsConsentSummaryLine(c))+'</div>'
-    +'<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">Manage on profile</button>');
+    // Same reason as the candidate row's "View full profile" button.
+    +(mtOnProfile()?'':'<button class="mt-out-link" onclick="event.stopPropagation();openCandPage('+c.id+',&apos;profile&apos;)">Manage on profile</button>'),c.id);
   var note=msgLastNote(c);
   if(note){
     h+='<div class="mt-sl">INTERNAL NOTE</div><div class="mt-note"><div class="mt-note-h">'+I.pencil+'NOT VISIBLE TO CANDIDATE</div>'
@@ -6351,45 +6396,50 @@ function mtTplHtml(c){
 // that whole namespace (promoIntro, renderPromoPanel, promoFactSheetOf, and
 // so on). Reuses promoFactSheetOf() for the real fact sheet link and
 // matchScore() (the same engine roleMatchList calls) for the MATCH tag.
-var msgPromoRoleId=null,msgPromoFacId=null,msgPromoQ='',
-  msgPromoOpts={dates:true,rate:true,ward:true,link:true,state:true,wards:true};
-function msgPromoPick(id){msgPromoRoleId=id;msgPromoFacId=null;mtRenderPromo();mtPromoSyncComposer();}
-function msgPromoToggle(key){msgPromoOpts[key]=!msgPromoOpts[key];mtRenderPromo();mtPromoSyncComposer();}
+// promoRoleId / promoFacId / promoQ / promoOpts now live in the per place
+// bucket (see MT_STATE above), so a role picked in the Messages hub does not
+// turn up preselected on a candidate profile, or the other way round.
+function msgPromoPick(id,cid){var s=mtS();s.promoRoleId=id;s.promoFacId=null;mtRenderPromo(cid);mtPromoSyncComposer(cid);}
+function msgPromoToggle(key,cid){var s=mtS();s.promoOpts[key]=!s.promoOpts[key];mtRenderPromo(cid);mtPromoSyncComposer(cid);}
 // Facility only promo, no live role attached. Same lazy document fetch
 // promoPickFacility already uses on the email promo panel, so a facility
 // that has never been opened this session still resolves its real fact
 // sheet instead of silently looking like it has none.
-function msgPromoPickFac(id){
-  msgPromoFacId=id;msgPromoRoleId=null;
+function msgPromoPickFac(id,cid){
+  var s=mtS();
+  s.promoFacId=id;s.promoRoleId=null;
   var fac=facilities.find(function(f){return f.id===id;});
   if(fac&&sb&&!facFilesLoaded[fac.id]){
     facFilesLoaded[fac.id]=true;
     sb.from('documents').select('*').eq('facility_id',fac.id).then(function(r){
       if(!r.error){
         fac.documents=(r.data||[]).map(mapDocRow);
-        if(msgPromoFacId===fac.id){mtRenderPromo();mtPromoSyncComposer();}
+        // Re-read the bucket rather than closing over s: this lands after an
+        // await, and the operator may have moved to the other place by then.
+        if(mtS().promoFacId===fac.id){mtRenderPromo(cid);mtPromoSyncComposer(cid);}
       }
     });
   }
-  mtRenderPromo();
-  mtPromoSyncComposer();
+  mtRenderPromo(cid);
+  mtPromoSyncComposer(cid);
 }
 // Stage 6, the rail proposes, the composer sends. Loads the built promo text
 // into #msgBox as an editable draft rather than sending blind from the rail.
 // Goes through msgFillDraft so it never overwrites a hand typed message, and
 // is a no-op when the open candidate has no SMS consent, since there is no
 // composer to load into for them (msgBlockedHtml renders instead).
-function mtPromoSyncComposer(){
-  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+function mtPromoSyncComposer(cid){
+  var c=mtCandFor(cid);
   if(!c||!c.smsConsent)return;
-  if(msgPromoRoleId){
-    var role=roles.find(function(r){return r.id===msgPromoRoleId;});
-    if(role)msgFillDraft(c.id,msgPromoText(role,c,msgPromoOpts));
+  var s=mtS();
+  if(s.promoRoleId){
+    var role=roles.find(function(r){return r.id===s.promoRoleId;});
+    if(role)msgFillDraft(c.id,msgPromoText(role,c,s.promoOpts));
     return;
   }
-  if(msgPromoFacId){
-    var fac=facilities.find(function(f){return f.id===msgPromoFacId;});
-    if(fac)msgFillDraft(c.id,msgPromoFacText(fac,c,msgPromoOpts));
+  if(s.promoFacId){
+    var fac=facilities.find(function(f){return f.id===s.promoFacId;});
+    if(fac)msgFillDraft(c.id,msgPromoFacText(fac,c,s.promoOpts));
   }
 }
 function msgPromoText(role,c,opts){
@@ -6426,36 +6476,36 @@ function msgPromoFacText(fac,c,opts){
   t+=' Want me to keep you in mind for roles there? Reply STOP to opt out.';
   return t;
 }
-function mtPromoJobRowHtml(role,isMatch,fac){
+function mtPromoJobRowHtml(role,isMatch,fac,cid){
   var dates=role.startDate?(fmt(role.startDate)+' to '+(role.endDate?fmt(role.endDate):'TBC')):'Dates TBC';
-  return '<div class="mt-job'+(msgPromoRoleId===role.id?' on':'')+'" onclick="msgPromoPick('+role.id+')">'
+  return '<div class="mt-job'+(mtS().promoRoleId===role.id?' on':'')+'" onclick="msgPromoPick('+role.id+','+cid+')">'
     +'<div class="mt-job-t">'+esc(fac&&fac.name?fac.name:'Facility TBC')+(isMatch?'<span class="mt-jmatch">MATCH</span>':'')+'</div>'
     +'<div class="mt-job-m">'+esc(role.ward||'Ward TBC')+'<span class="sp">&middot;</span>'+esc(dates)+(fac&&fac.state?'<span class="sp">&middot;</span>'+esc(fac.state):'')+'</div>'
     +'</div>';
 }
 // Facility search result row, no role attached. Picking it starts the
 // facility only promo below, same click-to-select pattern as a role row.
-function mtPromoFacRowHtml(fac){
+function mtPromoFacRowHtml(fac,cid){
   var wardNames=(fac.wards||[]).map(function(w){return w.name;}).filter(Boolean);
-  return '<div class="mt-job'+(msgPromoFacId===fac.id?' on':'')+'" onclick="msgPromoPickFac('+fac.id+')">'
+  return '<div class="mt-job'+(mtS().promoFacId===fac.id?' on':'')+'" onclick="msgPromoPickFac('+fac.id+','+cid+')">'
     +'<div class="mt-job-t">'+esc(fac.name)+'</div>'
     +'<div class="mt-job-m">'+(wardNames.length?esc(wardNames.join(', ')):'Wards TBC')+(fac.state?'<span class="sp">&middot;</span>'+esc(fac.state):'')+'</div>'
     +'</div>';
 }
-function mtPromoTogglesHtml(role){
-  var hasRate=!!role.rate;
+function mtPromoTogglesHtml(role,cid){
+  var hasRate=!!role.rate,opts=mtS().promoOpts;
   var defs=[['ward','Ward'],['dates','Dates'],['rate','Rate'],['link','Fact sheet link']];
   return '<div class="mt-opts">'+defs.map(function(o){
-    var key=o[0],disabled=key==='rate'&&!hasRate,on=msgPromoOpts[key]&&!disabled;
-    return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;)"')+'>'+o[1]+'</span>';
+    var key=o[0],disabled=key==='rate'&&!hasRate,on=opts[key]&&!disabled;
+    return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;,'+cid+')"')+'>'+o[1]+'</span>';
   }).join('')+'</div>';
 }
-function mtPromoFacTogglesHtml(fac){
-  var hasFactSheet=!!promoFactSheetOf(fac);
+function mtPromoFacTogglesHtml(fac,cid){
+  var hasFactSheet=!!promoFactSheetOf(fac),opts=mtS().promoOpts;
   var defs=[['state','State'],['wards','Wards'],['link','Fact sheet link']];
   return '<div class="mt-opts">'+defs.map(function(o){
-    var key=o[0],disabled=key==='link'&&!hasFactSheet,on=msgPromoOpts[key]&&!disabled;
-    return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;)"')+'>'+o[1]+'</span>';
+    var key=o[0],disabled=key==='link'&&!hasFactSheet,on=opts[key]&&!disabled;
+    return '<span class="mt-opt'+(on?' on':'')+(disabled?' dis':'')+'"'+(disabled?'':' onclick="msgPromoToggle(&apos;'+key+'&apos;,'+cid+')"')+'>'+o[1]+'</span>';
   }).join('')+'</div>';
 }
 // Stage 6.1: with a role picked, the compose panel (toggles, then the draft
@@ -6476,20 +6526,21 @@ function mtPromoFacTogglesHtml(fac){
 // at those facilities surfaced right under them.
 function mtPromoHtml(c){
   var first=(c.name||'').split(' ')[0]||'this candidate';
-  var role=msgPromoRoleId?roles.find(function(r){return r.id===msgPromoRoleId;}):null;
-  var fac=(!role&&msgPromoFacId)?facilities.find(function(f){return f.id===msgPromoFacId;}):null;
+  var s=mtS();
+  var role=s.promoRoleId?roles.find(function(r){return r.id===s.promoRoleId;}):null;
+  var fac=(!role&&s.promoFacId)?facilities.find(function(f){return f.id===s.promoFacId;}):null;
   if(role){
     var facR=facilities.find(function(f){return f.id===role.facilityId;});
     var dates=role.startDate?(fmt(role.startDate)+' to '+(role.endDate?fmt(role.endDate):'TBC')):'Dates TBC';
-    var h='<div class="mt-sl">JOB PROMO<button onclick="msgPromoPick(null)">Pick a different role</button></div>';
+    var h='<div class="mt-sl">JOB PROMO<button onclick="msgPromoPick(null,'+c.id+')">Pick a different role</button></div>';
     h+='<div class="mt-promo-sel"><div class="mt-promo-sel-t">'+esc(facR&&facR.name?facR.name:'Facility TBC')+'</div>'
       +'<div class="mt-promo-sel-m">'+esc(role.ward||'Ward TBC')+'<span class="sp">&middot;</span>'+esc(dates)+(facR&&facR.state?'<span class="sp">&middot;</span>'+esc(facR.state):'')+'</div></div>';
-    h+='<div class="mt-sl">INCLUDE</div>'+mtPromoTogglesHtml(role);
+    h+='<div class="mt-sl">INCLUDE</div>'+mtPromoTogglesHtml(role,c.id);
     var matchCount=roleMatchList(vc(),role).length;
     if(c.smsConsent){
       h+='<div class="mt-empty">Draft loaded into the composer below. Edit it there, then send.</div>';
     }else{
-      var txt=msgPromoText(role,c,msgPromoOpts);
+      var txt=msgPromoText(role,c,s.promoOpts);
       h+='<div class="mt-prev"><div class="mt-prev-lb">SMS PREVIEW</div>'+esc(txt)+'</div>';
       h+='<div class="mt-empty">'+esc(first)+' has not given SMS consent, there is no composer to load a draft into for them. You can still send this to the matched group.</div>';
     }
@@ -6498,14 +6549,14 @@ function mtPromoHtml(c){
   }
   if(fac){
     var wardNames=(fac.wards||[]).map(function(w){return w.name;}).filter(Boolean);
-    var h='<div class="mt-sl">JOB PROMO<button onclick="msgPromoPick(null)">Pick a different facility</button></div>';
+    var h='<div class="mt-sl">JOB PROMO<button onclick="msgPromoPick(null,'+c.id+')">Pick a different facility</button></div>';
     h+='<div class="mt-promo-sel"><div class="mt-promo-sel-t">'+esc(fac.name)+'</div>'
       +'<div class="mt-promo-sel-m">'+(fac.state?esc(fac.state):'State TBC')+(wardNames.length?'<span class="sp">&middot;</span>'+esc(wardNames.join(', ')):'')+'</div></div>';
-    h+='<div class="mt-sl">INCLUDE</div>'+mtPromoFacTogglesHtml(fac);
+    h+='<div class="mt-sl">INCLUDE</div>'+mtPromoFacTogglesHtml(fac,c.id);
     if(c.smsConsent){
       h+='<div class="mt-empty">Draft loaded into the composer below. Edit it there, then send.</div>';
     }else{
-      var txt=msgPromoFacText(fac,c,msgPromoOpts);
+      var txt=msgPromoFacText(fac,c,s.promoOpts);
       h+='<div class="mt-prev"><div class="mt-prev-lb">SMS PREVIEW</div>'+esc(txt)+'</div>';
       h+='<div class="mt-empty">'+esc(first)+' has not given SMS consent, there is no composer to load a draft into for them.</div>';
     }
@@ -6518,20 +6569,21 @@ function mtPromoHtml(c){
   // the field it is sitting in.
   return '<div class="mt-sl">JOB PROMO</div>'
     +'<div class="msghub-search" style="margin-bottom:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>'
-    +'<input placeholder="Search any facility" value="'+esc(msgPromoQ||'')+'" oninput="msgPromoSearch(this.value)"></div>'
+    +'<input placeholder="Search any facility" value="'+esc(s.promoQ||'')+'" oninput="msgPromoSearch(this.value,'+c.id+')"></div>'
     +'<div id="mt-promo-results">'+mtPromoResultsHtml(c)+'</div>';
 }
 function mtPromoResultsHtml(c){
   var first=(c.name||'').split(' ')[0]||'this candidate';
-  var q=(msgPromoQ||'').trim().toLowerCase();
+  var promoQ=mtS().promoQ;
+  var q=(promoQ||'').trim().toLowerCase();
   var openRoles=roles.filter(function(r){return r.status==='Open'||r.status==='Likely';});
   if(q){
     var matchedFacs=facilities.filter(function(f){return facAliasMatch(f,q);});
-    if(!matchedFacs.length)return '<div class="mt-empty">No facilities match &quot;'+esc(msgPromoQ)+'&quot;.</div>';
+    if(!matchedFacs.length)return '<div class="mt-empty">No facilities match &quot;'+esc(promoQ)+'&quot;.</div>';
     return matchedFacs.map(function(f){
-      var row=mtPromoFacRowHtml(f);
+      var row=mtPromoFacRowHtml(f,c.id);
       var facRoles=openRoles.filter(function(r){return r.facilityId===f.id;});
-      row+=facRoles.map(function(r){return mtPromoJobRowHtml(r,matchScore(c,r).score>0,f);}).join('');
+      row+=facRoles.map(function(r){return mtPromoJobRowHtml(r,matchScore(c,r).score>0,f,c.id);}).join('');
       return row;
     }).join('');
   }
@@ -6540,7 +6592,7 @@ function mtPromoResultsHtml(c){
   tagged.sort(function(a,b){return (b.m?1:0)-(a.m?1:0);});
   var h=tagged.map(function(x){
     var facT=facilities.find(function(f){return f.id===x.r.facilityId;});
-    return mtPromoJobRowHtml(x.r,x.m,facT);
+    return mtPromoJobRowHtml(x.r,x.m,facT,c.id);
   }).join('');
   h+='<div style="font-size:11.5px;color:var(--ink4);margin-top:14px;line-height:1.55">Pick a role to build a promo SMS. Roles matching '+esc(first)+"'s profile are tagged.</div>";
   return h;
@@ -6548,15 +6600,15 @@ function mtPromoResultsHtml(c){
 // Bound to the search input's oninput. Only replaces the results container,
 // never the input, so the field keeps focus and the cursor position through
 // every keystroke.
-function msgPromoSearch(v){
-  msgPromoQ=v;
-  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+function msgPromoSearch(v,cid){
+  mtS().promoQ=v;
+  var c=mtCandFor(cid);
   if(!c)return;
   var el=document.getElementById('mt-promo-results');
   if(el)el.innerHTML=mtPromoResultsHtml(c);
 }
-function mtRenderPromo(){
-  var c=candidates.find(function(x){return x.id===msgHubSelectedId;});
+function mtRenderPromo(cid){
+  var c=mtCandFor(cid);
   if(!c)return;
   var el=document.getElementById('mt-promo');
   if(el)el.innerHTML=mtPromoHtml(c);
@@ -6572,13 +6624,16 @@ function msgPromoSendGroup(roleId){
     message:'Sends an individual SMS to each of the '+eligible.length+' matched, opted in candidates.'+(skipped?' '+skipped+' match'+(skipped!==1?'es':'')+' will be skipped for consent.':''),
     confirmLabel:'Send'},function(){
     var sentCount=0,failCount=0,total=eligible.length;
+    var opts=mtS().promoOpts;
     eligible.forEach(function(c){
-      var text=msgPromoText(role,c,msgPromoOpts);
+      var text=msgPromoText(role,c,opts);
       sendMessage(c.id,text).then(function(r){
         if(r.error)failCount++;else sentCount++;
         if(sentCount+failCount===total){
           showToast('Sent to '+sentCount+' of '+total+(skipped?', '+skipped+' skipped for consent':'')+'.');
-          if(curPage==='messages')renderMessagesHub();
+          // Redraw whichever screen this was run from, the Messages hub or
+          // the candidate profile, rather than only ever the hub.
+          msgRefreshUI();
         }
       });
     });
@@ -7902,8 +7957,12 @@ function renderCandPage(){
   } else if(_tab==='cv'){
     tabContent=renderCpCv(c);
   } else if(_tab==='messages'){
-    tabContent='<div style="display:flex;justify-content:center;padding:8px 0">'
-      +'<div style="width:100%;max-width:390px;height:660px">'+renderMsgThread(c)+'</div>'
+    // Two panes, the same thread and the same tools rail the Messages centre
+    // uses, minus its conversations list. The rail's panels are filled after
+    // the page HTML lands, below, the same order renderMessagesHub uses.
+    tabContent='<div class="msgprof">'
+      +'<div class="msgprof-stage"><div class="msgprof-phone">'+renderMsgThread(c)+'</div></div>'
+      +'<div class="mt-rail">'+mtShellHtml()+'</div>'
       +'</div>';
   } else {
     tabContent=cpSec('overview','Overview',cpEditing==='overview'?ovEdit:ovView)
@@ -7916,6 +7975,11 @@ function renderCandPage(){
     +tabBar
     +'<div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">'+tabContent+'</div>'
     +'</div>';
+  // mtShellHtml only writes the rail's three empty containers, so this has to
+  // run once the HTML above is in the document, exactly as renderMessagesHub
+  // does it. Passing this page's candidate keeps the rail off the hub's own
+  // selection entirely.
+  if(_tab==='messages')mtRenderAll(c.id);
 }
 
 // ── FACILITY FULL PAGE ─────────────────────────────────────────────────────

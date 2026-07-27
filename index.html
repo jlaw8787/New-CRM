@@ -5612,21 +5612,20 @@ function msgRefreshUI(){
 // real edit, a real keystroke, a template insert, an emoji insert, a send,
 // clears it back to false.
 var msgBoxIsDraft=false;
-// Bound to the textarea's oninput, not called by any programmatic filler, so
-// it only ever fires on a real keystroke.
-function msgOnInput(cid){msgBoxIsDraft=false;msgCnt(cid);}
-// Chrome quirk, not obvious: a plain box.value='x' assignment updates what
-// the DOM reports, but not the textarea's internal edit history, so the very
-// next time the operator focuses that field Chrome can snap the value back
-// to what it was before the assignment, silently. execCommand('insertText')
-// goes through the real editing path so it sticks, with the raw property
-// setter as a fallback for browsers where execCommand is unavailable.
+// Mirrors the composer textarea's value. Kept as a real JS variable, not
+// just DOM state, so the current text does not exist only in the box.
+var msgBoxText='';
+// Bound to the textarea's oninput, fires on a real keystroke and also when
+// msgSetBoxText below dispatches its own input event after a programmatic
+// insert.
+function msgOnInput(cid){msgBoxIsDraft=false;var box=document.getElementById('msgBox');if(box)msgBoxText=box.value;msgCnt(cid);}
+// Sets the textarea value directly rather than depending on
+// execCommand('insertText')'s return value. msgBoxText is updated in the
+// same step so the text also lives in a real variable, not only the DOM.
 function msgSetBoxText(box,text){
   box.focus();
-  box.select();
-  if(document.execCommand&&document.execCommand('insertText',false,text))return;
-  var setter=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;
-  setter.call(box,text);
+  box.value=text;
+  msgBoxText=text;
   box.dispatchEvent(new Event('input',{bubbles:true}));
 }
 // Shared by the job promo rail and the compliance chase action. Refuses to
@@ -6598,7 +6597,6 @@ function tplInsert(id){
   msgSetBoxText(box,mergeTemplate(t.body,c));
   msgBoxIsDraft=false;
   msgCnt(c.id);
-  box.focus();
   showToast('Template inserted and merged.');
 }
 var tplManageView='list',tplEditState=null;

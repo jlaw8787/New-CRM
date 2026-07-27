@@ -8859,6 +8859,7 @@ function saveContract(){
       alertDays:14,healthRegion:EK.healthRegion||'',loadingPct:EK.loadingPct||0,perDiem:EK.perDiem||0,
       oncallRate:EK.oncallRate||'',notes:EK.notes||'',
       flightConfirmed:false,accomConfirmed:false,shiftConfirmed:false,
+      nextPlan:r.data.next_plan||'Undecided',
       lastEditedBy:CU.name,lastEditedAt:nowIso};
     if(!cand.contracts)cand.contracts=[];
     cand.contracts.push(newContract);
@@ -10127,6 +10128,24 @@ function downloadWeekendHandoverPdf(){
   _whPdfDoc.save(fname);
 }
 
+// Next plan, contract-ending readiness build step 1, data field only, the
+// alert itself is a later step. Undecided is the default for every existing
+// contract too, set at the database column level, not just in this object.
+var NEXT_PLAN_OPTS=['Undecided','Extending','Exiting'];
+function mpSetNextPlan(v){
+  var hit=findContractById(MPContractId),k=hit.contract;
+  if(!k)return;
+  var old=k.nextPlan;
+  k.nextPlan=v;
+  mpRenderBody();
+  sb.from('contracts').update({next_plan:v}).eq('id',k.id).then(function(r){
+    if(r.error){
+      k.nextPlan=old;mpRenderBody();
+      showToast('Save error: '+r.error.message,'err');
+      console.error('[DB] contract next_plan update',r.error);
+    }
+  });
+}
 function openManagePlacement(contractId){
   MPContractId=contractId;
   MPFlightEditId=null;MPAccomEditId=null;MPCarEditId=null;MPExpenseEditId=null;
@@ -10188,14 +10207,14 @@ function mpRenderBody(){
       +'</div>'
     :'';
 
-  document.getElementById('m-ttl').textContent='Manage Placement — '+esc(cand.name);
+  document.getElementById('m-ttl').textContent='Manage Placement, '+esc(cand.name);
   document.getElementById('m-info').innerHTML='';document.getElementById('m-tabs').innerHTML='';
   document.getElementById('m-body').innerHTML='<div style="padding:16px">'
     +'<div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:12px">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
     +'<div>'
     +'<div style="font-size:13px;font-weight:500">'+esc(cand.name)+'</div>'
-    +'<div style="font-size:11px;color:var(--t2);margin-top:2px">'+esc(k.facility||'')+(k.ward?' — '+esc(k.ward):'')+'</div>'
+    +'<div style="font-size:11px;color:var(--t2);margin-top:2px">'+esc(k.facility||'')+(k.ward?', '+esc(k.ward):'')+'</div>'
     +'<div style="font-size:11px;color:var(--t3);margin-top:2px">'+fmt(k.startDate)+' → '+fmt(k.endDate)+'</div>'
     +'</div>'
     +'<button class="btn btn-p btn-sm" style="flex-shrink:0" onclick="openContractPdfPreview('+k.id+')">Preview Contract</button>'
@@ -10203,6 +10222,12 @@ function mpRenderBody(){
     +'</div>'
     +placementCompHtml
     +'<div style="font-size:11px;font-weight:500;color:var(--brand);margin-bottom:16px;padding:10px 14px;background:var(--brand-l);border-radius:10px">'+glanceLine+'</div>'
+    +'<div style="margin-bottom:16px">'
+    +'<div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--t2);margin-bottom:6px">Next plan</div>'
+    +'<div style="display:flex;gap:3px;background:var(--brand-l);border-radius:6px;padding:4px;width:fit-content">'
+    +NEXT_PLAN_OPTS.map(function(o){return '<button class="toggle-pill'+(k.nextPlan===o?' on':'')+'" onclick="mpSetNextPlan(&apos;'+o+'&apos;)">'+o+'</button>';}).join('')
+    +'</div>'
+    +'</div>'
     +mpFlightsSectionHtml(fls)
     +mpAccomSectionHtml(acs)
     +mpCarSectionHtml(cars)
@@ -11433,6 +11458,7 @@ function mapCandidate(row,acts,comps,subs,cons,fls,acs,cars,exps,docs,msgs){
         docAddedAt:k.doc_added_at||'',firstShiftTime:k.first_shift_time||'',
         supervisor:k.supervisor||'',flightConfirmed:!!k.flight_confirmed,
         accomConfirmed:!!k.accom_confirmed,shiftConfirmed:!!k.shift_confirmed,
+        nextPlan:k.next_plan||'Undecided',
         lastEditedBy:k.last_edited_by||'',lastEditedAt:k.last_edited_at||''};}),
     documents:(docs||[]).sort(function(a,b){return a.uploaded_at<b.uploaded_at?1:-1;}).map(mapDocRow),
     messages:(msgs||[]).sort(function(a,b){return a.created_at<b.created_at?-1:1;}).map(function(m){

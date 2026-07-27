@@ -1751,6 +1751,34 @@ function expAll(type){
   if(type==="contracts")expCSV(vc().reduce(function(a,c){return a.concat(c.contracts.map(function(k){var rateClean=cleanRate(k.rate);return{Candidate:c.name,Facility:k.facility,Ward:k.ward,Status:k.status,Region:k.healthRegion||"",Start:k.startDate,End:k.endDate,Rate:rateClean!==""?"$"+rateClean+"/hr":"",Hours:k.hours,Loading:k.loadingPct?k.loadingPct+"%":"",PerDiem:k.perDiem?"$"+k.perDiem+"/day":"",FirstShift:k.firstShiftTime||"",Supervisor:k.supervisor||"",FlightConfirmed:k.flightConfirmed?"Yes":"No",AccomConfirmed:k.accomConfirmed?"Yes":"No",ShiftConfirmed:k.shiftConfirmed?"Yes":"No",ContractDoc:k.docUrl||"",LastEditedBy:c.lastEditedBy||"",LastEditedAt:c.lastEditedAt||""};}));},[]),"hca-contracts.csv");
 }
 // AUTOMATIONS
+// Shared by the contract_comp alert below and the readiness check inside
+// getAutos(), one source of truth for "does a compliance item lapse while
+// this specific placement is running", not two copies of the date math.
+function complianceRiskDuringContract(c,k){
+  if(!k.startDate||!k.endDate)return[];
+  var pStart=new Date(k.startDate),pEnd=new Date(k.endDate);
+  if(isNaN(pStart.getTime())||isNaN(pEnd.getTime()))return[];
+  var totalDays=Math.round((pEnd-pStart)/86400000)+1;
+  if(totalDays<1)return[];
+  var risk=[];
+  getCmpItems(c).forEach(function(item){
+    var ci3=c.compliance&&c.compliance.items&&c.compliance.items[item.key];
+    if(!ci3||!ci3.expiry)return;
+    var exp=new Date(ci3.expiry);
+    if(isNaN(exp.getTime()))return;
+    if(ci3.expiry<k.startDate||ci3.expiry>k.endDate)return;
+    risk.push({item:item,expiry:ci3.expiry,dayOfPlacement:Math.round((exp-pStart)/86400000)+1,totalDays:totalDays});
+  });
+  return risk;
+}
+// A travel leg (flights, accommodation, or car hire) counts as ready only
+// once every record for it has a decided status, Booked, Self-booked, or
+// explicitly Not required. No record at all for that leg is missing, not
+// ready, the same as a record left undecided.
+function travelLegReady(records){
+  if(!records.length)return false;
+  return records.every(function(r){return ['Not required','Booked','Self-booked'].indexOf(r.status)>=0;});
+}
 function getAutos(cands){
   var alerts=[];
   cands.forEach(function(c){
@@ -1785,8 +1813,29 @@ function getAutos(cands){
       var d=ddiff(k.endDate);
       if(d!==null&&d>=0&&d<=(k.alertDays||14)&&k.status==="Active")alerts.push({id:'contract:'+k.id,level:d<=7?"red":"amber",type:"contract",title:"Contract expires "+d+"d: "+c.name,desc:k.facility+" — "+k.ward+" — ends "+fmt(k.endDate),cid:c.id,tab:"Contracts"});
       if(d!==null&&d>(k.alertDays||14)&&d<=21&&k.status==="Active")alerts.push({id:'extend:'+k.id,level:"blue",type:"extend",title:"Discuss extension: "+c.name,desc:"Contract at "+k.facility+" ends in "+d+" days.",cid:c.id,tab:"Contracts"});
-      if(["Signed","Active"].indexOf(k.status)>=0){var lnk=c.travel.flights.concat(c.travel.accommodation).filter(function(t){return t.contractId===k.id;});if(!lnk.length)alerts.push({id:'travel:'+k.id,level:"amber",type:"travel",title:"No travel arranged: "+c.name,desc:"Active contract at "+k.facility+". Start: "+fmt(k.startDate),cid:c.id,tab:"Travel & Expenses"});}
+      var inReadinessWindow=d!==null&&d>=0&&d<=(k.alertDays||14)&&k.status==="Active";
+      if(["Signed","Active"].indexOf(k.status)>=0&&!inReadinessWindow){var lnk=c.travel.flights.concat(c.travel.accommodation).filter(function(t){return t.contractId===k.id;});if(!lnk.length)alerts.push({id:'travel:'+k.id,level:"amber",type:"travel",title:"No travel arranged: "+c.name,desc:"Active contract at "+k.facility+". Start: "+fmt(k.startDate),cid:c.id,tab:"Travel & Expenses"});}
       if(d!==null&&d>=22&&d<=45&&k.status==="Active")alerts.push({id:'redeploy:'+k.id,level:"blue",type:"redeploy",title:"Redeployment window: "+c.name,desc:"Contract ends "+fmt(k.endDate)+" ("+d+"d). Source next placement.",cid:c.id,tab:"Contracts"});
+      if(inReadinessWindow){
+        var kFlights=c.travel.flights.filter(function(f){return f.contractId===k.id;});
+        var kAccom=c.travel.accommodation.filter(function(a){return a.contractId===k.id;});
+        var kCars=c.travel.carHire.filter(function(ca){return ca.contractId===k.id;});
+        var travelReady=travelLegReady(kFlights)&&travelLegReady(kAccom)&&travelLegReady(kCars);
+        var compReady=complianceRiskDuringContract(c,k).length===0;
+        var planReady=k.nextPlan==='Extending'||k.nextPlan==='Exiting';
+        if(!travelReady||!compReady||!planReady){
+          var missing=[];
+          if(!travelReady)missing.push('travel not booked');
+          if(!compReady)missing.push('compliance expiring during placement');
+          if(!planReady)missing.push('next plan undecided');
+          var missingText=missing.join(', ');
+          missingText=missingText.charAt(0).toUpperCase()+missingText.slice(1);
+          alerts.push({id:'readiness:'+k.id,level:d<=7?'red':'amber',type:'readiness',
+            title:'Ending readiness: '+c.name,
+            desc:'Ending in '+d+' day'+(d!==1?'s':'')+'. '+missingText+'.',
+            cid:c.id,tab:'Contracts'});
+        }
+      }
     });
     getCmpItems(c).forEach(function(item){
       var ci2=c.compliance.items[item.key];
@@ -1811,23 +1860,12 @@ function getAutos(cands){
     // per-contract loop so it can't perturb the existing contract/comp alerts above.
     c.contracts.forEach(function(k){
       if(["Signed","Active"].indexOf(k.status)<0)return;
-      if(!k.startDate||!k.endDate)return;
-      var pStart=new Date(k.startDate),pEnd=new Date(k.endDate);
-      if(isNaN(pStart.getTime())||isNaN(pEnd.getTime()))return;
-      var totalDays=Math.round((pEnd-pStart)/86400000)+1;
-      if(totalDays<1)return;
-      getCmpItems(c).forEach(function(item){
-        var ci3=c.compliance&&c.compliance.items&&c.compliance.items[item.key];
-        if(!ci3||!ci3.expiry)return;
-        var exp=new Date(ci3.expiry);
-        if(isNaN(exp.getTime()))return;
-        if(ci3.expiry<k.startDate||ci3.expiry>k.endDate)return;
-        var dayOfPlacement=Math.round((exp-pStart)/86400000)+1;
-        alerts.push({id:'contract_comp:'+c.id+':'+k.id+':'+item.key,
+      complianceRiskDuringContract(c,k).forEach(function(risk){
+        alerts.push({id:'contract_comp:'+c.id+':'+k.id+':'+risk.item.key,
           level:k.status==='Active'?'red':'amber',type:'contract_comp',
-          title:item.label+' expires during placement at '+(k.facility||'facility TBC'),
-          desc:c.name+' — expires '+fmt(ci3.expiry)+', day '+dayOfPlacement+' of '+totalDays+(k.ward?' — '+k.ward:''),
-          cid:c.id,key:item.key,itemName:item.label,contractId:k.id,tab:'Compliance'});
+          title:risk.item.label+' expires during placement at '+(k.facility||'facility TBC'),
+          desc:c.name+', expires '+fmt(risk.expiry)+', day '+risk.dayOfPlacement+' of '+risk.totalDays+(k.ward?', '+k.ward:''),
+          cid:c.id,key:risk.item.key,itemName:risk.item.label,contractId:k.id,tab:'Compliance'});
       });
     });
   });
@@ -3197,6 +3235,7 @@ function renderAlerts(){
   var groups=[
     {key:'critical',label:'Critical',color:'var(--danger)',items:all.filter(function(a){return (a.type==='ahpra'&&a.level==='red')||(a.type==='comp'&&a.level==='red')||(a.type==='contract'&&a.level==='red');})},
     {key:'placementcomp',label:'Compliance Expiring During Placement',color:'var(--danger)',items:all.filter(function(a){return a.type==='contract_comp';})},
+    {key:'readiness',label:'Contract Readiness',color:'var(--danger)',items:all.filter(function(a){return a.type==='readiness';})},
     {key:'followups',label:'Follow-ups Due',color:'var(--danger)',items:all.filter(function(a){return a.type==='sub';})},
     {key:'checkins',label:'Check-ins Overdue',color:'var(--warn)',items:all.filter(function(a){return a.type==='checkin';})},
     {key:'replies',label:'New Replies',color:'var(--warn)',items:all.filter(function(a){return a.type==='message';})},

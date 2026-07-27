@@ -47,24 +47,23 @@ Reference: cv-builder-v2.html mockup, renderCvDoc and renderCpCv in index.html.
 ### Templates and merge preview
 Status: IN PROGRESS
 Priority: P1
-Built and pushed. Insert into composer was not landing text, fix prompt sent to
-Claude Code. Confirm on the live site after the next push, then run the click
-through, then mark DONE. Watch the popover clipping inside overflow hidden.
+Templates, merge preview, and insert into composer are built. Outstanding bug:
+inserting a template does put the text into the composer, but it disappears
+about a blink later, so something is re-rendering and wiping it. Confirmed
+live on 27 July 2026. Watch the popover clipping inside overflow hidden.
 
 ### SMS job promo builder
-Status: TODO
+Status: DONE
 Priority: P2
 Pick a role, toggle which details to include, assemble an SMS with segment
 costing and an auto appended opt out line, send to one candidate or a matched
-group. Builds on templates and the segment counter. Mockup: renderPromoPanel and
-renderPromo in the workspace file.
+group. Built: mtPromoHtml, msgPromoText, group send with consent filtering.
 
 ### Inbound message alerts
-Status: TODO
+Status: DONE
 Priority: P2
-getAutos needs a branch so an inbound message raises an alert. First decision is
-where inbound messages land so getAutos can see them. Buildable now against
-seeded test rows, does not need the provider.
+getAutos raises an alert when an inbound message lands. Built: the
+'inbound:'+c.id branch in getAutos.
 
 ### SMS provider
 Status: BLOCKED
@@ -144,6 +143,45 @@ credential model. Needs a backend for scheduled checks.
 
 ---
 
+## From KNOWN-ISSUES.md and WORKFLOW-AUDIT.md
+
+### Candidate phase stops at Contract
+Status: TODO
+Priority: not set
+Nothing sets Travel & Onboarding, On Assignment, Redeployment or Extension/Exit,
+and there is no manual override anywhere. PHASE-MODEL-BRIEF.md is a locked
+decision that was never built.
+
+### Expired compliance items still show Verified
+Status: TODO
+Priority: not set
+An expired compliance item still shows a green Verified badge on the
+Compliance tab, while Alerts correctly flags it as expired. KNOWN-ISSUES #1.
+
+### Contracts page Add Contract button is a dead stub
+Status: TODO
+Priority: not set
+KNOWN-ISSUES #17.
+
+### Facility contact info stored in two places
+Status: TODO
+Priority: not set
+Facility contact info is stored in two places and drifts out of sync.
+KNOWN-ISSUES #8.
+
+### No way to delete or archive a candidate
+Status: TODO
+Priority: not set
+KNOWN-ISSUES #16.
+
+### Submit flow start/end date inputs missing on the role based path
+Status: TODO
+Priority: not set
+Start/end date inputs in the submit flow only render for ad-hoc submissions,
+not the common role-based path. KNOWN-ISSUES #22a.
+
+---
+
 ## Housekeeping
 
 ### Em dash sweep
@@ -155,18 +193,20 @@ clean tree so it does not tangle with a feature build.
 
 ---
 
-## Candidate profile Messages tab, bring the message centre in
+## Candidate profile Messages tab, two pane layout
+Status: TODO
+Priority: P1
 
 Right now the profile Messages tab is just the thread and composer. The
 tools rail (Context, Templates, Job promo, compliance chase, emoji) only
 exists in the Messages centre, so you can reply from a profile but not act.
 
-Goal: surface the same tools rail inside the profile Messages tab so you can
-do everything without bouncing out to the centre. Context rows, template
-insert, job promo into the composer, tick and chase compliance, emoji, all
-of it, working against the candidate whose profile you are on.
+Goal: a two pane layout inside the profile Messages tab, one candidate's
+chat history on the left, the tools rail on the right. Context rows,
+template insert, job promo into the composer, tick and chase compliance,
+emoji, all of it, working against the candidate whose profile you are on.
 
-Reuse the existing rail components (mtCtxHtml, templates, promo, chase), do
-not rebuild them. Watch that they key off the profile candidate, not the
-hub's selected conversation. Kill the double handling of leaving the profile
-to send a promo or chase.
+Reuse renderMessagesHub, mtCtxHtml and mtPromoHtml, do not rebuild them.
+Watch that they key off the profile candidate, not the hub's selected
+conversation. Kill the double handling of leaving the profile to send a
+promo or chase.

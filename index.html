@@ -1792,11 +1792,11 @@ function getAutos(cands){
           var hrs=Math.floor(overdueMs/3600000);
           alerts.push({id:'followup:'+f.id,level:is48?"red":"amber",type:"sub",
             title:(is48?"48h overdue":"24h due")+": "+c.name,
-            desc:"Submitted to "+s.facility+" — "+f.label+", "+hrs+"h since due. Call now.",
-            cid:c.id,si:i,subId:s.id,followupId:f.id,tab:"Submissions"});
+            desc:"Submitted to "+s.facility+", "+f.label+", "+hrs+"h since due. Call now.",
+            cid:c.id,si:i,subId:s.id,followupId:f.id,tab:"Submissions",sortVal:-hrs});
         });
       }
-      if(s.status==="Promoting"){var dSt=ddiff(s.submittedDate);if(dSt!==null&&dSt<=-7)alerts.push({id:'promoting:'+s.id,level:"amber",type:"sub",title:"Still promoting: "+c.name,desc:"In Promoting for "+Math.abs(dSt)+"d at "+s.facility+". Submit or close.",cid:c.id,tab:"Submissions"});}
+      if(s.status==="Promoting"){var dSt=ddiff(s.submittedDate);if(dSt!==null&&dSt<=-7)alerts.push({id:'promoting:'+s.id,level:"amber",type:"sub",title:"Still promoting: "+c.name,desc:"In Promoting for "+Math.abs(dSt)+"d at "+s.facility+". Submit or close.",cid:c.id,tab:"Submissions",sortVal:dSt});}
     });
     // Inbound replies already land on the candidate as direction 'in' with a
     // readAt, no new table. One alert per candidate regardless of how many
@@ -1806,17 +1806,24 @@ function getAutos(cands){
       var lastIn=unreadIn[unreadIn.length-1];
       var preview=(lastIn.body||'').trim();
       if(preview.length>90)preview=preview.slice(0,90)+'...';
-      alerts.push({id:'inbound:'+c.id,level:'amber',type:'message',title:'New reply: '+c.name,desc:preview,cid:c.id,tab:'Messages'});
+      alerts.push({id:'inbound:'+c.id,level:'amber',type:'message',title:'New reply: '+c.name,desc:preview,cid:c.id,tab:'Messages',sortVal:new Date(lastIn.createdAt||0).getTime()});
     }
     var ci=ciStatus(c);
-    if(ci.stale&&["Active","Screening","Compliance","On Assignment","Redeployment"].indexOf(c.phase)>=0)alerts.push({id:'checkin:'+c.id,level:"red",type:"checkin",title:"No check-in 14+ days: "+c.name,desc:"Last: "+(c.lastCheckin?fmt(c.lastCheckin):"never")+" — Phase: "+c.phase,cid:c.id,tab:"Activity"});
+    if(ci.stale&&["Active","Screening","Compliance","On Assignment","Redeployment"].indexOf(c.phase)>=0){
+      // Staleness gate (ci.stale) is untouched, still >14 days or never. Only
+      // the level assigned once it fires changes: 14 to 21 days is amber,
+      // over 21 days (or never checked in at all) is red.
+      var ciAgo=c.lastCheckin?Math.abs(ddiff(c.lastCheckin)):null;
+      var ciLvl=(ciAgo===null||ciAgo>21)?"red":"amber";
+      alerts.push({id:'checkin:'+c.id,level:ciLvl,type:"checkin",title:"No check-in 14+ days: "+c.name,desc:"Last: "+(c.lastCheckin?fmt(c.lastCheckin):"never")+", Phase: "+c.phase,cid:c.id,tab:"Activity",sortVal:ciAgo===null?-999999:-ciAgo});
+    }
     c.contracts.forEach(function(k){
       var d=ddiff(k.endDate);
-      if(d!==null&&d>=0&&d<=(k.alertDays||14)&&k.status==="Active")alerts.push({id:'contract:'+k.id,level:d<=7?"red":"amber",type:"contract",title:"Contract expires "+d+"d: "+c.name,desc:k.facility+" — "+k.ward+" — ends "+fmt(k.endDate),cid:c.id,tab:"Contracts"});
-      if(d!==null&&d>(k.alertDays||14)&&d<=21&&k.status==="Active")alerts.push({id:'extend:'+k.id,level:"blue",type:"extend",title:"Discuss extension: "+c.name,desc:"Contract at "+k.facility+" ends in "+d+" days.",cid:c.id,tab:"Contracts"});
+      if(d!==null&&d>=0&&d<=(k.alertDays||14)&&k.status==="Active")alerts.push({id:'contract:'+k.id,level:d<=7?"red":"amber",type:"contract",title:"Contract expires "+d+"d: "+c.name,desc:k.facility+", "+k.ward+", ends "+fmt(k.endDate),cid:c.id,tab:"Contracts",sortVal:d});
+      if(d!==null&&d>(k.alertDays||14)&&d<=21&&k.status==="Active")alerts.push({id:'extend:'+k.id,level:"blue",type:"extend",title:"Discuss extension: "+c.name,desc:"Contract at "+k.facility+" ends in "+d+" days.",cid:c.id,tab:"Contracts",sortVal:d});
       var inReadinessWindow=d!==null&&d>=0&&d<=(k.alertDays||14)&&k.status==="Active";
-      if(["Signed","Active"].indexOf(k.status)>=0&&!inReadinessWindow){var lnk=c.travel.flights.concat(c.travel.accommodation).filter(function(t){return t.contractId===k.id;});if(!lnk.length)alerts.push({id:'travel:'+k.id,level:"amber",type:"travel",title:"No travel arranged: "+c.name,desc:"Active contract at "+k.facility+". Start: "+fmt(k.startDate),cid:c.id,tab:"Travel & Expenses"});}
-      if(d!==null&&d>=22&&d<=45&&k.status==="Active")alerts.push({id:'redeploy:'+k.id,level:"blue",type:"redeploy",title:"Redeployment window: "+c.name,desc:"Contract ends "+fmt(k.endDate)+" ("+d+"d). Source next placement.",cid:c.id,tab:"Contracts"});
+      if(["Signed","Active"].indexOf(k.status)>=0&&!inReadinessWindow){var lnk=c.travel.flights.concat(c.travel.accommodation).filter(function(t){return t.contractId===k.id;});if(!lnk.length){var dSt2=ddiff(k.startDate);alerts.push({id:'travel:'+k.id,level:"amber",type:"travel",title:"No travel arranged: "+c.name,desc:"Active contract at "+k.facility+". Start: "+fmt(k.startDate),cid:c.id,tab:"Travel & Expenses",sortVal:dSt2===null?0:dSt2});}}
+      if(d!==null&&d>=22&&d<=45&&k.status==="Active")alerts.push({id:'redeploy:'+k.id,level:"blue",type:"redeploy",title:"Redeployment window: "+c.name,desc:"Contract ends "+fmt(k.endDate)+" ("+d+"d). Source next placement.",cid:c.id,tab:"Contracts",sortVal:d});
       if(inReadinessWindow){
         var kFlights=c.travel.flights.filter(function(f){return f.contractId===k.id;});
         var kAccom=c.travel.accommodation.filter(function(a){return a.contractId===k.id;});
@@ -1834,7 +1841,7 @@ function getAutos(cands){
           alerts.push({id:'readiness:'+k.id,level:d<=7?'red':'amber',type:'readiness',
             title:'Ending readiness: '+c.name,
             desc:'Ending in '+d+' day'+(d!==1?'s':'')+'. '+missingText+'.',
-            cid:c.id,contractId:k.id,tab:'Contracts'});
+            cid:c.id,contractId:k.id,tab:'Contracts',sortVal:d});
         }
       }
     });
@@ -1847,13 +1854,13 @@ function getAutos(cands){
       var type=isAhpra?'ahpra':'comp';
       var aid=type+':'+c.id+':'+item.key;
       if(d<0){
-        alerts.push({id:aid,level:'red',type:type,title:item.label+' EXPIRED',desc:c.name+' — expired '+Math.abs(d)+'d ago',cid:c.id,key:item.key,itemName:item.label,tab:'Compliance'});
+        alerts.push({id:aid,level:'red',type:type,title:item.label+' EXPIRED',desc:c.name+', expired '+Math.abs(d)+'d ago',cid:c.id,key:item.key,itemName:item.label,tab:'Compliance',sortVal:d});
       } else if(d<=60){
         var lvl=d<=7?'red':d<=30?'amber':'blue';
-        alerts.push({id:aid,level:lvl,type:type,title:item.label+' expiring in '+d+'d',desc:c.name+' — expires '+fmt(ci2.expiry),cid:c.id,key:item.key,itemName:item.label,tab:'Compliance'});
+        alerts.push({id:aid,level:lvl,type:type,title:item.label+' expiring in '+d+'d',desc:c.name+', expires '+fmt(ci2.expiry),cid:c.id,key:item.key,itemName:item.label,tab:'Compliance',sortVal:d});
       }
     });
-    // Compliance-during-contract check — deliberately separate from the comp/ahpra
+    // Compliance-during-contract check, deliberately separate from the comp/ahpra
     // type above. That check is "expiring soon relative to today"; this one is
     // "will lapse while this specific placement is running", which the 60-day
     // window can miss entirely (a 90-day-out expiry inside a long contract) or
@@ -1862,11 +1869,12 @@ function getAutos(cands){
     c.contracts.forEach(function(k){
       if(["Signed","Active"].indexOf(k.status)<0)return;
       complianceRiskDuringContract(c,k).forEach(function(risk){
+        var dRisk=ddiff(risk.expiry);
         alerts.push({id:'contract_comp:'+c.id+':'+k.id+':'+risk.item.key,
           level:k.status==='Active'?'red':'amber',type:'contract_comp',
           title:risk.item.label+' expires during placement at '+(k.facility||'facility TBC'),
           desc:c.name+', expires '+fmt(risk.expiry)+', day '+risk.dayOfPlacement+' of '+risk.totalDays+(k.ward?', '+k.ward:''),
-          cid:c.id,key:risk.item.key,itemName:risk.item.label,contractId:k.id,tab:'Compliance'});
+          cid:c.id,key:risk.item.key,itemName:risk.item.label,contractId:k.id,tab:'Compliance',sortVal:dRisk===null?0:dRisk});
       });
     });
   });
@@ -2239,7 +2247,11 @@ function updateBadges(){
   var ke=cands.reduce(function(a,c){return a+c.contracts.filter(function(k){var d=ddiff(k.endDate);return d!==null&&d<=14&&d>=0;}).length;},0);var nbK=document.getElementById("nb-k");nbK.textContent=ke;nbK.style.display=ke?"":"none";
   var nbMsg=document.getElementById("nb-msg");
   if(nbMsg){var unreadMsg=cands.reduce(function(a,c){return a+msgUnreadCount(c);},0);nbMsg.textContent=unreadMsg;nbMsg.style.display=unreadMsg?"":"none";}
-  if(reds){document.getElementById("abar-txt").innerHTML="<strong>"+reds+" urgent alert"+(reds>1?"s":"")+"</strong> — "+autos.find(function(a){return a.level==="red";}).title;document.getElementById("abar").style.display="flex";}else document.getElementById("abar").style.display="none";
+  if(reds){
+    var topRed=autos.filter(function(a){return a.level==="red";}).reduce(function(best,a){return(best===null||(a.sortVal||0)<(best.sortVal||0))?a:best;},null);
+    document.getElementById("abar-txt").innerHTML="<strong>"+reds+" urgent alert"+(reds>1?"s":"")+"</strong>, "+topRed.title;
+    document.getElementById("abar").style.display="flex";
+  }else document.getElementById("abar").style.display="none";
 }
 function renderPage(){({home:renderHome,dashboard:renderMgmtDash,candidates:renderCandidates,candidateprofile:renderCandPage,hotlist:renderHotlist,alerts:renderAlerts,submissions:renderSubmissions,travel:renderTravel,contracts:renderContracts,facilities:renderFacilities,facilityprofile:renderFacPage,jobboard:renderJobBoard,team:renderTeam,rateref:renderRateRef,settings:renderSettings,messages:renderMessagesHub}[curPage]||renderHome)();}
 
@@ -3231,24 +3243,49 @@ function alertRowHtml(a){
     +'</div>';
 }
 function alertsToggleSection(key){alertsCollapsed[key]=!alertsCollapsed[key];renderAlerts();}
+// red first, then amber, then blue. Within the same level, smaller sortVal
+// wins, soonest date or largest overdue amount, whichever that alert type
+// set it to in getAutos().
+var ALERT_LEVEL_RANK={red:0,amber:1,blue:2};
+function alertSortItems(items){
+  return items.slice().sort(function(a,b){
+    var ra=ALERT_LEVEL_RANK[a.level]!=null?ALERT_LEVEL_RANK[a.level]:3;
+    var rb=ALERT_LEVEL_RANK[b.level]!=null?ALERT_LEVEL_RANK[b.level]:3;
+    if(ra!==rb)return ra-rb;
+    return (a.sortVal||0)-(b.sortVal||0);
+  });
+}
+// Header color reflects what is actually inside the section, not a fixed
+// label. Highest level present wins: any red makes the header red, else any
+// amber makes it amber, else blue. Same color values alertRowHtml already
+// uses per row, so a red header matches the red rows inside it.
+function alertGroupColor(items){
+  if(items.some(function(a){return a.level==='red';}))return'var(--danger)';
+  if(items.some(function(a){return a.level==='amber';}))return'#d97706';
+  return'var(--accent)';
+}
 function renderAlerts(){
   var raw=getAutos(vc());
   var all=raw.filter(function(a){return !snzOk(a.id||'');});
   var snoozed=raw.length-all.length;
   document.getElementById("tb-h").textContent="Alerts & Actions";
-  document.getElementById("tb-s").textContent=all.length+" alerts — "+all.filter(function(a){return a.level==="red";}).length+" urgent"+(snoozed?" ("+snoozed+" snoozed)":'');
+  document.getElementById("tb-s").textContent=all.length+" alerts, "+all.filter(function(a){return a.level==="red";}).length+" urgent"+(snoozed?" ("+snoozed+" snoozed)":'');
   document.getElementById("tb-r").innerHTML='';
   var groups=[
-    {key:'critical',label:'Critical',color:'var(--danger)',items:all.filter(function(a){return (a.type==='ahpra'&&a.level==='red')||(a.type==='comp'&&a.level==='red')||(a.type==='contract'&&a.level==='red');})},
-    {key:'placementcomp',label:'Compliance Expiring During Placement',color:'var(--danger)',items:all.filter(function(a){return a.type==='contract_comp';})},
-    {key:'readiness',label:'Contract Readiness',color:'var(--danger)',items:all.filter(function(a){return a.type==='readiness';})},
-    {key:'followups',label:'Follow-ups Due',color:'var(--danger)',items:all.filter(function(a){return a.type==='sub';})},
-    {key:'checkins',label:'Check-ins Overdue',color:'var(--warn)',items:all.filter(function(a){return a.type==='checkin';})},
-    {key:'replies',label:'New Replies',color:'var(--warn)',items:all.filter(function(a){return a.type==='message';})},
-    {key:'travel',label:'Travel Not Arranged',color:'#d97706',items:all.filter(function(a){return a.type==='travel';})},
-    {key:'contractactions',label:'Contract Actions',color:'var(--accent)',items:all.filter(function(a){return (a.type==='contract'&&a.level!=='red')||a.type==='extend'||a.type==='redeploy';})},
-    {key:'expiring',label:'Expiring Soon',color:'#d97706',items:all.filter(function(a){return (a.type==='comp'||a.type==='ahpra')&&a.level!=='red';})}
-  ].filter(function(g){return g.items.length;});
+    {key:'critical',label:'Critical',items:all.filter(function(a){return (a.type==='ahpra'&&a.level==='red')||(a.type==='comp'&&a.level==='red')||(a.type==='contract'&&a.level==='red');})},
+    {key:'placementcomp',label:'Compliance Expiring During Placement',items:all.filter(function(a){return a.type==='contract_comp';})},
+    {key:'readiness',label:'Contract Readiness',items:all.filter(function(a){return a.type==='readiness';})},
+    {key:'followups',label:'Follow-ups Due',items:all.filter(function(a){return a.type==='sub';})},
+    {key:'checkins',label:'Check-ins Overdue',items:all.filter(function(a){return a.type==='checkin';})},
+    {key:'replies',label:'New Replies',items:all.filter(function(a){return a.type==='message';})},
+    {key:'travel',label:'Travel Not Arranged',items:all.filter(function(a){return a.type==='travel';})},
+    {key:'contractactions',label:'Contract Actions',items:all.filter(function(a){return (a.type==='contract'&&a.level!=='red')||a.type==='extend'||a.type==='redeploy';})},
+    {key:'expiring',label:'Expiring Soon',items:all.filter(function(a){return (a.type==='comp'||a.type==='ahpra')&&a.level!=='red';})}
+  ].filter(function(g){return g.items.length;}).map(function(g){
+    g.items=alertSortItems(g.items);
+    g.color=alertGroupColor(g.items);
+    return g;
+  });
   var html=groups.length
     ?groups.map(function(g){
         var collapsed=!!alertsCollapsed[g.key];

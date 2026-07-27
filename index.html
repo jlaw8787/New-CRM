@@ -87,11 +87,12 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .tb-l h1{font-size:18px;font-weight:500;color:var(--t1)}
 .tb-l .sub{font-size:11px;color:var(--t3);margin-top:1px}
 .tb-r{display:flex;align-items:center;gap:8px}
-.tb-search{display:flex;align-items:center;gap:7px;color:var(--t3);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;transition:border-color .12s ease,color .12s ease;margin-left:auto;flex-shrink:0}
-.tb-search:hover{border-color:var(--border-s);color:var(--t2)}
-.tb-search svg{width:14px;height:14px;stroke:currentColor;fill:none;flex-shrink:0}
+.tb-recent{margin-left:auto}
+.tb-search{display:flex;align-items:center;gap:9px;color:var(--t3);background:var(--surface);border:none;box-shadow:var(--dc-shadow-field);border-radius:10px;padding:10px 16px;font-size:14px;cursor:pointer;transition:box-shadow .12s ease,color .12s ease;position:absolute;left:50%;transform:translateX(-50%);width:420px;max-width:44vw;flex-shrink:0}
+.tb-search:hover{box-shadow:0 0 0 1px var(--border-s);color:var(--t2)}
+.tb-search svg{width:16px;height:16px;stroke:currentColor;fill:none;flex-shrink:0}
 .tb-search span{white-space:nowrap}
-.tb-search-kbd{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:0 5px;font-size:10px;font-weight:600;color:var(--t3);margin-left:4px}
+.tb-search-kbd{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:11px;font-weight:600;color:var(--t3);margin-left:4px}
 .tb-recent-btn{display:flex;align-items:center;gap:6px;color:var(--t3);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;transition:border-color .12s ease,color .12s ease;flex-shrink:0}
 .tb-recent-btn:hover{border-color:var(--border-s);color:var(--t2)}
 .tb-recent-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;flex-shrink:0}
@@ -324,9 +325,9 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .pipe-node{display:flex;flex-direction:column;align-items:center;padding:6px 9px;border-radius:4px;cursor:pointer;transition:all .12s;min-width:76px;gap:3px}
 .pipe-node:hover{background:var(--dc-purple-soft)}.pipe-node.on{background:var(--dc-purple-soft);box-shadow:0 0 0 1.5px var(--dc-purple)}
 .pipe-num{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700}
-.pipe-nl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--t2);text-align:center;line-height:1.3}
+.pipe-nl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--t2);text-align:center;line-height:1.3}
 .pipe-node.on .pipe-nl{color:var(--dc-purple-deep)}
-.pipe-cnt{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+.pipe-cnt{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
 .pipe-ch{font-size:11px;color:var(--border-s);margin:0 1px;flex-shrink:0}
 
 /* FILTER */
@@ -1833,7 +1834,7 @@ function getAutos(cands){
           alerts.push({id:'readiness:'+k.id,level:d<=7?'red':'amber',type:'readiness',
             title:'Ending readiness: '+c.name,
             desc:'Ending in '+d+' day'+(d!==1?'s':'')+'. '+missingText+'.',
-            cid:c.id,tab:'Contracts'});
+            cid:c.id,contractId:k.id,tab:'Contracts'});
         }
       }
     });
@@ -1893,6 +1894,7 @@ var cgEditingAvailId=null;
 var cgEditingPrimaryId=null;
 var jbNewCount=0,jobMatchFilt=null;
 var mbCollapsed=false,mbAvailExpanded=false,mbRolesExpanded=false,mbCompExpanded=false,mbCheckinExpanded=false,mbFollowupExpanded=false;
+var alertsCollapsed={};
 var subFiltStatus=localStorage.getItem('hca_sf_st')||'All';
 var subFiltConsId=localStorage.getItem('hca_sf_co')||'All';
 var subFiltFacility=localStorage.getItem('hca_sf_fa')||'All';
@@ -3187,6 +3189,7 @@ function alertRowHtml(a){
   else if(a.type==='sub'){rowClick='openCandAtSubAlert('+a.cid+','+(a.subId||'null')+')';}
   else if(a.type==='checkin'){rowClick='openCandAtCheckin('+a.cid+')';}
   else if(a.type==='message'){rowClick='openCandPage('+a.cid+',\'messages\')';}
+  else if(a.type==='readiness'){rowClick='openManagePlacement('+a.contractId+')';}
   else{rowClick='openCandPage('+a.cid+')';}
   var actions='';
   if(a.type==='checkin'){
@@ -3202,6 +3205,8 @@ function alertRowHtml(a){
     actions='<button class="ai-act" style="background:var(--ok-l);color:var(--ok)" onclick="event.stopPropagation();alertMarkVerified('+a.cid+',\''+a.key+'\',\''+aid+'\')">Mark Verified</button>';
   } else if(a.type==='message'){
     actions='<button class="ai-act" style="background:#e8f0ff;color:var(--accent)" onclick="event.stopPropagation();openCandPage('+a.cid+',\'messages\')">Open Thread</button>';
+  } else if(a.type==='readiness'){
+    actions='<button class="ai-act" style="background:#e8f0ff;color:var(--accent)" onclick="event.stopPropagation();openManagePlacement('+a.contractId+')">Manage Placement</button>';
   } else {
     actions='<button class="ai-act" style="background:#e8f0ff;color:var(--accent)" onclick="event.stopPropagation();openCandPage('+a.cid+')">Open</button>';
   }
@@ -3225,6 +3230,7 @@ function alertRowHtml(a){
     +checkinForm
     +'</div>';
 }
+function alertsToggleSection(key){alertsCollapsed[key]=!alertsCollapsed[key];renderAlerts();}
 function renderAlerts(){
   var raw=getAutos(vc());
   var all=raw.filter(function(a){return !snzOk(a.id||'');});
@@ -3245,18 +3251,20 @@ function renderAlerts(){
   ].filter(function(g){return g.items.length;});
   var html=groups.length
     ?groups.map(function(g){
+        var collapsed=!!alertsCollapsed[g.key];
         return '<div style="margin-bottom:24px">'
-          +'<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:'+g.color+';margin-bottom:8px;display:flex;align-items:center;gap:8px">'
+          +'<div class="dim-hover" style="cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:'+g.color+';margin-bottom:8px;display:flex;align-items:center;gap:8px" onclick="alertsToggleSection(\''+g.key+'\')">'
+          +'<span style="display:inline-flex;transition:transform .15s var(--e);transform:rotate('+(collapsed?'0':'90')+'deg)">'+ico(I.chevron,11,g.color)+'</span>'
           +g.label
           +'<span style="background:'+g.color+';color:#fff;font-size:9px;padding:4px 8px;border-radius:10px">'+g.items.length+'</span>'
           +'</div>'
-          +g.items.map(function(a){
+          +(collapsed?'':g.items.map(function(a){
             try{return alertRowHtml(a);}
             catch(e){console.error('[alerts] row render failed, skipping row',e,a);return '';}
-          }).join('')
+          }).join(''))
           +'</div>';
       }).join('')
-    :'<div class="empty-st">'+I.chk+' All clear — no alerts.</div>';
+    :'<div class="empty-st">'+I.chk+' All clear, no alerts.</div>';
   document.getElementById("page").innerHTML='<div class="card" style="padding:16px 16px">'+html+'</div>';
 }
 

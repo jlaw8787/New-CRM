@@ -79,7 +79,7 @@ a minimum body size.
   /* status, soft by default, full fill and ring only on the tile that needs attention */
   --dc-green:#158060; --dc-green-soft:#E1F5EE; --dc-green-deep:#0B5A45;
   --dc-amber:#9C6212; --dc-amber-soft:#FAEEDA; --dc-amber-deep:#6E4109; --dc-amber-ring:#EDC987;
-  --dc-red:#A32D2D; --dc-red-soft:#FCEBEB;
+  --dc-red:#A32D2D; --dc-red-soft:#FCEBEB; --dc-red-deep:#7A1F1F; --dc-red-ring:#E8A3A3;
   --dc-blue:#185FA5; --dc-blue-soft:#E6F1FB;
   --dc-grey:#8F8D84;
 
@@ -87,6 +87,7 @@ a minimum body size.
   --dc-r-card:14px; --dc-r-control:10px; --dc-r-pill:20px; --dc-r-avatar:14px;
   --dc-shadow-card:0 2px 8px rgba(0,0,0,.05);
   --dc-shadow-row:inset 0 -1px 0 rgba(0,0,0,.05);
+  --dc-shadow-field:0 0 0 1px rgba(0,0,0,.08);
 }
 ```
 
@@ -98,7 +99,28 @@ fill with white initials. Secondary is `--dc-purple-soft` fill with
 `--dc-purple-deep` initials.
 
 Row dividers inside a paper card are a shadow, `--dc-shadow-row`, never a
-border line.
+border line. Form fields use `--dc-shadow-field` the same way, a shadow
+standing in for the whole outline, not just the bottom edge.
+
+Metric tiles: one shared tile, `dcv2Tile`, used by every screen with a stat
+row, not one version per screen. Calm by default, a soft tinted icon chip
+in the tile's own hue on an otherwise white tile. Two loud states, both a
+full coloured fill plus an inset ring, amber for warning level using
+`--dc-amber-ring`, red for urgent using `--dc-red-ring`, and a separate
+plain purple ring for a tile that is the currently applied filter on a list
+screen, unrelated to either loud state.
+
+Candidate pipeline strip: ten stages grouped by meaning into five soft
+identities, not one saturated colour per stage. Purple for New Lead and
+Contract (fill `#EEEDFE`, text `#534AB7`), blue for Screening (fill
+`#E6F1FB`, text `#185FA5`), amber for Compliance and Offer (fill `#FAEEDA`,
+text `#854F0B`), green for Submission, Travel and Onboarding, On Assignment
+and Redeployment (fill `#E1F5EE`, text `#0F6E56`), grey for Extension or
+Exit (fill `#F1EFE8`, text `#5F5E5A`). The stage circle carries the fill and
+text, the count below stays tabular. The selected stage gets a plain purple
+ring, `--dc-purple` on `--dc-purple-soft`, unrelated to the stage's own
+colour. This is a fixed set of five pairs for this one component, not new
+global tokens.
 
 ## Type
 Inter, loaded from Google Fonts, weights 400 450 500 550 600 650.

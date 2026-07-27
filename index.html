@@ -6935,6 +6935,58 @@ function cpAddActivity(cid){
   });
   renderCandPage();showToast('Logged');
 }
+// Owning consultant reassignment, one candidate at a time. Admin/ops only,
+// hard gated here as well as in the button that opens this, not just a UI
+// check. Only candidates.consultant_id changes. Submissions, contracts,
+// follow-ups and travel records carry no consultant field of their own,
+// they all hang off the candidate, so nothing else needs to move. Submitted
+// by on a submission is a separate, historical field set once at submit
+// time, this never touches it.
+function cpChangeConsultant(cid){
+  if(!CU||(CU.role!=='admin'&&CU.role!=='ops'))return;
+  var c=candidates.find(function(x){return x.id===cid;});if(!c)return;
+  var cons=users.filter(function(u){return u.role==='consultant';});
+  var options=cons.map(function(u){return '<option value="'+u.id+'"'+(u.id===c.consultantId?' selected':'')+'>'+esc(u.name)+'</option>';}).join('');
+  showConfirm({
+    title:'Change owning consultant',
+    message:'Reassigns '+c.name+' to a different consultant. Submissions already made keep their original submitted by record.',
+    extraHtml:'<div class="fg" style="margin-bottom:0"><label>Consultant</label><select id="cp-cons-select" style="border:none;box-shadow:var(--sh-b)">'+options+'</select></div>',
+    confirmLabel:'Change',
+    danger:false
+  },function(){
+    var sel=document.getElementById('cp-cons-select');
+    var newId=sel?parseInt(sel.value):null;
+    if(!newId||newId===c.consultantId)return;
+    cpSaveConsultant(cid,newId);
+  });
+}
+function cpSaveConsultant(cid,newId){
+  if(!CU||(CU.role!=='admin'&&CU.role!=='ops'))return;
+  var c=candidates.find(function(x){return x.id===cid;});if(!c)return;
+  if(c.consultantId===newId)return;
+  var oldId=c.consultantId;
+  var oldU=uById(oldId),newU=uById(newId);
+  if(!newU)return;
+  c.consultantId=newId;
+  var now=new Date().toISOString();
+  var msg='Owning consultant changed from '+(oldU?oldU.name:'unassigned')+' to '+newU.name+'.';
+  if(!c.activity)c.activity=[];
+  c.activity.push({type:'System',content:msg,author:CU.name,ts:now,_synced:false});
+  showToast('Consultant changed');
+  renderCandPage();updateBadges();
+  sb.from('candidates').update({consultant_id:newId}).eq('id',cid).then(function(r){
+    if(r.error){
+      c.consultantId=oldId;
+      c.activity=(c.activity||[]).filter(function(a){return a.ts!==now;});
+      showToast('Failed to change consultant, reverted','err');console.error(r.error);
+      renderCandPage();updateBadges();
+      return;
+    }
+    sb.from('activity').insert({candidate_id:cid,entity_type:'candidate',entity_id:cid,author_id:CU.id||null,type:'System',content:msg,author:CU.name,ts:now}).then(function(r2){
+      if(r2.error)console.error('[DB] consultant change activity',r2.error);
+    });
+  });
+}
 function renderCpActivity(c){
   var acts=(c.activity||[]).slice().reverse();
   var COL={Note:'var(--accent)',Call:'var(--ok)',Email:'#8B5CF6',Meeting:'var(--warn)',System:'var(--t3)'};
@@ -7604,7 +7656,7 @@ function renderCandPage(){
     +'</div></div>';
   var teamHtml=(u||ad)?'<div class="facts-card">'
       +'<div class="card-section-title">Team</div>'
-      +(u?'<div class="team-row"><div class="team-avatar" style="background:'+(u.color||'var(--brand)')+'">'+esc(u.initials||'?')+'</div><div><div class="team-name">'+esc(u.name)+'</div><div class="team-role">Consultant</div></div></div>':'')
+      +(u?'<div class="team-row" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><div class="team-avatar" style="background:'+(u.color||'var(--brand)')+'">'+esc(u.initials||'?')+'</div><div><div class="team-name">'+esc(u.name)+'</div><div class="team-role">Consultant</div></div></div>'+(isAdminOps?'<span class="dim-hover" style="font-size:11px;color:var(--brand);cursor:pointer;flex-shrink:0" onclick="cpChangeConsultant('+c.id+')">Change</span>':'')+'</div>':'')
       +(ad?'<div class="team-row"><div class="team-avatar" style="background:'+(ad.color||'#8B5CF6')+'">'+esc(ad.initials||'?')+'</div><div><div class="team-name">'+esc(ad.name)+'</div><div class="team-role">Admin</div></div></div>':'')
       +'</div>':'';
   var readinessHtml='<div class="facts-card">'

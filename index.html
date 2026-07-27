@@ -193,7 +193,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
   --dc-purple:#6936B8; --dc-purple-mid:#7F77DD; --dc-purple-deep:#534AB7; --dc-purple-soft:#EEEDFE;
   --dc-green:#158060; --dc-green-soft:#E1F5EE; --dc-green-deep:#0B5A45;
   --dc-amber:#9C6212; --dc-amber-soft:#FAEEDA; --dc-amber-deep:#6E4109; --dc-amber-ring:#EDC987;
-  --dc-red:#A32D2D; --dc-red-soft:#FCEBEB;
+  --dc-red:#A32D2D; --dc-red-soft:#FCEBEB; --dc-red-deep:#7A1F1F; --dc-red-ring:#E8A3A3;
   --dc-blue:#185FA5; --dc-blue-soft:#E6F1FB;
   --dc-grey:#8F8D84;
   --dc-r-card:14px; --dc-r-control:10px; --dc-r-pill:20px;
@@ -213,15 +213,25 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
 .dcv2-tile-ico{width:34px;height:34px;border-radius:var(--dc-r-control);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
 .dcv2-tile-label{font-size:12px;font-weight:500;color:var(--dc-t2);margin-bottom:4px}
 .dcv2-tile-num{font-size:31px;font-weight:500;color:var(--dc-t1);line-height:1;font-variant-numeric:tabular-nums}
+.dcv2-tile-sub{font-size:10px;color:var(--dc-t3);margin-top:4px}
 .dcv2-hue-green .dcv2-tile-ico{background:var(--dc-green-soft);color:var(--dc-green)}
 .dcv2-hue-blue .dcv2-tile-ico{background:var(--dc-blue-soft);color:var(--dc-blue)}
 .dcv2-hue-purple .dcv2-tile-ico{background:var(--dc-purple-soft);color:var(--dc-purple)}
 .dcv2-hue-amber .dcv2-tile-ico{background:var(--dc-amber-soft);color:var(--dc-amber)}
-/* Attention state, the only tile allowed to go loud, amber fill plus an
-   inset ring, both shadows, never a border line. */
-.dcv2-tile.dcv2-attn{background:var(--dc-amber-soft);box-shadow:var(--dc-shadow-card),inset 0 0 0 1.5px var(--dc-amber-ring)}
-.dcv2-tile.dcv2-attn .dcv2-tile-ico{background:var(--dc-amber);color:#fff}
-.dcv2-tile.dcv2-attn .dcv2-tile-label,.dcv2-tile.dcv2-attn .dcv2-tile-num{color:var(--dc-amber-deep)}
+/* Attention state, the only tiles allowed to go loud, a full fill plus an
+   inset ring, both shadows, never a border line. Amber for warning level
+   (expiring, awaiting, needs a look), red for urgent (overdue, rejected).
+   Phase 2 platform rollout, every screen's tiles share this, not a new one. */
+.dcv2-tile.dcv2-attn-amber{background:var(--dc-amber-soft);box-shadow:var(--dc-shadow-card),inset 0 0 0 1.5px var(--dc-amber-ring)}
+.dcv2-tile.dcv2-attn-amber .dcv2-tile-ico{background:var(--dc-amber);color:#fff}
+.dcv2-tile.dcv2-attn-amber .dcv2-tile-label,.dcv2-tile.dcv2-attn-amber .dcv2-tile-num,.dcv2-tile.dcv2-attn-amber .dcv2-tile-sub{color:var(--dc-amber-deep)}
+.dcv2-tile.dcv2-attn-red{background:var(--dc-red-soft);box-shadow:var(--dc-shadow-card),inset 0 0 0 1.5px var(--dc-red-ring)}
+.dcv2-tile.dcv2-attn-red .dcv2-tile-ico{background:var(--dc-red);color:#fff}
+.dcv2-tile.dcv2-attn-red .dcv2-tile-label,.dcv2-tile.dcv2-attn-red .dcv2-tile-num,.dcv2-tile.dcv2-attn-red .dcv2-tile-sub{color:var(--dc-red-deep)}
+/* Currently applied filter on a list screen, plain purple ring, no fill
+   change, unrelated to attention. Declared after the attn rules so it wins
+   the tie if a tile is somehow both at once. */
+.dcv2-tile.dcv2-active{box-shadow:var(--dc-shadow-card),inset 0 0 0 1.5px var(--dc-purple)}
 .dcv2-card{background:var(--dc-card);border-radius:var(--dc-r-card);box-shadow:var(--dc-shadow-card);margin-bottom:22px;overflow:hidden}
 .dcv2-card-hd{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:var(--dc-shadow-row)}
 .dcv2-card-title{font-size:13px;font-weight:500;color:var(--dc-t1);display:flex;align-items:center;gap:8px}
@@ -2466,12 +2476,24 @@ function renderMorningBrief(cands){
 // chip in its own hue by default. Pass attn:true only for a tile that
 // represents something needing attention right now, it deepens to a full
 // coloured fill with an inset ring, every other tile stays calm regardless
-// of hue.
+// of hue. attnColor picks which loud state, amber for warning level, red
+// for urgent, defaults to amber (the only state the Dashboard ever needed).
+// Pass active:true when the tile IS the currently applied filter on a list
+// screen, a plain purple ring, unrelated to attn. If both are true, active
+// wins visually (the operator already acted on whatever attn was flagging).
+// Pass sub for an optional third line under the number, the Management
+// Dashboard's tiles carry real context (of what, since when) the Dashboard's
+// own tiles never needed, everything else about the tile is identical.
+// Shared by every screen's tile row, this is the one tile style, not one
+// per screen.
 function dcv2Tile(opts){
-  return '<div class="dcv2-tile dcv2-hue-'+opts.hue+(opts.attn?' dcv2-attn':'')+'" onclick="'+opts.onclick+'">'
+  var attnClass=opts.attn?' dcv2-attn-'+(opts.attnColor||'amber'):'';
+  var activeClass=opts.active?' dcv2-active':'';
+  return '<div class="dcv2-tile dcv2-hue-'+opts.hue+attnClass+activeClass+'" onclick="'+(opts.onclick||'')+'">'
     +'<div class="dcv2-tile-ico">'+ico(opts.icon,16)+'</div>'
     +'<div class="dcv2-tile-label">'+esc(opts.label)+'</div>'
     +'<div class="dcv2-tile-num">'+opts.val+'</div>'
+    +(opts.sub?'<div class="dcv2-tile-sub">'+esc(opts.sub)+'</div>':'')
     +'</div>';
 }
 function renderHome(){
@@ -3377,28 +3399,21 @@ function renderSubmissions(){
     +'<button class="btn btn-g btn-sm" onclick="expAll(&apos;submissions&apos;)">'+I.dl+' Export</button>'
     +'</div>';
 
-  // ── HERO (summary strip) — real aggregates from the full `all` list
-  // (independent of active filters), same accepted-rate formula already
-  // used on the Management Dashboard. No fabricated data.
+  // HERO (summary strip), Direction C tiles, real aggregates from the full
+  // `all` list (independent of active filters), same accepted-rate formula
+  // already used on the Management Dashboard. No fabricated data.
   var OUTCOME_ST=['Accepted','Withdrawn','Declined'];
   var withOutcome=all.filter(function(s){return OUTCOME_ST.indexOf(s.status)>=0;});
   var awaitingCount=all.length-withOutcome.length;
   var acceptedCount=all.filter(function(s){return s.status==='Accepted';}).length;
   var acceptedRate=withOutcome.length>0?Math.round(acceptedCount/withOutcome.length*100):null;
   var overdueCount=all.map(prepSub).filter(function(p){return p.fuOverdue;}).length;
-  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
-    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
-    +'</div>';}
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.doc,'Total submissions',all.length)
-    +heroStat(I.clock,'Awaiting outcome',awaitingCount)
-    +heroStat(I.chk,'Accepted rate',acceptedRate!==null?acceptedRate+'%':'&mdash;')
-    +heroStat(I.warn,'Overdue follow-ups',overdueCount)
-    +'</div></div>';
+  var heroHtml='<div class="dcv2-tiles">'
+    +dcv2Tile({icon:I.doc,label:'Total submissions',val:all.length,hue:'blue'})
+    +dcv2Tile({icon:I.clock,label:'Awaiting outcome',val:awaitingCount,hue:'amber'})
+    +dcv2Tile({icon:I.chk,label:'Accepted rate',val:acceptedRate!==null?acceptedRate+'%':'N/A',hue:'green'})
+    +dcv2Tile({icon:I.warn,label:'Overdue follow-ups',val:overdueCount,hue:'red',attn:overdueCount>0,attnColor:'red'})
+    +'</div>';
 
   var filterSel='font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px';
   var filterBar='<div style="display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">'
@@ -3530,23 +3545,17 @@ function renderTravel(){
   var pend=allT.filter(function(x){return x.approvalStatus==="Pending";}).length;
   var appr=allT.filter(function(x){return x.approvalStatus==="Approved";}).length;
   var rej=allT.filter(function(x){return x.approvalStatus==="Rejected";}).length;
-  document.getElementById("tb-s").textContent=allT.length+" records — "+pend+" pending";
+  document.getElementById("tb-s").textContent=allT.length+" records, "+pend+" pending";
   document.getElementById("tb-r").innerHTML='<button class="btn btn-g btn-sm" onclick="expAll(&apos;travel&apos;)">'+I.dl+' Export</button>';
 
-  // ── HERO (summary strip) — real counts from `allT`, no fabrication.
-  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
-    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
-    +'</div>';}
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.plane,'Total records',allT.length)
-    +heroStat(I.clock,'Pending',pend)
-    +heroStat(I.chk,'Approved',appr)
-    +heroStat(I.warn,'Rejected',rej)
-    +'</div></div>';
+  // HERO (summary strip), Direction C tiles, real counts from `allT`, no
+  // fabrication.
+  var heroHtml='<div class="dcv2-tiles">'
+    +dcv2Tile({icon:I.plane,label:'Total records',val:allT.length,hue:'blue'})
+    +dcv2Tile({icon:I.clock,label:'Pending',val:pend,hue:'amber'})
+    +dcv2Tile({icon:I.chk,label:'Approved',val:appr,hue:'green'})
+    +dcv2Tile({icon:I.warn,label:'Rejected',val:rej,hue:'red',attn:rej>0,attnColor:'red'})
+    +'</div>';
 
   var apB=function(st){return'<span class="ap-pill '+(st==="Approved"?"ap-ok":st==="Rejected"?"ap-r":"ap-p")+'">'+st+'</span>';};
   // Past = relevant date strictly before today (ddiff<0). Missing/unparseable date defaults to Active so nothing vanishes.
@@ -3641,27 +3650,26 @@ function contractsChipsHtml(){
 function renderContracts(){
   var all=vc().reduce(function(a,c){return a.concat(c.contracts.map(function(k){return Object.assign({},k,{cid:c.id,cn:c.name,cc:c.classification,cConsId:c.consultantId});}));}, []);
   document.getElementById("tb-h").textContent="Contracts";
-  document.getElementById("tb-s").textContent=all.length+" contracts — "+all.filter(function(k){return k.status==="Active";}).length+" active";
+  document.getElementById("tb-s").textContent=all.length+" contracts, "+all.filter(function(k){return k.status==="Active";}).length+" active";
   document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="qMod(&apos;Contracts&apos;)">Add contract</button> <button class="btn btn-g btn-sm" onclick="expAll(&apos;contracts&apos;)">'+I.dl+' Export</button> <button class="btn btn-g btn-sm" onclick="openWeekendHandover()">Weekend Handover</button>';
 
-  // ── HERO (summary strip) — real aggregates from `all`; pipeline-value uses
-  // the same rate*hours*(days-remaining/7) formula already used on the
-  // Management Dashboard. No fabricated data. Counts are always computed from
-  // the FULL unfiltered `all` list, not the filtered view -- a tile's own
-  // number should never shrink just because its own filter is applied.
+  // HERO (summary strip), Direction C tiles, real aggregates from `all`,
+  // pipeline value uses the same rate*hours*(days-remaining/7) formula
+  // already used on the Management Dashboard. No fabricated data. Counts
+  // are always computed from the FULL unfiltered `all` list, not the
+  // filtered view, a tile's own number should never shrink just because
+  // its own filter is applied.
   var activeContracts=all.filter(function(k){return k.status==="Active";});
   var expiringSoonCount=activeContracts.filter(function(k){var d=ddiff(k.endDate);return d!==null&&d>=0&&d<=21;}).length;
   var pipelineVal=activeContracts.reduce(function(sum,k){var r=parseFloat(k.rate)||0,h=parseFloat(k.hours)||0,d=ddiff(k.endDate);return d&&d>0?sum+r*h*(d/7):sum;},0);
   var fmtMon=function(n){return n>=1e6?"$"+(n/1e6).toFixed(1)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"K":"$"+Math.round(n);};
   var isActivePreset=ctFilt.statuses.length===1&&ctFilt.statuses[0]==='Active';
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +kpiChip({icon:I.case,label:'Total contracts',val:all.length,hue:'blue',onclick:'ctTileTotal()'})
-    +kpiChip({icon:I.chk,label:'Active',val:activeContracts.length,hue:'teal',onclick:'ctTileActive()',active:isActivePreset})
-    +kpiChip({icon:I.warn,label:'Expiring soon',val:expiringSoonCount,hue:'amber',onclick:'ctTileExpiring()',active:ctFilt.expiringOnly})
-    +kpiChip({icon:I.sheet,label:'Pipeline value',val:fmtMon(pipelineVal),hue:'blue'})
-    +'</div></div>';
+  var heroHtml='<div class="dcv2-tiles">'
+    +dcv2Tile({icon:I.case,label:'Total contracts',val:all.length,hue:'blue',onclick:'ctTileTotal()'})
+    +dcv2Tile({icon:I.chk,label:'Active',val:activeContracts.length,hue:'green',onclick:'ctTileActive()',active:isActivePreset})
+    +dcv2Tile({icon:I.warn,label:'Expiring soon',val:expiringSoonCount,hue:'amber',attn:expiringSoonCount>0,onclick:'ctTileExpiring()',active:ctFilt.expiringOnly})
+    +dcv2Tile({icon:I.sheet,label:'Pipeline value',val:fmtMon(pipelineVal),hue:'blue'})
+    +'</div>';
 
   // ── DRILL-DOWN FILTER BAR — same UX as the candidate grid: removable chips,
   // Clear all, live "Showing X of Y". Click an existing facility/ward/status
@@ -3757,18 +3765,17 @@ function renderFacilities(){
   document.getElementById("tb-s").textContent=facilities.length+" facilities total";
   document.getElementById("tb-r").innerHTML='<button class="btn btn-p" onclick="openFacModal()">+ Add facility</button>';
 
-  // ── HERO (summary strip) — real aggregates from `facilities`, no fabrication.
+  // HERO (summary strip), Direction C tiles, real aggregates from
+  // `facilities`, no fabrication.
   var preferredCount=facilities.filter(function(f){return f.preferredStatus;}).length;
   var publicCount=facilities.filter(function(f){return (f.type||'Public')==='Public';}).length;
   var privateCount=facilities.filter(function(f){return f.type==='Private';}).length;
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +kpiChip({icon:I.hosp,label:'Total facilities',val:facilities.length,hue:'blue'})
-    +kpiChip({icon:I.star,label:'Preferred',val:preferredCount,hue:'teal'})
-    +kpiChip({icon:I.doc,label:'Public',val:publicCount,onclick:"facTileNav('public')"})
-    +kpiChip({icon:I.case,label:'Private',val:privateCount,onclick:"facTileNav('private')"})
-    +'</div></div>';
+  var heroHtml='<div class="dcv2-tiles">'
+    +dcv2Tile({icon:I.hosp,label:'Total facilities',val:facilities.length,hue:'blue'})
+    +dcv2Tile({icon:I.star,label:'Preferred',val:preferredCount,hue:'green'})
+    +dcv2Tile({icon:I.doc,label:'Public',val:publicCount,hue:'purple',onclick:"facTileNav('public')"})
+    +dcv2Tile({icon:I.case,label:'Private',val:privateCount,hue:'blue',onclick:"facTileNav('private')"})
+    +'</div>';
 
   var filtered=facilities.filter(function(f){
     if(facState!=="All"&&f.state!==facState)return false;
@@ -3833,25 +3840,19 @@ function renderTeam(){
   document.getElementById("tb-r").innerHTML="<button class=\"btn btn-p\" onclick=\"openUserModal()\">Add user</button>";
   var cons=users.filter(function(u){return u.role==="consultant";});
 
-  // ── HERO (summary strip) — real aggregates across the team's own candidates,
-  // same phase/status checks already used per-consultant below.
+  // HERO (summary strip), Direction C tiles, real aggregates across the
+  // team's own candidates, same phase/status checks already used
+  // per-consultant below.
   var consIdSet=new Set(cons.map(function(u){return u.id;}));
   var teamCands=candidates.filter(function(c){return consIdSet.has(c.consultantId);});
   var teamPlaced=teamCands.filter(function(c){return c.phase==="On Assignment"||c.phase==="Extension/Exit";}).length;
   var teamActive=teamCands.reduce(function(a,c){return a+c.contracts.filter(function(k){return k.status==="Active";}).length;},0);
-  function heroStat(icon,label,val){return'<div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px">'
-    +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:10px">'+ico(icon,16,'#fff')+'</div>'
-    +'<div style="font-size:11px;font-weight:400;color:#CECBF6;margin-bottom:2px">'+label+'</div>'
-    +'<div style="font-size:26px;font-weight:500;color:#fff;line-height:1">'+val+'</div>'
-    +'</div>';}
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +heroStat(I.person,'Consultants',cons.length)
-    +heroStat(I.case,'Candidates managed',teamCands.length)
-    +heroStat(I.chk,'Placed',teamPlaced)
-    +heroStat(I.doc,'Active contracts',teamActive)
-    +'</div></div>';
+  var heroHtml='<div class="dcv2-tiles">'
+    +dcv2Tile({icon:I.person,label:'Consultants',val:cons.length,hue:'purple'})
+    +dcv2Tile({icon:I.case,label:'Candidates managed',val:teamCands.length,hue:'blue'})
+    +dcv2Tile({icon:I.chk,label:'Placed',val:teamPlaced,hue:'green'})
+    +dcv2Tile({icon:I.doc,label:'Active contracts',val:teamActive,hue:'purple'})
+    +'</div>';
 
   var cards=cons.map(function(u){
     var mc=candidates.filter(function(c){return c.consultantId===u.id;});
@@ -4594,7 +4595,7 @@ function buildChaseList(){
 
 function renderMgmtDash(){
   document.getElementById("tb-h").textContent="Management Dashboard";
-  document.getElementById("tb-s").textContent="Pipeline, follow-ups and conversions — all consultants";
+  document.getElementById("tb-s").textContent="Pipeline, follow-ups and conversions, all consultants";
   document.getElementById("tb-r").innerHTML="";
   var allC=candidates,cons=users.filter(function(u){return u.role==="consultant";});
   var OUTCOME=["Accepted","Withdrawn","Declined"];
@@ -4616,18 +4617,22 @@ function renderMgmtDash(){
     return d&&d>0?t+r*h*(d/7):t;
   },0);},0);
   var fmtMon=function(n){return n>=1e6?"$"+(n/1e6).toFixed(1)+"M":n>=1e3?"$"+(n/1e3).toFixed(0)+"K":"$"+Math.round(n);};
-  var topRow='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">'
-    +kpiChip({label:'Total Subs',val:total,sub:'all time',hue:'blue',onLight:true,onclick:"mgmtTileNav('subs-all')"})
-    +kpiChip({label:'No Outcome',val:noOutPct+'%',sub:noOutN+' of '+total+' subs',hue:noOutPct>=50?'red':'amber',onLight:true})
-    +kpiChip({label:'Overdue F/U',val:overdue.length,sub:'need chasing now',hue:'red',onLight:true,onclick:"mgmtTileNav('subs-all')"})
-    +kpiChip({label:'Stale 7d+',val:stale.length,sub:'no update in 7+ days',hue:'red',onLight:true,onclick:"mgmtTileNav('subs-all')"})
+  // Direction C tiles, same shared dcv2Tile as every other screen. No Outcome
+  // keeps its calm amber identity until the rate is actually bad (50%+), then
+  // deepens to red, the same calm-by-default, loud-only-when-it-matters rule
+  // as the Dashboard's own compliance tile.
+  var topRow='<div class="dcv2-tiles">'
+    +dcv2Tile({icon:I.mail,label:'Total Subs',val:total,sub:'all time',hue:'blue',onclick:"mgmtTileNav('subs-all')"})
+    +dcv2Tile({icon:I.warn,label:'No Outcome',val:noOutPct+'%',sub:noOutN+' of '+total+' subs',hue:'amber',attn:noOutPct>=50,attnColor:'red'})
+    +dcv2Tile({icon:I.phone,label:'Overdue F/U',val:overdue.length,sub:'need chasing now',hue:'red',attn:overdue.length>0,attnColor:'red',onclick:"mgmtTileNav('subs-all')"})
+    +dcv2Tile({icon:I.clock,label:'Stale 7d+',val:stale.length,sub:'no update in 7+ days',hue:'red',attn:stale.length>0,attnColor:'red',onclick:"mgmtTileNav('subs-all')"})
     +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">'
-    +kpiChip({label:'Placed',val:placed.length,sub:'on assignment',hue:'teal',onLight:true,onclick:"mgmtTileNav('candidates-placed')"})
-    +kpiChip({label:'Active Contracts',val:activeCon,sub:'running now',hue:'purple',onLight:true,onclick:"mgmtTileNav('contracts')"})
-    +kpiChip({label:'Accepted Rate',val:convRate+'%',sub:'of subs with outcome',hue:'teal',onLight:true,onclick:"mgmtTileNav('subs-accepted')"})
-    +kpiChip({label:'In Pipeline',val:inPipe.length,sub:'submitted/under review',hue:'blue',onLight:true,onclick:"mgmtTileNav('subs-all')"})
-    +kpiChip({label:'Pipeline Value',val:fmtMon(pipelineVal),sub:'active contract rev. remaining',hue:'blue',onLight:true,onclick:"mgmtTileNav('contracts')"})
+    +'<div class="dcv2-tiles" style="grid-template-columns:repeat(5,1fr)">'
+    +dcv2Tile({icon:I.person,label:'Placed',val:placed.length,sub:'on assignment',hue:'green',onclick:"mgmtTileNav('candidates-placed')"})
+    +dcv2Tile({icon:I.doc,label:'Active Contracts',val:activeCon,sub:'running now',hue:'purple',onclick:"mgmtTileNav('contracts')"})
+    +dcv2Tile({icon:I.chk,label:'Accepted Rate',val:convRate+'%',sub:'of subs with outcome',hue:'green',onclick:"mgmtTileNav('subs-accepted')"})
+    +dcv2Tile({icon:I.case,label:'In Pipeline',val:inPipe.length,sub:'submitted, under review',hue:'blue',onclick:"mgmtTileNav('subs-all')"})
+    +dcv2Tile({icon:I.sheet,label:'Pipeline Value',val:fmtMon(pipelineVal),sub:'active contract rev. remaining',hue:'blue',onclick:"mgmtTileNav('contracts')"})
     +'</div>';
   var rows=cons.map(function(u){
     var mc=allC.filter(function(c){return c.consultantId===u.id;});
@@ -8551,20 +8556,18 @@ function renderJobBoard(){
   if(sel&&filtered.indexOf(sel)<0){roleFilt={state:'All',ward:'All',nurseType:'All',status:'All'};filtered=roles.slice();}
   document.getElementById("tb-s").textContent=filtered.length+' role'+(filtered.length!==1?'s':'')+' shown';
 
-  // ── HERO (summary strip) — real aggregates from the full `roles` list
-  // (independent of the current filter), no fabricated data.
+  // HERO (summary strip), Direction C tiles, real aggregates from the full
+  // `roles` list (independent of the current filter), no fabricated data.
   var openRoles=roles.filter(function(r){return r.status==='Open';});
   var likelyRoles=roles.filter(function(r){return r.status==='Likely';});
   var totalPositions=openRoles.reduce(function(s,r){return s+(r.positionsAvailable||1);},0);
   var facilitiesRepped=new Set(openRoles.concat(likelyRoles).map(function(r){return r.facilityId;})).size;
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">'
-    +kpiChip({icon:I.doc,label:'Open roles',val:openRoles.length,hue:'teal',onclick:"jobTileNav('open')"})
-    +kpiChip({icon:I.person,label:'Total positions',val:totalPositions,hue:'blue',onclick:"jobTileNav('open')"})
-    +kpiChip({icon:I.clock,label:'Likely',val:likelyRoles.length,hue:'amber',onclick:"jobTileNav('likely')"})
-    +kpiChip({icon:I.hosp,label:'Facilities',val:facilitiesRepped})
-    +'</div></div>';
+  var heroHtml='<div class="dcv2-tiles">'
+    +dcv2Tile({icon:I.doc,label:'Open roles',val:openRoles.length,hue:'green',onclick:"jobTileNav('open')"})
+    +dcv2Tile({icon:I.person,label:'Total positions',val:totalPositions,hue:'blue',onclick:"jobTileNav('open')"})
+    +dcv2Tile({icon:I.clock,label:'Likely',val:likelyRoles.length,hue:'amber',onclick:"jobTileNav('likely')"})
+    +dcv2Tile({icon:I.hosp,label:'Facilities',val:facilitiesRepped,hue:'purple'})
+    +'</div>';
 
   var h=heroHtml+'<div class="jb-filter-bar">'
     +'<span style="font-size:10px;font-weight:500;color:var(--t3)">STATUS</span>'

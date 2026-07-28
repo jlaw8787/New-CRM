@@ -4117,9 +4117,18 @@ function closeModal(){document.getElementById("mo").style.display="none";}
 var EF=null,EFid=null;
 function openFacModal(id){
   EFid=id||null;
-  EF=id?JSON.parse(JSON.stringify(facilities.find(function(f){return f.id===id;}))):({id:uid(),name:"",state:"NT",region:"",type:"Public",beds:"",wards:[],contactName:"",contactEmail:"",contactPhone:"",notes:"",address:"",addressSuburb:"",addressPostcode:""});
+  // A new facility now starts with every column the editor can write, so the
+  // save payload never sends undefined for a field the form can set. An
+  // existing facility already carries all of these, mapFacility maps them.
+  EF=id?JSON.parse(JSON.stringify(facilities.find(function(f){return f.id===id;}))):({id:uid(),name:"",state:"NT",region:"",type:"Public",beds:"",wards:[],contactName:"",contactEmail:"",contactPhone:"",notes:"",address:"",addressSuburb:"",addressPostcode:"",
+    healthAuthority:"",aliases:[],preferredStatus:false,
+    remoteLoadingApplies:false,remoteLoadingPct:0,
+    accommodationProvided:false,accommodationType:"",carRequired:false,
+    submissionEmail:"",secondaryContactName:"",secondaryContactEmail:"",secondaryContactPhone:"",
+    notesCandidate:""});
   if(!EF.wards)EF.wards=[];
-  document.getElementById("modal").style.maxWidth="640px";
+  if(!EF.aliases)EF.aliases=[];
+  document.getElementById("modal").style.maxWidth="720px";
   document.getElementById("m-ttl").textContent=id?"Edit Facility":"New Facility";
   document.getElementById("m-info").innerHTML="";
   document.getElementById("m-tabs").innerHTML="";
@@ -4137,29 +4146,89 @@ function renderFacModalBody(){
       +'<button class="btn btn-g btn-xs" onclick="EF.wards.splice('+i+',1);renderFacModalBody()">&#215;</button>'
       +'</div>';
   }).join("");
+  // Health service picker. Options come from the health_service rows already in
+  // compliance_requirements, so anything picked here is guaranteed to resolve
+  // against a compliance rule. Nothing about the cascade itself is touched,
+  // resolveFacilityRequirements still matches on the same scope_name string.
+  var hsList=facHsOptions();
+  var hsCur=EF.healthAuthority||'';
+  var hsUnmatched=!!hsCur&&hsList.indexOf(hsCur)<0;
+  // A value already on the record that no rule uses is kept, shown as selected
+  // and labelled, never quietly dropped or swapped for something else.
+  var hsSel='<select onchange="EF.healthAuthority=this.value;renderFacModalBody()">'
+    +'<option value=""'+(hsCur?'':' selected')+'>None</option>'
+    +(hsUnmatched?'<option value="'+esc(hsCur)+'" selected>'+esc(hsCur)+' (no compliance rules)</option>':'')
+    +hsList.map(function(h){return '<option value="'+esc(h)+'"'+(h===hsCur?' selected':'')+'>'+esc(h)+'</option>';}).join('')
+    +'</select>';
+  var hsWarn=hsUnmatched
+    ?'<div style="margin-top:6px;padding:8px 10px;border-radius:var(--dc-r-control);background:var(--dc-amber-soft);color:var(--dc-amber-deep);box-shadow:inset 0 0 0 1px var(--dc-amber-ring);font-size:11.5px;line-height:1.5">'
+      +'No compliance rule uses this health service, so no health service requirements resolve for this facility. It has been left exactly as it was. Pick one from the list to link it, or leave it if the name is right and the rules are not loaded yet.'
+      +'</div>'
+    :'';
+  // Same keep-what-is-there approach for accommodation type. The three options
+  // are the values already in use, an existing value outside them is preserved.
+  var acList=['Private rental','Hotel','Onsite quarters'];
+  var acCur=EF.accommodationType||'';
+  var acSel='<select onchange="EF.accommodationType=this.value">'
+    +'<option value=""'+(acCur?'':' selected')+'>Not set</option>'
+    +(acCur&&acList.indexOf(acCur)<0?'<option value="'+esc(acCur)+'" selected>'+esc(acCur)+'</option>':'')
+    +acList.map(function(a){return '<option value="'+esc(a)+'"'+(a===acCur?' selected':'')+'>'+esc(a)+'</option>';}).join('')
+    +'</select>';
+  var cbLbl='font-size:12px;cursor:pointer;display:flex;align-items:center;gap:7px;padding:6px 0';
   document.getElementById("m-body").innerHTML=
     '<div class="fb">'
+    +'<div class="sh">Identity</div>'
     +'<div class="fr f2"><div class="fg"><label>Facility Name <span class="req">*</span></label><input value="'+esc(EF.name)+'" oninput="EF.name=this.value"></div>'
-    +'<div class="fg"><label>State</label><select onchange="EF.state=this.value">'+["NSW","VIC","QLD","WA","SA","TAS","NT","ACT"].map(function(s){return '<option '+(EF.state===s?"selected":"")+'>'+s+'</option>';}).join("")+'</select></div></div>'
-    +'<div class="fr f2"><div class="fg"><label>Region</label><input value="'+esc(EF.region||"")+'" oninput="EF.region=this.value" placeholder="e.g. NT — Remote"></div>'
     +'<div class="fg"><label>Type</label><select onchange="EF.type=this.value">'+["Public","Private","NGO","Remote Community"].map(function(t){return '<option '+(EF.type===t?"selected":"")+'>'+t+'</option>';}).join("")+'</select></div></div>'
-    +'<div class="fg"><label>Beds</label><input type="number" value="'+(EF.beds||"")+'" oninput="EF.beds=this.value" placeholder="350" style="max-width:120px"></div>'
+    +'<div class="fr f2"><div class="fg"><label>Beds</label><input type="number" value="'+(EF.beds||"")+'" oninput="EF.beds=this.value" placeholder="350"></div>'
+    +'<div class="fg"><label>Also known as</label><input value="'+esc((EF.aliases||[]).join(", "))+'" oninput="EF.aliases=this.value.split(&apos;,&apos;).map(function(s){return s.trim();}).filter(Boolean)" placeholder="Other names, separated by commas"></div></div>'
+
+    +'<div class="sh">Geography and parent</div>'
+    +'<div class="fr f2"><div class="fg"><label>State</label><select onchange="EF.state=this.value">'+["NSW","VIC","QLD","WA","SA","TAS","NT","ACT"].map(function(s){return '<option '+(EF.state===s?"selected":"")+'>'+s+'</option>';}).join("")+'</select></div>'
+    +'<div class="fg"><label>Region</label><input value="'+esc(EF.region||"")+'" oninput="EF.region=this.value" placeholder="e.g. Pilbara"></div></div>'
+    +'<div class="fg"><label>Health service</label>'+hsSel+hsWarn+'</div>'
     +'<div class="fg"><label>Street Address</label><input value="'+esc(EF.address||"")+'" oninput="EF.address=this.value" placeholder="e.g. 15 Hospital Rd"></div>'
     +'<div class="fr f2"><div class="fg"><label>Suburb</label><input value="'+esc(EF.addressSuburb||"")+'" oninput="EF.addressSuburb=this.value"></div>'
     +'<div class="fg"><label>Postcode</label><input value="'+esc(EF.addressPostcode||"")+'" oninput="EF.addressPostcode=this.value" maxlength="4"></div></div>'
+
     +'<div class="sh" style="display:flex;justify-content:space-between;align-items:center">Wards &amp; Nurse Types Required'
       +'<div style="display:flex;gap:6px">'
       +'<button class="btn btn-g btn-xs" onclick="applyMPSPreset()">+ MPS Preset</button>'
       +'<button class="btn btn-g btn-xs" onclick="EF.wards.push({name:&apos;&apos;,nurseTypes:[&apos;RN&apos;]});renderFacModalBody()">+ Add Ward</button>'
       +'</div></div>'
-    +'<div style="margin-bottom:8px">'+(wardRows||'<div style="font-size:11px;color:var(--t3);padding:8px 0">No wards added yet — use "+ Add Ward" or "+ MPS Preset" for a multipurpose facility.</div>')+'</div>'
-    +'<div class="sh">Primary Contact</div>'
-    +'<div class="fr f3"><div class="fg"><label>Contact Name</label><input value="'+esc(EF.contactName||"")+'" oninput="EF.contactName=this.value"></div>'
+    +'<div style="margin-bottom:8px">'+(wardRows||'<div style="font-size:11px;color:var(--t3);padding:8px 0">No wards added yet, use "+ Add Ward" or "+ MPS Preset" for a multipurpose facility.</div>')+'</div>'
+
+    +'<div class="sh">Contacts</div>'
+    +'<div class="fr f3"><div class="fg"><label>Primary Contact</label><input value="'+esc(EF.contactName||"")+'" oninput="EF.contactName=this.value"></div>'
     +'<div class="fg"><label>Email</label><input type="email" value="'+esc(EF.contactEmail||"")+'" oninput="EF.contactEmail=this.value"></div>'
     +'<div class="fg"><label>Phone</label><input value="'+esc(EF.contactPhone||"")+'" oninput="EF.contactPhone=this.value"></div></div>'
-    +'<div class="sh">Notes</div>'
-    +'<div class="fg"><textarea rows="3" oninput="EF.notes=this.value" placeholder="Relationship notes, turnaround times, special requirements...">'+esc(EF.notes||"")+'</textarea></div>'
+    +'<div class="fr f3"><div class="fg"><label>Secondary Contact</label><input value="'+esc(EF.secondaryContactName||"")+'" oninput="EF.secondaryContactName=this.value"></div>'
+    +'<div class="fg"><label>Email</label><input type="email" value="'+esc(EF.secondaryContactEmail||"")+'" oninput="EF.secondaryContactEmail=this.value"></div>'
+    +'<div class="fg"><label>Phone</label><input value="'+esc(EF.secondaryContactPhone||"")+'" oninput="EF.secondaryContactPhone=this.value"></div></div>'
+    +'<div class="fg"><label>Submission Email</label><input type="email" value="'+esc(EF.submissionEmail||"")+'" oninput="EF.submissionEmail=this.value" placeholder="Where candidate submissions are sent"></div>'
+
+    +'<div class="sh">Accommodation and travel</div>'
+    +'<label style="'+cbLbl+'"><input type="checkbox"'+(EF.accommodationProvided?' checked':'')+' onchange="EF.accommodationProvided=this.checked;renderFacModalBody()"> Accommodation provided</label>'
+    +(EF.accommodationProvided?'<div class="fg" style="margin-bottom:4px"><label>Accommodation Type</label>'+acSel+'</div>':'')
+    +'<label style="'+cbLbl+'"><input type="checkbox"'+(EF.carRequired?' checked':'')+' onchange="EF.carRequired=this.checked"> Car required on site</label>'
+    +'<label style="'+cbLbl+'"><input type="checkbox"'+(EF.remoteLoadingApplies?' checked':'')+' onchange="EF.remoteLoadingApplies=this.checked;renderFacModalBody()"> Remote loading applies</label>'
+    +(EF.remoteLoadingApplies?'<div class="fg" style="margin-bottom:4px"><label>Remote Loading %</label><input type="number" min="0" max="100" value="'+(EF.remoteLoadingPct||0)+'" oninput="EF.remoteLoadingPct=parseInt(this.value)||0" style="max-width:140px"></div>':'')
+
+    +'<div class="sh">Admin</div>'
+    +'<label style="'+cbLbl+'"><input type="checkbox"'+(EF.preferredStatus?' checked':'')+' onchange="EF.preferredStatus=this.checked"> Preferred facility</label>'
+    +'<div class="fg" style="margin-top:8px"><label>Internal Notes</label><textarea rows="3" oninput="EF.notes=this.value" placeholder="Relationship notes, turnaround times, special requirements...">'+esc(EF.notes||"")+'</textarea></div>'
+    +'<div class="fg"><label>Notes for Candidates</label><textarea rows="3" oninput="EF.notesCandidate=this.value" placeholder="What a nurse should know before going, safe to share with them">'+esc(EF.notesCandidate||"")+'</textarea></div>'
     +'</div>';
+}
+// Distinct health service names that compliance_requirements actually carries
+// rules for. Read only, this never writes to complianceRequirements and does
+// not change how the cascade resolves.
+function facHsOptions(){
+  var seen={},out=[];
+  (typeof complianceRequirements!=='undefined'?complianceRequirements:[]).forEach(function(r){
+    if(r&&r.level==='health_service'&&r.scope_name&&!seen[r.scope_name]){seen[r.scope_name]=true;out.push(r.scope_name);}
+  });
+  return out.sort();
 }
 function toggleWardNT(i,nt,checked){
   var arr=EF.wards[i].nurseTypes;
@@ -12173,7 +12242,24 @@ function saveFac(){
       contact_email:EF.contactEmail||null,contact_phone:EF.contactPhone||null,
       address:EF.address||null,address_suburb:EF.addressSuburb||null,address_postcode:EF.addressPostcode||null,
       notes:EF.notes||null,last_edited_by:EF.lastEditedBy,last_edited_at:EF.lastEditedAt,
-      created_by:EF.createdBy||null,created_at:EF.createdAt||null
+      created_by:EF.createdBy||null,created_at:EF.createdAt||null,
+      // These columns were read by mapFacility and shown on the facility page
+      // but were never in this payload, so nothing the editor did to them was
+      // ever written. Booleans and the percentage go as real values rather
+      // than null, since every existing row carries one.
+      health_authority:EF.healthAuthority||null,
+      aliases:EF.aliases||[],
+      preferred_status:!!EF.preferredStatus,
+      remote_loading_applies:!!EF.remoteLoadingApplies,
+      remote_loading_pct:EF.remoteLoadingPct||0,
+      accommodation_provided:!!EF.accommodationProvided,
+      accommodation_type:EF.accommodationType||null,
+      car_required:!!EF.carRequired,
+      submission_email:EF.submissionEmail||null,
+      secondary_contact_name:EF.secondaryContactName||null,
+      secondary_contact_email:EF.secondaryContactEmail||null,
+      secondary_contact_phone:EF.secondaryContactPhone||null,
+      notes_candidate:EF.notesCandidate||null
     };
     // facilities.id is GENERATED ALWAYS AS IDENTITY — a batch/single .upsert() with
     // an explicit id fails outright (Postgres 428C9), same failure mode as

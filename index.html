@@ -973,6 +973,45 @@ textarea.tpl-input{resize:vertical;min-height:70px;line-height:1.4}
 .ai-send:disabled{opacity:.5;cursor:default}
 .ai-send:disabled:hover{transform:none}
 
+/* ── FACILITY AND WARD NOTES PANEL ───────────────────────────────────────
+   Right side pop out for quick notes typed during a call. Same slide in
+   pattern as the AI assistant panel above (fixed right, transform, same
+   easing and width behaviour), not a second panel idiom. Direction C tokens
+   throughout, every separator a shadow rather than a border line. */
+.fnote-panel{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:92vw;background:var(--dc-card);box-shadow:-12px 0 40px rgba(26,26,46,.18);z-index:450;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.16,.8,.3,1)}
+.fnote-panel.open{transform:translateX(0)}
+.fnote-hdr{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:16px;background:var(--brand-grad)}
+.fnote-hdr-t{flex:1;min-width:0}
+.fnote-hdr-title{font-size:14px;font-weight:500;color:#fff}
+.fnote-hdr-sub{font-size:11.5px;color:rgba(255,255,255,.75);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fnote-close{background:rgba(255,255,255,.14);border:none;color:#fff;width:26px;height:26px;border-radius:8px;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.fnote-close:hover{background:rgba(255,255,255,.24)}
+.fnote-compose{flex-shrink:0;padding:14px 16px;box-shadow:var(--dc-shadow-row)}
+.fnote-lbl{display:block;font-size:10px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--dc-t3);margin-bottom:5px}
+.fnote-inp{width:100%;padding:8px 11px;border:none;border-radius:var(--dc-r-control);box-shadow:var(--dc-shadow-field);background:var(--dc-card);font-size:13px;color:var(--dc-t1);font-family:inherit}
+textarea.fnote-inp{resize:vertical;min-height:76px;line-height:1.5}
+.fnote-inp:disabled{opacity:.55;cursor:not-allowed}
+.fnote-crow{display:flex;align-items:center;gap:10px;margin-top:10px}
+.fnote-status{flex:1;min-width:0;font-size:11.5px;line-height:1.45;font-variant-numeric:tabular-nums}
+.fnote-status.ok{color:var(--dc-green)}
+.fnote-status.err{color:var(--dc-red)}
+.fnote-status.busy{color:var(--dc-t3)}
+.fnote-hint{font-size:11px;color:var(--dc-t3);margin-top:8px}
+.fnote-filter{flex-shrink:0;padding:12px 16px;box-shadow:var(--dc-shadow-row);display:flex;align-items:center;gap:10px}
+.fnote-filter .fnote-lbl{margin-bottom:0;white-space:nowrap}
+.fnote-list{flex:1;overflow-y:auto;padding:12px 16px 24px;background:var(--dc-bg)}
+.fnote{border-radius:var(--dc-r-card);box-shadow:var(--dc-shadow-card);background:var(--dc-card);padding:12px 14px;margin-bottom:10px}
+.fnote-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.fnote-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--dc-tile);color:var(--dc-t2);white-space:nowrap}
+.fnote-chip.attn{background:var(--dc-red-soft);color:var(--dc-red)}
+.fnote-ward{font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--dc-purple-soft);color:var(--dc-purple-deep);white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.fnote-del{margin-left:auto;background:none;border:none;color:var(--dc-t3);cursor:pointer;padding:3px;border-radius:6px;display:inline-flex;flex-shrink:0;transition:color .12s,background .12s}
+.fnote-del:hover{color:var(--dc-red);background:var(--dc-red-soft)}
+.fnote-body{font-size:13px;line-height:1.55;color:var(--dc-t1);white-space:pre-wrap;word-break:break-word}
+.fnote-meta{font-size:11.5px;color:var(--dc-t3);margin-top:7px;font-variant-numeric:tabular-nums}
+.fnote-empty{font-size:12.5px;color:var(--dc-t3);line-height:1.6;text-align:center;padding:28px 14px}
+@media(max-width:640px){.fnote-panel{width:100vw;max-width:100vw}}
+
 /* LOGIN */
 #ls{position:fixed;inset:0;background:linear-gradient(135deg,#1a1d2e,#250d48 50%,#003888 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
 .lc{background:var(--surface);border-radius:8px;padding:30px 26px;width:100%;max-width:380px;box-shadow:0 28px 70px rgba(0,0,0,.35)}
@@ -1171,6 +1210,20 @@ textarea.tpl-input{resize:vertical;min-height:70px;line-height:1.4}
     <input type="text" id="ai-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter'){event.preventDefault();aiSendUser(this.value);}">
     <button class="ai-send" aria-label="Send" onclick="aiSendUser(document.getElementById('ai-input').value)"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg></button>
   </div>
+</div>
+
+<!-- FACILITY AND WARD NOTES PANEL -->
+<div class="fnote-panel" id="fnote-panel">
+  <div class="fnote-hdr">
+    <div class="fnote-hdr-t">
+      <div class="fnote-hdr-title" id="fnote-title">Notes</div>
+      <div class="fnote-hdr-sub" id="fnote-sub"></div>
+    </div>
+    <button class="fnote-close" onclick="closeNotesPanel()" aria-label="Close notes">&#215;</button>
+  </div>
+  <div class="fnote-compose" id="fnote-compose"></div>
+  <div class="fnote-filter" id="fnote-filter"></div>
+  <div class="fnote-list" id="fnote-list"></div>
 </div>
 
 <script>
@@ -2252,6 +2305,10 @@ var NO_SCROLL_MEMORY={candidateprofile:1,facilityprofile:1};
 function nav(pg){
   if(!NO_SCROLL_MEMORY[curPage])pageScrollY[curPage]=window.scrollY;
   if(curPage==="home"&&pg!=="home")mbCollapsed=true;
+  // The notes panel belongs to one facility. Leaving that page closes it, so
+  // it can never sit open over an unrelated screen. Any half typed note is
+  // held in fnDrafts and comes back when the same target is reopened.
+  if(typeof fnOpen!=='undefined'&&fnOpen)closeNotesPanel();
   curPage=pg;
   if(pg==='jobboard'){jbNewCount=0;}
   var newHash='#'+hashForPage(pg);
@@ -4789,6 +4846,7 @@ document.addEventListener("keydown",function(e){
     if(document.getElementById('mo').style.display==='flex'){closeModal();return;}
     if(document.getElementById('sf-ov').style.display==='flex'){if(!sfSentConfirmed)closeSF();return;}
     if(document.getElementById('sr-ov').style.display==='flex'){closeSearch();return;}
+    if(fnOpen){closeNotesPanel();return;}
     if(cpEditing){cancelCpEdit();return;}
     if(cpNAEditing){cpNAEditing=false;renderCandPage();return;}
     if(listNAEditId!==null){listNAEditId=null;renderCandidates();return;}
@@ -8163,6 +8221,12 @@ function openFacPage(id){
       if(!r.error){facActivityCache[id]=(r.data||[]);if(curFacId===id)renderFacPage();}
     });
   }
+  // Notes load with the page, the same way activity does, so the Notes
+  // buttons can show a real count before anyone opens the panel.
+  if(fnNotesCache[id]===undefined)loadFacilityNotes(id,function(){
+    if(curFacId===id)renderFacPage();
+    if(fnOpen&&fnFacId===id)fnRenderList();
+  });
   if(sb&&!facFilesLoaded[id]){
     facFilesLoaded[id]=true;
     sb.from('documents').select('*').eq('facility_id',id).then(function(r){
@@ -8418,10 +8482,13 @@ function facWardRowHtml(f,w,idx,isAdminOps,wRoles,wCons,wReqs){
     +'<div class="cp-lbl">Open roles at this ward</div><div style="margin-bottom:14px">'+rolesHtml+'</div>'
     +'<div class="cp-lbl">Active placements at this ward</div><div style="margin-bottom:14px">'+consHtml+'</div>'
     +'<div class="cp-lbl">Compliance requirements</div>'+reqsHtml;
+  // Ward notes open against the ward NAME, not an index or a ward id, because
+  // that is what the note row stores. See the notes module for why.
+  var notesBtn='<button class="btn btn-g btn-xs" onclick="event.stopPropagation();openNotesPanel('+f.id+',&apos;'+esc(jsAttrEsc(w.name))+'&apos;)" title="Notes for this ward">'+ico(I.pencil,11)+' Notes'+fnCountLabel(f.id,w.name)+'</button>';
   return '<div class="cp-sec'+(isOpen?'':' cp-closed')+'" style="margin-bottom:8px">'
     +'<div class="cp-sec-hdr" onclick="facWardToggle('+f.id+','+idx+')">'
     +'<div style="min-width:0"><div style="font-size:13px;font-weight:500;color:var(--t1)">'+esc(w.name)+'</div>'+chipsHtml+'</div>'
-    +'<div class="cp-sec-acts"><span style="font-size:10px;color:var(--t3);font-variant-numeric:tabular-nums;white-space:nowrap">'+wRoles.length+' open &middot; '+wCons.length+' active</span><span class="cp-arr">&#9660;</span></div>'
+    +'<div class="cp-sec-acts">'+notesBtn+'<span style="font-size:10px;color:var(--t3);font-variant-numeric:tabular-nums;white-space:nowrap">'+wRoles.length+' open &middot; '+wCons.length+' active</span><span class="cp-arr">&#9660;</span></div>'
     +'</div>'
     +'<div class="cp-sec-body">'+body+'</div>'
     +'</div>';
@@ -8651,6 +8718,8 @@ function renderFacPage(){
   document.getElementById('tb-s').textContent=(f.type||'Facility')+(f.state?' — '+f.state:'')+(f.region?' / '+f.region:'');
   document.getElementById('tb-r').innerHTML=''
     +'<button class="btn btn-g btn-sm" onclick="nav(\'facilities\')">'+I.back+' Facilities</button>'
+    // Notes are open to everyone, so this one is not gated to admin and ops.
+    +'<button class="btn btn-g btn-sm" onclick="openNotesPanel('+f.id+',null)" style="margin-left:8px">'+ico(I.pencil,12)+' Notes'+fnCountLabel(f.id,null)+'</button>'
     +(isAdminOps?'<button class="btn btn-p btn-sm" onclick="openFacModal('+f.id+')" style="margin-left:8px">Edit details</button>':'');
 
   // ── IDENTITY HEADER (hero moment, matching the candidate page) ───────────────
@@ -8765,6 +8834,260 @@ function renderFacPage(){
     +heroHtml
     +'<div class="entity-page" style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start;padding:0">'+left+right+'</div>'
     +'</div>';
+}
+
+// ══════════════════════════════════════════════════
+// FACILITY AND WARD NOTES
+// ═══════════════════════════════════════════════════
+// A right side pop out for quick notes typed during a call. Facilities and
+// wards only, nothing else. One row per note in facility_notes.
+//
+// A note written on a ward carries that ward's name. A note written on the
+// facility carries none. The facility list shows both, ward ones labelled.
+// A ward list shows only that ward's notes.
+//
+// The ward is held as a NAME, not a ward id, on purpose. saveFac deletes and
+// reinserts every ward row for a facility on each save, so ward ids change
+// under us and a note keyed on one would be silently orphaned. Roles,
+// submissions and contracts already reference wards by name for the same
+// reason. wardOrphanReassign, which repairs those strings after a ward is
+// renamed, repairs notes alongside them.
+//
+// This panel does not replace the facility Activity section. Activity is the
+// system trail (submissions, files, contract changes) plus the older typed
+// entries. Notes are the deliberate record of a conversation. Worth deciding
+// later whether Activity keeps its own typing box, since two places to type
+// about the same facility will read as a duplicate.
+var NOTE_REASONS=['Rate','Complaint or issue','Extension','Staffing request','Accommodation','General'];
+var fnOpen=false,fnFacId=null,fnWard=null,fnFilter='All',fnSaving=false;
+var fnNotesCache={},fnNotesLoading={},fnNotesError={};
+// Half typed notes live here, keyed by facility and ward, so a redraw of the
+// panel or of the page behind it never loses what was being written.
+var fnDrafts={};
+var fnStatus=null;
+
+function fnKey(facId,ward){return facId+'|'+(ward||'');}
+function fnDraft(){
+  var k=fnKey(fnFacId,fnWard);
+  if(!fnDrafts[k])fnDrafts[k]={text:'',reason:'General'};
+  return fnDrafts[k];
+}
+function fnReasonChipClass(reason){return reason==='Complaint or issue'?'fnote-chip attn':'fnote-chip';}
+function mapNoteRow(n){
+  return{id:n.id,facilityId:n.facility_id,ward:n.ward_name||'',reason:n.reason||'General',
+    body:n.body||'',author:n.author||'',authorId:n.author_id||null,createdAt:n.created_at||''};
+}
+function fnCanDelete(n){
+  if(!CU)return false;
+  if(n.authorId!=null&&CU.id!=null)return n.authorId===CU.id;
+  return !!n.author&&n.author===CU.name;
+}
+
+// Loaded per facility when the facility page opens, the same way facility
+// activity already is, so the Notes buttons can carry a real count and the
+// panel opens against data that is already there.
+function loadFacilityNotes(facId,onDone){
+  if(!sb){fnNotesCache[facId]=fnNotesCache[facId]||[];if(onDone)onDone();return;}
+  if(fnNotesLoading[facId])return;
+  fnNotesLoading[facId]=true;
+  sb.from('facility_notes').select('*').eq('facility_id',facId)
+    .order('created_at',{ascending:false})
+    .then(function(r){
+      fnNotesLoading[facId]=false;
+      if(r.error){
+        fnNotesError[facId]=r.error.message||'could not load notes';
+        console.error('[DB] load facility notes',r.error);
+      } else {
+        fnNotesError[facId]=null;
+        fnNotesCache[facId]=(r.data||[]).map(mapNoteRow);
+      }
+      if(onDone)onDone();
+    });
+}
+
+// Notes for one target. No ward means the facility view, which includes every
+// ward's notes as well. A ward means that ward only.
+function fnNotesFor(facId,ward){
+  var all=fnNotesCache[facId];
+  if(!all)return null;
+  if(!ward)return all;
+  return all.filter(function(n){return n.ward===ward;});
+}
+function fnCountFor(facId,ward){
+  var list=fnNotesFor(facId,ward);
+  return list?list.length:null;
+}
+function fnCountLabel(facId,ward){
+  var n=fnCountFor(facId,ward);
+  return n?' ('+n+')':'';
+}
+
+function openNotesPanel(facId,ward){
+  fnFacId=facId;fnWard=ward||null;fnFilter='All';fnStatus=null;fnSaving=false;
+  fnOpen=true;
+  document.getElementById('fnote-panel').classList.add('open');
+  if(fnNotesCache[facId]===undefined)loadFacilityNotes(facId,function(){
+    if(fnOpen&&fnFacId===facId)fnRenderList();
+    if(curPage==='facilityprofile'&&curFacId===facId)renderFacPage();
+  });
+  renderNotesPanel();
+  setTimeout(function(){var el=document.getElementById('fnote-body');if(el)el.focus();},260);
+}
+function closeNotesPanel(){
+  fnOpen=false;fnStatus=null;
+  var p=document.getElementById('fnote-panel');
+  if(p)p.classList.remove('open');
+}
+
+function fnSetReason(v){fnDraft().reason=v;}
+function fnOnInput(v){fnDraft().text=v;if(fnStatus){fnStatus=null;fnRenderStatus();}}
+function fnSetFilter(v){fnFilter=v;fnRenderList();}
+function fnKeydown(e){
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.preventDefault();fnSave();}
+}
+
+function fnRenderStatus(){
+  var el=document.getElementById('fnote-status');
+  if(!el)return;
+  el.className='fnote-status'+(fnStatus?' '+fnStatus.kind:'');
+  el.textContent=fnStatus?fnStatus.text:'';
+}
+
+function fnSave(){
+  if(fnSaving)return;
+  var d=fnDraft();
+  var body=(d.text||'').trim();
+  if(!body){
+    fnStatus={kind:'err',text:'Nothing to save. Type the note first.'};
+    fnRenderStatus();
+    var box=document.getElementById('fnote-body');if(box)box.focus();
+    return;
+  }
+  if(NOTE_REASONS.indexOf(d.reason)<0)d.reason='General';
+  if(!sb){
+    fnStatus={kind:'err',text:'Not saved. No database connection.'};
+    fnRenderStatus();return;
+  }
+  var facId=fnFacId,ward=fnWard;
+  fnSaving=true;
+  fnStatus={kind:'busy',text:'Saving...'};
+  fnRenderCompose();
+  var row={facility_id:facId,ward_name:ward||null,reason:d.reason,body:body,
+    author:CU?CU.name:'Unknown',author_id:(CU&&CU.id!=null)?CU.id:null,
+    created_at:new Date().toISOString()};
+  sb.from('facility_notes').insert(row).select('*').single().then(function(r){
+    fnSaving=false;
+    if(r.error||!r.data){
+      // The typed text stays exactly where it was. Nothing is cleared on a
+      // failure, so the note can be saved again once the problem is fixed.
+      fnStatus={kind:'err',text:'Not saved: '+((r.error&&r.error.message)||'unknown error')+'. Your note is still here, try Save again.'};
+      console.error('[DB] save facility note',r.error);
+      fnRenderCompose();
+      return;
+    }
+    if(!fnNotesCache[facId])fnNotesCache[facId]=[];
+    fnNotesCache[facId].unshift(mapNoteRow(r.data));
+    fnDrafts[fnKey(facId,ward)]={text:'',reason:d.reason};
+    fnStatus={kind:'ok',text:'Saved.'};
+    fnRenderCompose();
+    fnRenderList();
+    if(curPage==='facilityprofile'&&curFacId===facId)renderFacPage();
+    var box=document.getElementById('fnote-body');if(box)box.focus();
+  });
+}
+
+function fnDelete(noteId){
+  var facId=fnFacId;
+  var all=fnNotesCache[facId]||[];
+  var n=all.find(function(x){return x.id===noteId;});
+  if(!n)return;
+  if(!fnCanDelete(n)){showToast('Only the person who wrote a note can delete it','err');return;}
+  showConfirm({title:'Delete this note?',message:'Written by '+n.author+' on '+fmtTS(n.createdAt)+'. This cannot be undone.',confirmLabel:'Delete'},function(){
+    if(!sb){showToast('No database connection','err');return;}
+    sb.from('facility_notes').delete().eq('id',noteId).then(function(r){
+      if(r.error){showToast('Delete failed: '+r.error.message,'err');console.error('[DB] delete facility note',r.error);return;}
+      fnNotesCache[facId]=(fnNotesCache[facId]||[]).filter(function(x){return x.id!==noteId;});
+      fnRenderList();
+      if(curPage==='facilityprofile'&&curFacId===facId)renderFacPage();
+      showToast('Note deleted');
+    });
+  });
+}
+
+function fnNoteHtml(n){
+  var showWard=!fnWard&&n.ward;
+  return '<div class="fnote">'
+    +'<div class="fnote-top">'
+    +'<span class="'+fnReasonChipClass(n.reason)+'">'+esc(n.reason)+'</span>'
+    +(showWard?'<span class="fnote-ward" title="'+esc(n.ward)+'">'+esc(n.ward)+'</span>':'')
+    +(fnCanDelete(n)?'<button class="fnote-del" onclick="fnDelete('+n.id+')" title="Delete this note" aria-label="Delete this note">'+ico(I.trash,13)+'</button>':'')
+    +'</div>'
+    +'<div class="fnote-body">'+esc(n.body)+'</div>'
+    +'<div class="fnote-meta">'+esc(n.author||'Unknown')+' &middot; '+esc(fmtTS(n.createdAt))+'</div>'
+    +'</div>';
+}
+
+function fnRenderCompose(){
+  var el=document.getElementById('fnote-compose');
+  if(!el)return;
+  var d=fnDraft();
+  var dis=fnSaving?' disabled':'';
+  el.innerHTML=''
+    +'<label class="fnote-lbl" for="fnote-reason">Reason</label>'
+    +'<select class="fnote-inp" id="fnote-reason" onchange="fnSetReason(this.value)"'+dis+'>'
+    +NOTE_REASONS.map(function(r){return '<option value="'+esc(r)+'"'+(d.reason===r?' selected':'')+'>'+esc(r)+'</option>';}).join('')
+    +'</select>'
+    +'<label class="fnote-lbl" for="fnote-body" style="margin-top:12px">Note</label>'
+    +'<textarea class="fnote-inp" id="fnote-body" rows="3" oninput="fnOnInput(this.value)" onkeydown="fnKeydown(event)"'+dis+'>'+esc(d.text||'')+'</textarea>'
+    +'<div class="fnote-crow">'
+    +'<span class="fnote-status'+(fnStatus?' '+fnStatus.kind:'')+'" id="fnote-status">'+(fnStatus?esc(fnStatus.text):'')+'</span>'
+    +'<button class="btn btn-p btn-sm" onclick="fnSave()"'+dis+'>'+(fnSaving?'Saving...':'Save note')+'</button>'
+    +'</div>'
+    +'<div class="fnote-hint">Ctrl and Enter saves.</div>';
+}
+
+function fnRenderList(){
+  var el=document.getElementById('fnote-list');
+  if(!el)return;
+  var list=fnNotesFor(fnFacId,fnWard);
+  if(list===null){
+    el.innerHTML=fnNotesError[fnFacId]
+      ?'<div class="fnote-empty">Could not load notes. '+esc(fnNotesError[fnFacId])+'</div>'
+      :'<div class="fnote-empty">Loading notes...</div>';
+    return;
+  }
+  var shown=fnFilter==='All'?list:list.filter(function(n){return n.reason===fnFilter;});
+  if(!shown.length){
+    var msg=list.length
+      ?'No notes with that reason. '+list.length+' note'+(list.length===1?'':'s')+' here in total.'
+      :(fnWard
+        ?'No notes on this ward yet. Type one above, it will show here and on the facility.'
+        :'No notes on this facility yet. Type one above.');
+    el.innerHTML='<div class="fnote-empty">'+esc(msg)+'</div>';
+    return;
+  }
+  el.innerHTML=shown.map(fnNoteHtml).join('');
+}
+
+function fnRenderFilter(){
+  var el=document.getElementById('fnote-filter');
+  if(!el)return;
+  el.innerHTML='<label class="fnote-lbl" for="fnote-reason-filter">Show</label>'
+    +'<select class="fnote-inp" id="fnote-reason-filter" onchange="fnSetFilter(this.value)">'
+    +'<option value="All"'+(fnFilter==='All'?' selected':'')+'>All reasons</option>'
+    +NOTE_REASONS.map(function(r){return '<option value="'+esc(r)+'"'+(fnFilter===r?' selected':'')+'>'+esc(r)+'</option>';}).join('')
+    +'</select>';
+}
+
+function renderNotesPanel(){
+  var f=facilities.find(function(x){return x.id===fnFacId;});
+  var title=document.getElementById('fnote-title');
+  var sub=document.getElementById('fnote-sub');
+  if(title)title.textContent=fnWard?'Ward notes':'Facility notes';
+  if(sub)sub.textContent=fnWard?(fnWard+', '+((f&&f.name)||'facility')):((f&&f.name)||'');
+  fnRenderCompose();
+  fnRenderFilter();
+  fnRenderList();
 }
 
 function cpRenderIncrEdit(d){
@@ -12214,6 +12537,13 @@ function checkWardOrphans(facId){
       if(k.facilityId===facId&&k.ward&&!wardNames[k.ward])counts[k.ward]=(counts[k.ward]||0)+1;
     });
   });
+  // Notes reference a ward by name too, so a renamed ward strands them the
+  // same way it strands a role or a contract. Counted here so the rename
+  // prompt appears even when notes are the only thing left pointing at the
+  // old name. Only counts what is already loaded for this facility.
+  (fnNotesCache[facId]||[]).forEach(function(n){
+    if(n.ward&&!wardNames[n.ward])counts[n.ward]=(counts[n.ward]||0)+1;
+  });
   var names=Object.keys(counts).sort();
   if(!names.length)return;
   _woFacId=facId;
@@ -12303,8 +12633,22 @@ function wardOrphanReassign(facId,oldName,newName,count){
       console.error('[DB] ward reassign contracts',r.error);
     }
   });
+  // Notes move with everything else, same shape: memory first, single update
+  // statement, revert that one table in memory if it fails.
+  var matchedNotes=(fnNotesCache[facId]||[]).filter(function(n){return n.ward===oldName;});
+  matchedNotes.forEach(function(n){n.ward=newName;});
+  var pNotes=sb.from('facility_notes').update({ward_name:newName}).eq('facility_id',facId).eq('ward_name',oldName).then(function(r){
+    if(r.error){
+      matchedNotes.forEach(function(x){x.ward=oldName;});renderPage();
+      showToast('Ward reassign failed for notes, reverted: '+r.error.message,'err');
+      console.error('[DB] ward reassign notes',r.error);
+    } else if(fnOpen&&fnFacId===facId){
+      if(fnWard===oldName)fnWard=newName;
+      renderNotesPanel();
+    }
+  });
   showToast('Moved '+count+' record'+(count!==1?'s':'')+' to "'+newName+'"');
-  return Promise.all([pRoles,pSubs,pContracts]);
+  return Promise.all([pRoles,pSubs,pContracts,pNotes]);
 }
 // Writes the modal's contact list back to facility_contacts, then refreshes the
 // in-memory facilityContacts for this facility so the profile shows the change

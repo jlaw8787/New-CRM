@@ -4128,6 +4128,12 @@ function openFacModal(id){
     notesCandidate:""});
   if(!EF.wards)EF.wards=[];
   if(!EF.aliases)EF.aliases=[];
+  // Contacts now live in facility_contacts, not on the facility row. Work on a
+  // copy so Cancel really cancels, and remember which ids we started with so
+  // save knows what was removed.
+  EF._contacts=(facilityContacts||[]).filter(function(c){return c.facilityId===EFid;})
+    .map(function(c){return{id:c.id,name:c.name||'',title:c.title||'',email:c.email||'',phone:c.phone||'',isPrimary:!!c.isPrimary,isSubmissionContact:!!c.isSubmissionContact,notes:c.notes||''};});
+  EF._contactIdsAtOpen=EF._contacts.map(function(c){return c.id;});
   document.getElementById("modal").style.maxWidth="720px";
   document.getElementById("m-ttl").textContent=id?"Edit Facility":"New Facility";
   document.getElementById("m-info").innerHTML="";
@@ -4188,6 +4194,30 @@ function renderFacModalBody(){
   // A field that depends on the toggle above it. Always rendered, so nothing
   // below it ever moves, greyed and disabled while its toggle is off.
   function depStyle(on){return 'margin:0 0 12px 12px;'+(on?'':'opacity:.45');}
+  // One card per contact, shadow rather than a border line. Text fields write
+  // straight into EF._contacts without a redraw so typing keeps focus, the
+  // same way the ward name field already works. Primary is a radio group, so
+  // picking one drops the other automatically.
+  var contactCards=(EF._contacts||[]).map(function(c,i){
+    return '<div style="padding:12px;margin-bottom:8px;border-radius:var(--dc-r-control);box-shadow:var(--dc-shadow-field);background:var(--surface)">'
+      +'<div class="fr f2" style="margin-bottom:8px">'
+      +'<div class="fg"><label>Name</label><input value="'+esc(c.name)+'" oninput="EF._contacts['+i+'].name=this.value" placeholder="Full name"></div>'
+      +'<div class="fg"><label>Role</label><input value="'+esc(c.title)+'" oninput="EF._contacts['+i+'].title=this.value" placeholder="e.g. Director of Nursing"></div>'
+      +'</div>'
+      +'<div class="fr f2" style="margin-bottom:8px">'
+      +'<div class="fg"><label>Email</label><input type="email" value="'+esc(c.email)+'" oninput="EF._contacts['+i+'].email=this.value"></div>'
+      +'<div class="fg"><label>Phone</label><input value="'+esc(c.phone)+'" oninput="EF._contacts['+i+'].phone=this.value"></div>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'
+      +'<div style="display:flex;gap:16px;flex-wrap:wrap">'
+      +'<label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:7px"><input type="radio" name="fac-primary-contact"'+(c.isPrimary?' checked':'')+' onchange="facSetPrimaryContact('+i+')"> Primary contact</label>'
+      +'<label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:7px"><input type="checkbox"'+(c.isSubmissionContact?' checked':'')+' onchange="EF._contacts['+i+'].isSubmissionContact=this.checked"> Receives submissions</label>'
+      +'</div>'
+      +'<button class="btn btn-g btn-xs" onclick="facRemoveContact('+i+')">Remove</button>'
+      +'</div>'
+      +(c.notes?'<div style="font-size:11px;color:var(--t3);margin-top:8px">'+esc(c.notes)+'</div>':'')
+      +'</div>';
+  }).join('')||'<div style="font-size:11px;color:var(--t3);padding:8px 0">No contacts yet, use "+ Add Contact".</div>';
   document.getElementById("m-body").innerHTML=
     '<div class="fb">'
     +'<div class="sh">Identity</div>'
@@ -4211,14 +4241,10 @@ function renderFacModalBody(){
       +'</div></div>'
     +'<div style="margin-bottom:8px">'+(wardRows||'<div style="font-size:11px;color:var(--t3);padding:8px 0">No wards added yet, use "+ Add Ward" or "+ MPS Preset" for a multipurpose facility.</div>')+'</div>'
 
-    +'<div class="sh">Contacts</div>'
-    +'<div class="fr f3"><div class="fg"><label>Primary Contact</label><input value="'+esc(EF.contactName||"")+'" oninput="EF.contactName=this.value"></div>'
-    +'<div class="fg"><label>Email</label><input type="email" value="'+esc(EF.contactEmail||"")+'" oninput="EF.contactEmail=this.value"></div>'
-    +'<div class="fg"><label>Phone</label><input value="'+esc(EF.contactPhone||"")+'" oninput="EF.contactPhone=this.value"></div></div>'
-    +'<div class="fr f3"><div class="fg"><label>Secondary Contact</label><input value="'+esc(EF.secondaryContactName||"")+'" oninput="EF.secondaryContactName=this.value"></div>'
-    +'<div class="fg"><label>Email</label><input type="email" value="'+esc(EF.secondaryContactEmail||"")+'" oninput="EF.secondaryContactEmail=this.value"></div>'
-    +'<div class="fg"><label>Phone</label><input value="'+esc(EF.secondaryContactPhone||"")+'" oninput="EF.secondaryContactPhone=this.value"></div></div>'
-    +'<div class="fg"><label>Submission Email</label><input type="email" value="'+esc(EF.submissionEmail||"")+'" oninput="EF.submissionEmail=this.value" placeholder="Where candidate submissions are sent"></div>'
+    +'<div class="sh" style="display:flex;justify-content:space-between;align-items:center">Contacts'
+      +'<button class="btn btn-g btn-xs" onclick="facAddContact()">+ Add Contact</button></div>'
+    +contactCards
+    +'<div class="fg" style="margin-top:8px"><label>Submission Email</label><input type="email" value="'+esc(EF.submissionEmail||"")+'" oninput="EF.submissionEmail=this.value" placeholder="Facility inbox where submissions are sent, not a person"></div>'
 
     +'<div class="sh">Accommodation and travel</div>'
     +'<label style="'+tglRow+'"><input type="checkbox"'+(EF.accommodationProvided?' checked':'')+' onchange="EF.accommodationProvided=this.checked;renderFacModalBody()"> Accommodation provided</label>'
@@ -4252,6 +4278,26 @@ function toggleWardNT(i,nt,checked){
 }
 function applyMPSPreset(){
   EF.wards.push({name:"Multipurpose (Acute/ED/Aged)",nurseTypes:["RN","EN"]});
+  renderFacModalBody();
+}
+// ── Facility contacts, edited in the modal, stored in facility_contacts ──────
+function facAddContact(){
+  if(!EF._contacts)EF._contacts=[];
+  // First contact on a facility with none becomes the primary, otherwise the
+  // existing primary is left alone.
+  var noPrimaryYet=!EF._contacts.some(function(c){return c.isPrimary;});
+  EF._contacts.push({id:null,name:'',title:'',email:'',phone:'',isPrimary:noPrimaryYet,isSubmissionContact:false,notes:''});
+  renderFacModalBody();
+}
+function facRemoveContact(i){
+  var wasPrimary=EF._contacts[i]&&EF._contacts[i].isPrimary;
+  EF._contacts.splice(i,1);
+  // Never leave a facility with contacts but no primary.
+  if(wasPrimary&&EF._contacts.length&&!EF._contacts.some(function(c){return c.isPrimary;}))EF._contacts[0].isPrimary=true;
+  renderFacModalBody();
+}
+function facSetPrimaryContact(i){
+  EF._contacts.forEach(function(c,j){c.isPrimary=(j===i);});
   renderFacModalBody();
 }
 
@@ -12242,6 +12288,44 @@ function wardOrphanReassign(facId,oldName,newName,count){
   showToast('Moved '+count+' record'+(count!==1?'s':'')+' to "'+newName+'"');
   return Promise.all([pRoles,pSubs,pContracts]);
 }
+// Writes the modal's contact list back to facility_contacts, then refreshes the
+// in-memory facilityContacts for this facility so the profile shows the change
+// without a reload. Rows are updated by id rather than deleted and reinserted,
+// so ids stay stable and the migration note on a migrated row survives an edit.
+// Returns the facility id so the save chain can carry on to wards.
+function syncFacilityContacts(facId){
+  var rows=(EF._contacts||[]).filter(function(c){
+    return (c.name||'').trim()||(c.email||'').trim()||(c.phone||'').trim();
+  });
+  var body=function(c){
+    return{facility_id:facId,name:(c.name||'').trim(),title:(c.title||'').trim()||null,
+      email:(c.email||'').trim()||null,phone:(c.phone||'').trim()||null,
+      is_primary:!!c.isPrimary,is_submission_contact:!!c.isSubmissionContact,
+      notes:c.notes||null};
+  };
+  var keptIds=rows.map(function(c){return c.id;}).filter(Boolean);
+  var goneIds=(EF._contactIdsAtOpen||[]).filter(function(id){return keptIds.indexOf(id)<0;});
+  var jobs=[];
+  if(goneIds.length)jobs.push(sb.from('facility_contacts').delete().in('id',goneIds));
+  rows.forEach(function(c){
+    if(c.id)jobs.push(sb.from('facility_contacts').update(body(c)).eq('id',c.id));
+  });
+  var newRows=rows.filter(function(c){return !c.id;});
+  if(newRows.length)jobs.push(sb.from('facility_contacts').insert(newRows.map(body)));
+  return Promise.all(jobs).then(function(results){
+    results.forEach(function(r){if(r&&r.error)console.error('[DB] facility contacts sync',r.error);});
+    // Re-read this facility's contacts so the profile page is in step.
+    return sb.from('facility_contacts').select('*').eq('facility_id',facId).then(function(r){
+      if(r.error){console.error('[DB] facility contacts reload',r.error);return facId;}
+      facilityContacts=(facilityContacts||[]).filter(function(c){return c.facilityId!==facId;})
+        .concat((r.data||[]).map(function(c){
+          return{id:c.id,facilityId:c.facility_id,name:c.name||'',title:c.title||'',email:c.email||'',
+            phone:c.phone||'',isPrimary:!!c.is_primary,isSubmissionContact:!!c.is_submission_contact,notes:c.notes||''};
+        }));
+      return facId;
+    });
+  });
+}
 function saveFac(){
   if(!EF.name){showToast("Name required","err");return;}
   var dupe=facilities.find(function(f){return f.id!==EF.id&&f.name.toLowerCase().trim()===EF.name.toLowerCase().trim();});
@@ -12251,9 +12335,12 @@ function saveFac(){
     if(isNew){EF.createdBy=CU.name;EF.createdAt=new Date().toISOString();}
     var idx=facilities.findIndex(function(f){return f.id===EF.id;});
     if(idx>=0)facilities[idx]=EF;else facilities.push(EF);
+    // contact_name, contact_email and contact_phone are deliberately absent.
+    // facility_contacts is the source of truth for contacts now, and those
+    // three columns are retired. They are left untouched on existing rows
+    // rather than nulled, so nothing is lost while they are still there.
     var payload={name:EF.name,state:EF.state,region:EF.region||null,
-      type:EF.type,beds:EF.beds||null,contact_name:EF.contactName||null,
-      contact_email:EF.contactEmail||null,contact_phone:EF.contactPhone||null,
+      type:EF.type,beds:EF.beds||null,
       address:EF.address||null,address_suburb:EF.addressSuburb||null,address_postcode:EF.addressPostcode||null,
       notes:EF.notes||null,last_edited_by:EF.lastEditedBy,last_edited_at:EF.lastEditedAt,
       created_by:EF.createdBy||null,created_at:EF.createdAt||null,
@@ -12294,6 +12381,8 @@ function saveFac(){
     var savedFacId=null;
     writeFac.then(function(facId){
       savedFacId=facId;
+      return syncFacilityContacts(facId);
+    }).then(function(facId){
       return sb.from('wards').delete().eq('facility_id',facId).then(function(r){
         if(r.error){console.error('[DB] saveFac wards del',r.error);return;}
         if(!EF.wards||!EF.wards.length)return;

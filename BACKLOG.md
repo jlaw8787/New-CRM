@@ -182,6 +182,57 @@ not the common role-based path. KNOWN-ISSUES #22a.
 
 ---
 
+## Facility and ward notes
+
+### Notes panel on facilities and wards
+Status: DONE
+Priority: P1
+Built and tested live 28 July 2026.
+
+Right side slide out panel for quick notes typed during a call. Opens from the
+facility profile and from any ward row. Six fixed reasons, Rate, Complaint or
+issue, Extension, Staffing request, Accommodation, General, enforced by a
+database CHECK so a reason can never become free text. Notes list newest first
+with author and time, and filter by reason. Notes written on a ward also appear
+in the facility list labelled with the ward, notes written on the facility do
+not appear on any ward. Everyone can read and add, delete is limited to the
+note's author. Ward notes are keyed on the ward name rather than a ward id,
+because saving a facility deletes and reinserts every ward row, so ward ids are
+not stable. Renaming a ward moves its notes with the roles and contracts.
+
+New table facility_notes, see NOTES-MIGRATION.sql. Background in
+NOTES-PANEL-FINDINGS.md.
+
+### Tag a team member in a note
+Status: TODO
+Priority: not set
+Raised alongside the notes panel build.
+
+The tag itself is easy. The work is deciding where the notification lands.
+Worth more once real Supabase auth replaces the profile picker, since a tagged
+person is currently just whoever picked that name off a dropdown.
+
+### Link notes across facilities
+Status: TODO
+Priority: not set
+Raised alongside the notes panel build.
+
+Needs clarifying before anything is designed. If the intent is a note that
+applies to a whole health service rather than one hospital, the facility
+hierarchy solves it and no linking feature is needed.
+
+### Two places to write about a facility
+Status: TODO
+Priority: not set
+Raised alongside the notes panel build.
+
+There are now two ways to write about a facility, the new notes panel and the
+Note box in the Activity section at the bottom of the facility profile. They do
+not share entries, so a note typed in one is invisible in the other. Decide
+which one wins after the panel has been used for a while.
+
+---
+
 ## Housekeeping
 
 ### Em dash sweep

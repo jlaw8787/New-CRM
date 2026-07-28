@@ -4137,6 +4137,13 @@ function openFacModal(id){
   document.getElementById("mo").style.display="flex";
 }
 function renderFacModalBody(){
+  // Replacing m-body's innerHTML resets the modal's scroller to the top, which
+  // put the row you were looking at somewhere else the moment you ticked a
+  // checkbox or added a ward. Hold the position and put it back. Combined with
+  // the dependent fields below always being rendered, the content height no
+  // longer changes on a toggle either, so the restored position is still right.
+  var scroller=document.querySelector('#modal .mscroll');
+  var keepScroll=scroller?scroller.scrollTop:0;
   var wardRows=EF.wards.map(function(w,i){
     return '<div class="ward-row" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">'
       +'<input value="'+esc(w.name)+'" oninput="EF.wards['+i+'].name=this.value" style="flex:1" placeholder="Ward name">'
@@ -4169,12 +4176,18 @@ function renderFacModalBody(){
   // are the values already in use, an existing value outside them is preserved.
   var acList=['Private rental','Hotel','Onsite quarters'];
   var acCur=EF.accommodationType||'';
-  var acSel='<select onchange="EF.accommodationType=this.value">'
+  var acSel='<select'+(EF.accommodationProvided?'':' disabled')+' onchange="EF.accommodationType=this.value">'
     +'<option value=""'+(acCur?'':' selected')+'>Not set</option>'
     +(acCur&&acList.indexOf(acCur)<0?'<option value="'+esc(acCur)+'" selected>'+esc(acCur)+'</option>':'')
     +acList.map(function(a){return '<option value="'+esc(a)+'"'+(a===acCur?' selected':'')+'>'+esc(a)+'</option>';}).join('')
     +'</select>';
-  var cbLbl='font-size:12px;cursor:pointer;display:flex;align-items:center;gap:7px;padding:6px 0';
+  // Each toggle is its own row with a shadow and a gap under it, rather than
+  // four full width labels stacked edge to edge with nothing between them.
+  // Shadow, not a border line.
+  var tglRow='display:flex;align-items:center;gap:9px;padding:10px 12px;margin-bottom:8px;border-radius:var(--dc-r-control);box-shadow:var(--dc-shadow-field);background:var(--surface);font-size:12px;cursor:pointer';
+  // A field that depends on the toggle above it. Always rendered, so nothing
+  // below it ever moves, greyed and disabled while its toggle is off.
+  function depStyle(on){return 'margin:0 0 12px 12px;'+(on?'':'opacity:.45');}
   document.getElementById("m-body").innerHTML=
     '<div class="fb">'
     +'<div class="sh">Identity</div>'
@@ -4208,17 +4221,18 @@ function renderFacModalBody(){
     +'<div class="fg"><label>Submission Email</label><input type="email" value="'+esc(EF.submissionEmail||"")+'" oninput="EF.submissionEmail=this.value" placeholder="Where candidate submissions are sent"></div>'
 
     +'<div class="sh">Accommodation and travel</div>'
-    +'<label style="'+cbLbl+'"><input type="checkbox"'+(EF.accommodationProvided?' checked':'')+' onchange="EF.accommodationProvided=this.checked;renderFacModalBody()"> Accommodation provided</label>'
-    +(EF.accommodationProvided?'<div class="fg" style="margin-bottom:4px"><label>Accommodation Type</label>'+acSel+'</div>':'')
-    +'<label style="'+cbLbl+'"><input type="checkbox"'+(EF.carRequired?' checked':'')+' onchange="EF.carRequired=this.checked"> Car required on site</label>'
-    +'<label style="'+cbLbl+'"><input type="checkbox"'+(EF.remoteLoadingApplies?' checked':'')+' onchange="EF.remoteLoadingApplies=this.checked;renderFacModalBody()"> Remote loading applies</label>'
-    +(EF.remoteLoadingApplies?'<div class="fg" style="margin-bottom:4px"><label>Remote Loading %</label><input type="number" min="0" max="100" value="'+(EF.remoteLoadingPct||0)+'" oninput="EF.remoteLoadingPct=parseInt(this.value)||0" style="max-width:140px"></div>':'')
+    +'<label style="'+tglRow+'"><input type="checkbox"'+(EF.accommodationProvided?' checked':'')+' onchange="EF.accommodationProvided=this.checked;renderFacModalBody()"> Accommodation provided</label>'
+    +'<div class="fg" style="'+depStyle(EF.accommodationProvided)+'"><label>Accommodation Type</label>'+acSel+'</div>'
+    +'<label style="'+tglRow+'"><input type="checkbox"'+(EF.carRequired?' checked':'')+' onchange="EF.carRequired=this.checked"> Car required on site</label>'
+    +'<label style="'+tglRow+'"><input type="checkbox"'+(EF.remoteLoadingApplies?' checked':'')+' onchange="EF.remoteLoadingApplies=this.checked;renderFacModalBody()"> Remote loading applies</label>'
+    +'<div class="fg" style="'+depStyle(EF.remoteLoadingApplies)+'"><label>Remote Loading %</label><input type="number" min="0" max="100"'+(EF.remoteLoadingApplies?'':' disabled')+' value="'+(EF.remoteLoadingPct||0)+'" oninput="EF.remoteLoadingPct=parseInt(this.value)||0" style="max-width:140px"></div>'
 
     +'<div class="sh">Admin</div>'
-    +'<label style="'+cbLbl+'"><input type="checkbox"'+(EF.preferredStatus?' checked':'')+' onchange="EF.preferredStatus=this.checked"> Preferred facility</label>'
+    +'<label style="'+tglRow+'"><input type="checkbox"'+(EF.preferredStatus?' checked':'')+' onchange="EF.preferredStatus=this.checked"> Preferred facility</label>'
     +'<div class="fg" style="margin-top:8px"><label>Internal Notes</label><textarea rows="3" oninput="EF.notes=this.value" placeholder="Relationship notes, turnaround times, special requirements...">'+esc(EF.notes||"")+'</textarea></div>'
     +'<div class="fg"><label>Notes for Candidates</label><textarea rows="3" oninput="EF.notesCandidate=this.value" placeholder="What a nurse should know before going, safe to share with them">'+esc(EF.notesCandidate||"")+'</textarea></div>'
     +'</div>';
+  if(scroller)scroller.scrollTop=keepScroll;
 }
 // Distinct health service names that compliance_requirements actually carries
 // rules for. Read only, this never writes to complianceRequirements and does

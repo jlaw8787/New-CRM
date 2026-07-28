@@ -1929,6 +1929,27 @@ var cpSubResolvedOpen=false;
 var travelPastOpen={flights:false,accommodation:false,expenses:false};
 function setSubView(v){subView=v;localStorage.setItem('hca_subview',v);renderSubmissions();}
 function setSubFilt(k,v){if(k==='st'){subFiltStatus=v;localStorage.setItem('hca_sf_st',v);}else if(k==='co'){subFiltConsId=v;localStorage.setItem('hca_sf_co',v);}else{subFiltFacility=v;localStorage.setItem('hca_sf_fa',v);}renderSubmissions();}
+// The three submissions filters are saved in localStorage, which is per
+// browser, while the dropdown options are built from what the signed in user
+// can actually see. So a value saved by one user can be missing from another
+// user's options. Left applied, it excluded every row while the dropdown
+// still read "All", because a select with no matching option falls back to
+// displaying its first one, and the first one is "All". A consultant only
+// ever sees themselves in the consultant list, so any other consultant's id
+// left over from an ops session emptied their whole Submissions page.
+//
+// Anything the current option list cannot show is dropped here, from the
+// variable and from localStorage, so a filter is applied only when the
+// dropdown is able to show it. Called from renderSubmissions once the option
+// lists exist, which means it also re-checks on a profile switch, since the
+// profile picker swaps user without reloading the page.
+function subFiltPrune(options,current,storageKey){
+  if(current==='All')return 'All';
+  var shown=options.some(function(o){return String(o)===String(current);});
+  if(shown)return current;
+  localStorage.removeItem(storageKey);
+  return 'All';
+}
 var dashActType="All",dashActCons="All";
 function vc(){
   if(!CU)return[];
@@ -3486,6 +3507,12 @@ function renderSubmissions(){
   var statuses=["All"].concat(Array.from(new Set(all.map(function(s){return s.status;}))).sort());
   var consIds=["All"].concat(Array.from(new Set(all.map(function(s){return s.cConsId;}).filter(Boolean))));
   var facNames=["All"].concat(Array.from(new Set(all.map(function(s){return s.facility||"—";}))).sort());
+
+  // Drop any saved filter this user's options cannot show, before it is used
+  // to filter anything or to build the dropdowns below. See subFiltPrune.
+  subFiltStatus=subFiltPrune(statuses,subFiltStatus,'hca_sf_st');
+  subFiltConsId=subFiltPrune(consIds,subFiltConsId,'hca_sf_co');
+  subFiltFacility=subFiltPrune(facNames,subFiltFacility,'hca_sf_fa');
 
   // apply filters (status filter skipped in pipeline view)
   var baseFiltered=all.filter(function(s){
@@ -7577,31 +7604,33 @@ function renderCandPage(){
       c.yearsExperience?c.yearsExperience+'yr exp':'',
       c.state?esc(c.state):''].filter(Boolean).join(' · ')
       +(c.availableFrom?' · Available '+fmt(c.availableFrom):'');
-  var heroHtml='<div style="position:relative;border-radius:20px;margin-bottom:20px;box-shadow:var(--shadow-card)">'
-    +'<div style="height:80px;border-radius:20px 20px 0 0;background:var(--brand-grad);position:relative;overflow:hidden">'
-    +'<div style="position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06);top:-80px;right:-30px;pointer-events:none"></div>'
-    +'</div>'
-    +'<div style="background:var(--surface);border-radius:0 0 20px 20px;position:relative;padding:0 24px 20px 132px;min-height:72px">'
-    +'<div style="position:absolute;left:24px;top:-48px;width:96px;height:96px;border-radius:24px;background:var(--brand-grad);border:4px solid var(--surface);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:500;color:#fff;letter-spacing:1px;box-shadow:0 4px 12px rgba(38,33,92,.3)">'+initials+'</div>'
-    +'<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;padding-top:16px">'
+  // Direction C. Plain white paper card on the calm grey page, separated by a
+  // soft shadow rather than a border line. The old purple gradient band and
+  // the avatar overlapping it are gone, purple now appears only on the avatar
+  // tile and the phase chip. Same treatment as the facility header below, and
+  // the same content in the same order.
+  var cpChip='font-size:11.5px;font-weight:500;padding:3px 9px;border-radius:6px';
+  var heroHtml='<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:var(--dc-card);border-radius:var(--dc-r-card);box-shadow:var(--dc-shadow-card);padding:20px 24px;margin-bottom:20px">'
+    +'<div style="display:flex;align-items:center;gap:16px;min-width:0">'
+    +'<div style="width:64px;height:64px;border-radius:14px;background:var(--dc-purple);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:500;color:#fff;letter-spacing:1px;flex-shrink:0">'+initials+'</div>'
     +'<div style="min-width:0">'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
-    +'<span style="font-size:19px;font-weight:500;color:var(--t1)">'+esc(c.name)+'</span>'
-    +(c.preferredName?'<span style="font-size:12px;color:var(--t3)">"'+esc(c.preferredName)+'"</span>':'')
-    +'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--brand-l);color:var(--brand);text-transform:uppercase;letter-spacing:.04em">'+esc(c.phase)+'</span>'
-    +(c.hot?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--danger-l);color:var(--danger);display:inline-flex;align-items:center;gap:3px">'+I.flame+' Hot</span>':'')
-    +(c.priority==='high'?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--danger-l);color:var(--danger)">High priority</span>':'')
-    +(c.doNotContact?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:var(--danger-l);color:var(--danger)">DNC</span>':'')
+    +'<span style="font-size:19px;font-weight:500;color:var(--dc-t1)">'+esc(c.name)+'</span>'
+    +(c.preferredName?'<span style="font-size:13px;color:var(--dc-t3)">"'+esc(c.preferredName)+'"</span>':'')
+    +'<span style="'+cpChip+';background:var(--dc-purple-soft);color:var(--dc-purple-deep);text-transform:uppercase;letter-spacing:.04em">'+esc(c.phase)+'</span>'
+    +(c.hot?'<span style="'+cpChip+';background:var(--dc-red-soft);color:var(--dc-red);display:inline-flex;align-items:center;gap:3px">'+I.flame+' Hot</span>':'')
+    +(c.priority==='high'?'<span style="'+cpChip+';background:var(--dc-red-soft);color:var(--dc-red)">High priority</span>':'')
+    +(c.doNotContact?'<span style="'+cpChip+';background:var(--dc-red-soft);color:var(--dc-red)">DNC</span>':'')
     +'</div>'
-    +'<div style="font-size:12px;color:var(--t2)">'+heroSubtext+'</div>'
-    +'</div>'
-    +'<div style="display:flex;gap:8px;padding-bottom:2px;flex-shrink:0">'
+    +'<div style="font-size:13px;color:var(--dc-t2);font-variant-numeric:tabular-nums">'+heroSubtext+'</div>'
+    +'</div></div>'
+    +'<div style="display:flex;gap:8px;flex-shrink:0">'
     +(c.phone?'<a href="tel:'+esc(c.phone)+'" class="btn btn-g btn-sm">'+ico(I.phone,12)+' Call</a>':'')
     +(c.email?'<a href="mailto:'+esc(c.email)+'" class="btn btn-g btn-sm">'+ico(I.mail,12)+' Email</a>':'')
     +'<button class="btn btn-g btn-sm" onclick="openPromoPanel('+c.id+')">'+ico(I.hosp,12)+' Promote location</button>'
     +'<button class="btn btn-p btn-sm" onclick="openSubFlow('+c.id+',null)">+ Submit</button>'
     +'</div>'
-    +'</div></div></div>';
+    +'</div>';
 
   // ── NEXT ACTION (existing next-action data/logic; band-styled version below
   // stays for the Overview-tab fallback, unchanged) ─────────────────────────────
@@ -8476,7 +8505,7 @@ function renderFacPage(){
   var allCons=candidates.reduce(function(a,c){return a.concat(c.contracts.filter(function(k){return k.facilityId===f.id;}));}, []);
   var activeContracts=allCons.filter(function(k){return k.status==='Active';}).length;
   var convRate=allSubs.length>0?Math.round(allCons.length/allSubs.length*100):null;
-  var healthColor=convRate===null?'var(--t3)':convRate>=50?'var(--ok)':convRate>=25?'#d4900a':'var(--danger)';
+  var healthColor=convRate===null?'var(--dc-grey)':convRate>=50?'var(--dc-green)':convRate>=25?'var(--dc-amber)':'var(--dc-red)';
   var fContacts=facilityContacts.filter(function(c){return c.facilityId===f.id;});
   var primaryContact=fContacts.find(function(c){return c.isPrimary;})||fContacts[0]||null;
   var displayContact=primaryContact||(f.contactName?{name:f.contactName,email:f.contactEmail,phone:f.contactPhone,title:''}:null);
@@ -8493,33 +8522,39 @@ function renderFacPage(){
 
   // ── IDENTITY HEADER (hero moment, matching the candidate page) ───────────────
   var heroSubtext=[f.type?esc(f.type):'',f.region?esc(f.region):'',f.beds?f.beds+' beds':''].filter(Boolean).join(' · ');
+  // Direction C, the same paper card treatment as the candidate header above.
+  // The ring keeps its own semantic colour, its unfilled track moves from a
+  // white tint (invisible on a white card) to the calm tile grey, and the
+  // centre disc becomes the card colour with near black text.
+  var facChip='font-size:11.5px;font-weight:500;padding:3px 9px;border-radius:6px';
+  var facStat='font-size:20px;font-weight:500;color:var(--dc-t1);font-variant-numeric:tabular-nums';
+  var facStatLbl='font-size:11px;color:var(--dc-t3);margin-top:2px';
   var ringHtmlFac=convRate!==null
     ?'<div style="position:relative;width:76px;height:76px;flex-shrink:0">'
-      +'<div style="width:76px;height:76px;border-radius:50%;background:conic-gradient('+healthColor+' '+convRate+'%, rgba(255,255,255,.2) 0)"></div>'
-      +'<div style="position:absolute;top:8px;left:8px;width:60px;height:60px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:#fff">'+convRate+'%</div>'
+      +'<div style="width:76px;height:76px;border-radius:50%;background:conic-gradient('+healthColor+' '+convRate+'%, var(--dc-tile) 0)"></div>'
+      +'<div style="position:absolute;top:8px;left:8px;width:60px;height:60px;border-radius:50%;background:var(--dc-card);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:var(--dc-t1);font-variant-numeric:tabular-nums">'+convRate+'%</div>'
       +'</div>'
-    :'<div style="width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.65);text-align:center;flex-shrink:0">No data yet</div>';
-  var heroHtml='<div style="position:relative;overflow:hidden;border-radius:20px;padding:26px 30px;margin-bottom:20px;background:var(--brand-grad);box-shadow:0 20px 40px -20px rgba(38,33,92,.55)">'
-    +'<div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-90px;right:-40px;pointer-events:none"></div>'
-    +'<div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">'
+    :'<div style="width:76px;height:76px;border-radius:50%;background:var(--dc-tile);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dc-t3);text-align:center;flex-shrink:0">No data yet</div>';
+  var heroHtml='<div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:var(--dc-card);border-radius:var(--dc-r-card);box-shadow:var(--dc-shadow-card);padding:20px 24px;margin-bottom:20px">'
     +'<div style="display:flex;align-items:center;gap:16px;min-width:0">'
-    +'<div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">'+ico(I.hosp,26,'#fff')+'</div>'
+    +'<div style="width:64px;height:64px;border-radius:14px;background:var(--dc-purple);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">'+ico(I.hosp,26,'#fff')+'</div>'
     +'<div style="min-width:0">'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
-    +'<span style="font-size:19px;font-weight:500;color:#fff">'+esc(f.name)+'</span>'
-    +(f.preferredStatus?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:#fff;color:var(--ok);display:inline-flex;align-items:center;gap:3px">'+ico(I.star,10)+' Preferred</span>':'')
-    +(f.state?'<span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,.18);color:#fff;text-transform:uppercase;letter-spacing:.04em">'+esc(f.state)+'</span>':'')
+    +'<span style="font-size:19px;font-weight:500;color:var(--dc-t1)">'+esc(f.name)+'</span>'
+    +(f.preferredStatus?'<span style="'+facChip+';background:var(--dc-green-soft);color:var(--dc-green);display:inline-flex;align-items:center;gap:3px">'+ico(I.star,10)+' Preferred</span>':'')
+    +(f.state?'<span style="'+facChip+';background:var(--dc-purple-soft);color:var(--dc-purple-deep);text-transform:uppercase;letter-spacing:.04em">'+esc(f.state)+'</span>':'')
     +'</div>'
-    +'<div style="font-size:12px;color:#CECBF6">'+heroSubtext+'</div>'
+    +'<div style="font-size:13px;color:var(--dc-t2);font-variant-numeric:tabular-nums">'+heroSubtext+'</div>'
     +'</div></div>'
     +'<div style="display:flex;align-items:center;gap:20px;flex-shrink:0">'
     +'<div style="display:flex;gap:16px">'
-    +'<div style="text-align:center"><div style="font-size:20px;font-weight:500;color:#fff">'+activeContracts+'</div><div style="font-size:9px;color:#CECBF6;margin-top:2px">Active</div></div>'
-    +'<div style="text-align:center"><div style="font-size:20px;font-weight:500;color:#fff">'+allCons.length+'</div><div style="font-size:9px;color:#CECBF6;margin-top:2px">Placed</div></div>'
-    +'<div style="text-align:center"><div style="font-size:20px;font-weight:500;color:#fff">'+allSubs.length+'</div><div style="font-size:9px;color:#CECBF6;margin-top:2px">Submitted</div></div>'
+    +'<div style="text-align:center"><div style="'+facStat+'">'+activeContracts+'</div><div style="'+facStatLbl+'">Active</div></div>'
+    +'<div style="text-align:center"><div style="'+facStat+'">'+allCons.length+'</div><div style="'+facStatLbl+'">Placed</div></div>'
+    +'<div style="text-align:center"><div style="'+facStat+'">'+allSubs.length+'</div><div style="'+facStatLbl+'">Submitted</div></div>'
     +'</div>'
     +ringHtmlFac
-    +'</div></div></div>';
+    +'</div>'
+    +'</div>';
 
   var left='<div class="entity-left" style="display:flex;flex-direction:column;gap:12px;position:sticky;top:24px">'
     +'<div class="facts-card">'

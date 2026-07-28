@@ -8213,7 +8213,11 @@ function renderCandPage(){
 
 function openFacPage(id){
   curFacId=id;facEditing=null;facEditData=null;
-  facOpen={overview:true,roles:false,submissions:false,contracts:false,checklist:false,compliance:true,contacts:false,documents:false,activity:false};
+  // Compliance requirements sits at the bottom and starts closed. It got long
+  // once health service rules resolved on top of facility ones, and the count
+  // in its header is enough to work from without opening it. Every other
+  // section keeps the state it had.
+  facOpen={overview:true,roles:false,submissions:false,contracts:false,checklist:false,compliance:false,contacts:false,documents:false,activity:false};
   nav('facilityprofile');
   var f0=facilities.find(function(x){return x.id===id;});if(f0)pushRecent('facility',id,f0.name,f0.state);
   if(sb&&!facActivityCache[id]){
@@ -8799,10 +8803,12 @@ function renderFacPage(){
     +facNavA('submissions','Submissions'+(allSubs.length?' ('+allSubs.length+')':''))
     +facNavA('contracts','Contracts'+(allCons.length?' ('+allCons.length+')':''))
     +facNavA('checklist','Submission checklist')
-    +facNavA('compliance','Compliance requirements')
     +facNavA('contacts','Contacts'+(fContacts.length?' ('+fContacts.length+')':''))
     +facNavA('documents','Documents')
     +facNavA('activity','Activity')
+    // Last, matching the section order on the right. facScrollTo opens the
+    // section before scrolling, so this still works with it closed.
+    +facNavA('compliance','Compliance requirements')
     +'</div></div>'
     +'</div>';
 
@@ -8822,12 +8828,15 @@ function renderFacPage(){
     +facSec('contracts','Contracts',renderFacContracts(f),'',allCons.length+' total')
     +facSec('checklist','Submission checklist',renderFacChecklist(f,isAdminOps),
       isAdminOps?'<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openChecklistModal('+f.id+')" style="font-size:10px;padding:4px 8px">Edit</button>':'')
-    +facSec('compliance','Compliance requirements',renderFacComplianceRequirements(f,isAdminOps),
-      isAdminOps?'<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openReqModal('+f.id+',null)" style="font-size:10px;padding:4px 8px">+ Add requirement</button>':'',
-      (function(){var t=resolveFacilityRequirements(f);var n=t.state.length+t.healthService.length+t.facility.length+t.ward.length;return n?n+' resolved':'';})())
     +facSec('contacts','Contacts',renderFacContacts(f,fContacts,isAdminOps),'',fContacts.length?fContacts.length+' on record':'')
     +facSec('documents','Documents',renderFacDocuments(f,isAdminOps),'',(f.documents||[]).length?(f.documents||[]).length+' files':'')
     +facSec('activity','Activity',renderFacActivitySection(f),'',facActivityCache[f.id]?facActivityCache[f.id].length+' entries':'loading...')
+    // Last on the page and closed by default. The count in the header is what
+    // makes it useful shut, so it states the total plainly rather than only
+    // appearing when there is something to say.
+    +facSec('compliance','Compliance requirements',renderFacComplianceRequirements(f,isAdminOps),
+      isAdminOps?'<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openReqModal('+f.id+',null)" style="font-size:10px;padding:4px 8px">+ Add requirement</button>':'',
+      (function(){var t=resolveFacilityRequirements(f);var n=t.state.length+t.healthService.length+t.facility.length+t.ward.length;return n?n+' requirement'+(n===1?'':'s'):'none loaded';})())
     +'</div>';
 
   document.getElementById('page').innerHTML='<div style="padding:24px">'
@@ -9147,7 +9156,7 @@ var sfReqSatisfiedBy={},sfReqAttachOpen={},sfPackCollapseOpen={};
 
 // ── FACILITY FULL PAGE STATE ───────────────────────────────────────────────
 var curFacId=null,facEditing=null,facEditData=null;
-var facOpen={overview:true,roles:false,wards:false,submissions:false,contracts:false,checklist:false,compliance:true,contacts:false,documents:false,activity:false};
+var facOpen={overview:true,roles:false,wards:false,submissions:false,contracts:false,checklist:false,compliance:false,contacts:false,documents:false,activity:false};
 var facilityContacts=[],facActivityCache={},facActType='Note',facFilesLoaded={};
 // Per ward expand state, keyed by facility id plus the ward's position in
 // f.wards, not its name. Two facilities sharing a ward name (ICU is common)

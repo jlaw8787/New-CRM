@@ -3884,6 +3884,16 @@ function facAliasMatch(f,q){
   if(f.name.toLowerCase().indexOf(q)>=0)return true;
   return (f.aliases||[]).some(function(a){return String(a||'').toLowerCase().indexOf(q)>=0;});
 }
+// facility_contacts is the single source of truth for facility contacts. The
+// contact_name, contact_email and contact_phone columns on facilities are
+// retired: still on the table, no longer read by the app and no longer
+// written by the editor. Everything that used to read them comes through here
+// instead. Falls back to the first contact if none is flagged primary, so a
+// facility with contacts always shows somebody.
+function facPrimaryContact(facId){
+  var list=(facilityContacts||[]).filter(function(c){return c.facilityId===facId;});
+  return list.find(function(c){return c.isPrimary;})||list[0]||null;
+}
 function renderFacilities(){
   facilities.forEach(function(f){
     f.activeContracts=candidates.reduce(function(a,c){return a+c.contracts.filter(function(k){return k.facilityId===f.id&&k.status==="Active";}).length;},0);
@@ -3947,7 +3957,7 @@ function renderFacilities(){
       +'<td style="text-align:center;font-weight:500">'+f.activeContracts+'</td>'
       +'<td style="text-align:center">'+f.totalSubs+'</td>'
       +'<td style="text-align:center;font-weight:500;color:'+convColor+'">'+(f.convRate===null?"—":f.convRate+"%")+'</td>'
-      +'<td style="font-size:10px;color:var(--t3)">'+esc(f.contactName||"")+'</td>'
+      +'<td style="font-size:10px;color:var(--t3)">'+(function(){var pc=facPrimaryContact(f.id);return pc?esc(pc.name):'<span style="color:var(--t4)">None</span>';})()+'</td>'
       +'<td><button class="btn btn-g btn-xs" onclick="event.stopPropagation();openFacModal('+f.id+')">Edit</button></td>'
       +'</tr>';
   }).join("");
@@ -4120,12 +4130,13 @@ function openFacModal(id){
   // A new facility now starts with every column the editor can write, so the
   // save payload never sends undefined for a field the form can set. An
   // existing facility already carries all of these, mapFacility maps them.
-  EF=id?JSON.parse(JSON.stringify(facilities.find(function(f){return f.id===id;}))):({id:uid(),name:"",state:"NT",region:"",type:"Public",beds:"",wards:[],contactName:"",contactEmail:"",contactPhone:"",notes:"",address:"",addressSuburb:"",addressPostcode:"",
+  // No contact fields in here. Contacts live in facility_contacts and are set
+  // up through the Contacts section below, including for a brand new facility.
+  EF=id?JSON.parse(JSON.stringify(facilities.find(function(f){return f.id===id;}))):({id:uid(),name:"",state:"NT",region:"",type:"Public",beds:"",wards:[],notes:"",address:"",addressSuburb:"",addressPostcode:"",
     healthAuthority:"",aliases:[],preferredStatus:false,
     remoteLoadingApplies:false,remoteLoadingPct:0,
     accommodationProvided:false,accommodationType:"",carRequired:false,
-    submissionEmail:"",secondaryContactName:"",secondaryContactEmail:"",secondaryContactPhone:"",
-    notesCandidate:""});
+    submissionEmail:"",notesCandidate:""});
   if(!EF.wards)EF.wards=[];
   if(!EF.aliases)EF.aliases=[];
   // Contacts now live in facility_contacts, not on the facility row. Work on a
@@ -8563,12 +8574,12 @@ function reloadComplianceRequirements(){
 }
 
 function renderFacContacts(f,fContacts,isAdminOps){
-  if(!fContacts.length&&!f.contactName){return '<div class="empty-st">'+I.person+'<b>No contacts recorded</b><p>Add a contact from the Edit Details panel to keep this facility\'s people on file.</p></div>';}
+  if(!fContacts.length){return '<div class="empty-st">'+I.person+'<b>No contacts recorded</b><p>Add a contact from the Edit Details panel to keep this facility\'s people on file.</p></div>';}
   var rows='';
-  if(fContacts.length){
+  {
     rows=fContacts.map(function(c){
       var initials=c.name.split(' ').filter(Boolean).map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)||'?';
-      return '<div style="display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">'
+      return '<div style="display:flex;align-items:flex-start;gap:10px;padding:12px 0;box-shadow:var(--dc-shadow-row)">'
         +'<div style="width:36px;height:36px;border-radius:10px;background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0">'+initials+'</div>'
         +'<div style="flex:1">'
         +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(c.name)+'</div>'
@@ -8581,13 +8592,6 @@ function renderFacContacts(f,fContacts,isAdminOps){
         +(c.phone?'<a href="tel:'+esc(c.phone)+'" class="contact-btn">'+I.phone+''+esc(c.phone)+'</a>':'')
         +'</div></div>';
     }).join('');
-  } else {
-    rows='<div style="padding:12px 0;border-bottom:1px solid var(--border)">'
-      +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(f.contactName)+'</div>'
-      +(f.contactEmail?'<a href="mailto:'+esc(f.contactEmail)+'" class="contact-btn" style="margin-top:8px">'+I.mail+''+esc(f.contactEmail)+'</a>':'')
-      +(f.contactPhone?'<a href="tel:'+esc(f.contactPhone)+'" class="contact-btn">'+I.phone+''+esc(f.contactPhone)+'</a>':'')
-      +(f.secondaryContactName?'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:500">Secondary contact</div><div style="font-size:12px;font-weight:500;color:var(--t1)">'+esc(f.secondaryContactName)+'</div>'+(f.secondaryContactEmail?'<a href="mailto:'+esc(f.secondaryContactEmail)+'" class="contact-btn" style="margin-top:8px">'+I.mail+''+esc(f.secondaryContactEmail)+'</a>':'')+(f.secondaryContactPhone?'<a href="tel:'+esc(f.secondaryContactPhone)+'" class="contact-btn">'+I.phone+''+esc(f.secondaryContactPhone)+'</a>':'')+'</div>':'')
-      +'</div>';
   }
   return rows;
 }
@@ -8636,9 +8640,9 @@ function renderFacPage(){
   var convRate=allSubs.length>0?Math.round(allCons.length/allSubs.length*100):null;
   var healthColor=convRate===null?'var(--dc-grey)':convRate>=50?'var(--dc-green)':convRate>=25?'var(--dc-amber)':'var(--dc-red)';
   var fContacts=facilityContacts.filter(function(c){return c.facilityId===f.id;});
-  var primaryContact=fContacts.find(function(c){return c.isPrimary;})||fContacts[0]||null;
-  var displayContact=primaryContact||(f.contactName?{name:f.contactName,email:f.contactEmail,phone:f.contactPhone,title:''}:null);
-  var displaySubEmail=f.submissionEmail||f.contactEmail||'';
+  var primaryContact=facPrimaryContact(f.id);
+  var displayContact=primaryContact;
+  var displaySubEmail=f.submissionEmail||(primaryContact&&primaryContact.email)||'';
   var facAddrLine=[f.address,[f.addressSuburb,f.state,f.addressPostcode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   var facRoles=roles.filter(function(r){return r.facilityId===f.id;});
   var openRoles=facRoles.filter(function(r){return r.status==='Open'||r.status==='Likely';}).length;
@@ -8699,22 +8703,25 @@ function renderFacPage(){
     +cpKeyFact('Remote Loading',f.remoteLoadingApplies?'+'+parseFloat(f.remoteLoadingPct||0)+'%':'N/A')
     +cpKeyFact('Preferred',f.preferredStatus?'<span class="badge b-gn" style="font-size:9px;display:inline-flex;align-items:center;gap:3px">'+ico(I.star,9)+' Yes</span>':'No')
     +'</div></div>'
-    +(displayContact||displaySubEmail?'<div class="facts-card">'
+    // Always rendered now. A facility with nobody on file says so plainly
+    // rather than the whole card disappearing and leaving a gap.
+    +('<div class="facts-card">'
+      +'<div class="card-section-title">Primary contact</div>'
       +(displayContact
-        ?'<div class="card-section-title">Primary contact</div>'
-         +'<div style="font-size:13px;font-weight:500;color:var(--t1);margin-top:4px">'+esc(displayContact.name)+'</div>'
+        ?'<div style="font-size:13px;font-weight:500;color:var(--t1);margin-top:4px">'+esc(displayContact.name)+'</div>'
          +(displayContact.title?'<div style="font-size:10px;color:var(--t3)">'+esc(displayContact.title)+'</div>':'')
          +(displayContact.email?'<a href="mailto:'+esc(displayContact.email)+'" class="contact-btn" style="margin-top:8px">'+I.mail+''+esc(displayContact.email)+'</a>':'')
          +(displayContact.phone?'<a href="tel:'+esc(displayContact.phone)+'" class="contact-btn">'+I.phone+''+esc(displayContact.phone)+'</a>':'')
-        :'')
+        :'<div style="font-size:12px;color:var(--t3);margin-top:4px;line-height:1.5">No contact recorded yet.</div>'
+         +(isAdminOps?'<button class="btn btn-g btn-sm" style="margin-top:8px" onclick="openFacModal('+f.id+')">Add a contact</button>':''))
       +(displaySubEmail
-        ?'<div style="margin-top:'+(displayContact?'14px':'0')+'"><div class="key-fact-label">Submission email</div>'
+        ?'<div style="margin-top:14px"><div class="key-fact-label">Submission email</div>'
          +'<div style="background:var(--brand-l);border-radius:8px;padding:8px 12px;margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:4px">'
          +'<span style="font-size:10px;color:var(--brand);font-weight:500;word-break:break-all">'+esc(displaySubEmail)+'</span>'
          +'<button onclick="navigator.clipboard.writeText(\''+esc(displaySubEmail)+'\').then(function(){showToast(\'Copied\');}).catch(function(){showToast(\'Copy failed\',\'err\');})" style="background:none;border:none;cursor:pointer;color:var(--brand);flex-shrink:0;display:inline-flex" title="Copy">'+ico(I.copy,14)+'</button>'
          +'</div></div>'
         :'')
-      +'</div>':'')
+      +'</div>')
     +'<div class="facts-card">'
     +'<div class="cp-nav" style="display:flex;flex-direction:column;gap:1px">'
     +facNavA('overview','Overview')
@@ -10121,9 +10128,10 @@ function generateContractPdf(contractId){
     field('Facility',fac?fac.name:null);
     field('Address',contractFacilityAddress(fac));
     field('Health authority / region',fac?(fac.healthAuthority||fac.region):null);
-    field('Facility contact',fac?fac.contactName:null);
-    field('Contact phone',fac?fac.contactPhone:null);
-    field('Contact email',fac?fac.contactEmail:null);
+    var pdfContact=fac?facPrimaryContact(fac.id):null;
+    field('Facility contact',pdfContact?pdfContact.name:null);
+    field('Contact phone',pdfContact?pdfContact.phone:null);
+    field('Contact email',pdfContact?pdfContact.email:null);
 
     sectionTitle('4. Assignment Details');
     field('Ward / specialty',k.ward);
@@ -10260,8 +10268,7 @@ function generateWeekendHandover(){
 function whBuildEntry(e){
   var cand=e.cand||null,k=e.k||{};
   var fac=(k&&k.facilityId&&typeof facilities!=='undefined'&&facilities)?(facilities.find(function(f){return f&&f.id===k.facilityId;})||null):null;
-  var fContacts=(fac&&typeof facilityContacts!=='undefined'&&facilityContacts)?facilityContacts.filter(function(c){return c&&c.facilityId===fac.id;}):[];
-  var primaryContact=fContacts.find(function(c){return c&&c.isPrimary;})||fContacts[0]||null;
+  var primaryContact=fac?facPrimaryContact(fac.id):null;
 
   var candName=whResolve(cand&&cand.name);
   var candPhone=whResolve(cand&&cand.phone);
@@ -10270,8 +10277,8 @@ function whBuildEntry(e){
   var facName=whResolve(fac&&fac.name);
   var facAddrRaw=fac?contractFacilityAddress(fac):null;
   var facAddr=(facAddrRaw&&facAddrRaw!=='TBC')?facAddrRaw:null;
-  var facContactName=whResolve(primaryContact?primaryContact.name:(fac&&fac.contactName));
-  var facContactPhone=whResolve(primaryContact?primaryContact.phone:(fac&&fac.contactPhone));
+  var facContactName=whResolve(primaryContact&&primaryContact.name);
+  var facContactPhone=whResolve(primaryContact&&primaryContact.phone);
 
   var ward=whResolve(k.ward);
   var firstShift=whResolve(k.firstShiftTime);
@@ -10654,7 +10661,7 @@ function openSubFlow(candId,roleId){
   sfStartDate=role?(role.startDate||''):'';sfEndDate=role?(role.endDate||''):'';
   sfSelectedDocIds=(c.documents||[]).filter(function(d){return !d.complianceItemId&&d.category==='CV'&&d.isCurrent!==false;}).map(function(d){return d.id;});
   sfReqSatisfiedBy={};sfReqAttachOpen={};sfPackCollapseOpen={};
-  sfTo=(fac&&(fac.submissionEmail||fac.contactEmail))||'';
+  sfTo=(fac&&(fac.submissionEmail||sfFacContactEmail(fac)))||'';
   sfSubject='Captain Contract Submission — '+c.name+' — '+c.classification+(fac?' — '+fac.name:'');
   document.getElementById('sf-ov').style.display='flex';
   sfRender();
@@ -10703,7 +10710,7 @@ function sfPickRole(id){
   var role=sfRoleId?roles.find(function(r){return r.id===sfRoleId;}):null;
   var fac=role?facilities.find(function(f){return f.id===role.facilityId;}):null;
   var c=candidates.find(function(x){return x.id===sfCandId;});
-  if(fac){sfTo=fac.submissionEmail||fac.contactEmail||sfTo;}
+  if(fac){sfTo=fac.submissionEmail||sfFacContactEmail(fac)||sfTo;}
   if(c){sfSubject='Captain Contract Submission — '+c.name+' — '+c.classification+(fac?' — '+fac.name:'');}
   if(role){sfStartDate=role.startDate||'';sfEndDate=role.endDate||'';}
   sfRender();
@@ -10732,8 +10739,19 @@ function sfBuildCheckSnap(){
   });
 }
 
+// Submission address falls back to the contact flagged as receiving
+// submissions, then to the primary contact, before giving up.
+function sfFacContactEmail(fac){
+  if(!fac)return '';
+  var list=(facilityContacts||[]).filter(function(c){return c.facilityId===fac.id;});
+  var subC=list.find(function(c){return c.isSubmissionContact&&c.email;});
+  if(subC)return subC.email;
+  var pc=facPrimaryContact(fac.id);
+  return (pc&&pc.email)||'';
+}
 function sfBuildEmailBody(c,role,fac){
-  var contact=fac&&fac.contactName?fac.contactName:'Hiring Manager';
+  var sfPc=fac?facPrimaryContact(fac.id):null;
+  var contact=(sfPc&&sfPc.name)?sfPc.name:'Hiring Manager';
   var sep='─'.repeat(40);
   var lines=[];
   lines.push('Dear '+contact+',','');
@@ -12357,9 +12375,10 @@ function saveFac(){
       accommodation_type:EF.accommodationType||null,
       car_required:!!EF.carRequired,
       submission_email:EF.submissionEmail||null,
-      secondary_contact_name:EF.secondaryContactName||null,
-      secondary_contact_email:EF.secondaryContactEmail||null,
-      secondary_contact_phone:EF.secondaryContactPhone||null,
+      // secondary_contact_name, secondary_contact_email and
+      // secondary_contact_phone are retired alongside the three primary ones.
+      // Left on the table, no longer written, no longer in the editor. A
+      // second contact is just another row in facility_contacts now.
       notes_candidate:EF.notesCandidate||null
     };
     // facilities.id is GENERATED ALWAYS AS IDENTITY — a batch/single .upsert() with

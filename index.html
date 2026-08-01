@@ -8,13 +8,25 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:13px}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#F4F4F2;color:#14140F;min-height:100vh;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+/* Type settings from the Direction C concept: tabular figures locked at the
+   font level, the concept's alternate glyph set, and its slightly tighter
+   tracking. line-height is deliberately NOT set here. The concept uses 1.5,
+   which would change the height of every row, card and table on every screen,
+   and this pass is colours, shadows and type only. */
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#F4F4F8;color:#191725;min-height:100vh;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"cv05" 1;letter-spacing:-.006em}
 input,select,textarea,button{font-family:inherit;font-size:inherit}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#c8cad1;border-radius:3px}
-input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(105,54,184,.15)!important}
+input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(91,74,214,.15)!important}
 :root{
-  --brand:#26215C;--brand-mid:#534AB7;--brand-d:#1c1846;--brand-l:#EEEDFE;--brand-pale:#F7F6FE;
-  --brand-grad:linear-gradient(135deg,#26215C,#534AB7);
+  /* Direction C concept, group D. The brand family drives every primary
+     button, the sidebar, modal headers and panel headers, 162 uses. Moved onto
+     the concept's navy and its one purple so those agree with the tiles and
+     text rather than staying on the old navy. The gradient keeps its shape,
+     only its two endpoints move. Note the concept's own primary button is a
+     flat purple, not a gradient, which is a component change and out of scope
+     for this pass. */
+  --brand:#211A44;--brand-mid:#5B4AD6;--brand-d:#171233;--brand-l:#EEEBFC;--brand-pale:#F7F5FE;
+  --brand-grad:linear-gradient(135deg,#211A44,#5B4AD6);
   --accent:#185FA5;--accent-l:#E6F1FB;
   --ok:#0F6E56;--ok-l:#E1F5EE;
   --warn:#BA7517;--warn-l:#FAEEDA;
@@ -24,13 +36,18 @@ input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(1
   /* Direction C, Phase 1: page background and ink promoted to shared tokens,
      so every screen using --bg/--t1/--t2/--t3 inherits the calm palette at
      once. --surface was already white, matching the new card colour, no
-     change needed there. Semantic colours (ok/warn/danger/accent/brand)
-     stay as they were this phase, badges/chips are updated per class
-     instead, buttons, sidebar and nav highlighting are a later phase. */
-  --bg:#F4F4F2;--surface:#ffffff;
-  --t1:#14140F;--t2:#54544E;--t3:#8F8D84;--t4:#c8cad1;
+     change needed there.
+     Concept pass, group C: these five are the twins of --dc-bg, --dc-t1,
+     --dc-t2, --dc-t3 and --dc-shadow-card and have always carried the same
+     values. They are the ones most of the app actually reads, 489 uses for
+     the ink ramp alone against 178 for the whole --dc- set, so they move
+     together with their twin. Change one without the other and the app is
+     two-tone. --accent stays a true blue on purpose, see the --dc-blue note
+     below. */
+  --bg:#F4F4F8;--surface:#ffffff;
+  --t1:#191725;--t2:#54535F;--t3:#84828F;--t4:#B4B2BE;
   --sb:#ffffff;
-  --shadow-card:0 2px 8px rgba(0,0,0,.05);
+  --shadow-card:0 2px 6px rgba(25,20,60,.045),0 14px 30px -18px rgba(25,20,60,.22);
 
   /* Captain Contract v2 design tokens, additive, for new components only.
      --bg intentionally omitted, the existing --bg above stays authoritative. */
@@ -189,18 +206,32 @@ svg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-l
    tokens above and the rules below, so most screens pick up the calm look
    without being hand restyled. Tokens live in CAPTAIN-CONTRACT-DESIGN.md. */
 :root{
-  --dc-bg:#F4F4F2; --dc-card:#FFFFFF; --dc-tile:#F4F4F2;
-  --dc-t1:#14140F; --dc-t2:#54544E; --dc-t3:#8F8D84;
-  --dc-purple:#6936B8; --dc-purple-mid:#7F77DD; --dc-purple-deep:#534AB7; --dc-purple-soft:#EEEDFE;
-  --dc-green:#158060; --dc-green-soft:#E1F5EE; --dc-green-deep:#0B5A45;
-  --dc-amber:#9C6212; --dc-amber-soft:#FAEEDA; --dc-amber-deep:#6E4109; --dc-amber-ring:#EDC987;
-  --dc-red:#A32D2D; --dc-red-soft:#FCEBEB; --dc-red-deep:#7A1F1F; --dc-red-ring:#E8A3A3;
+  --dc-bg:#F4F4F8; --dc-card:#FFFFFF; --dc-tile:#F4F4F8;
+  --dc-t1:#191725; --dc-t2:#54535F; --dc-t3:#84828F; --dc-t4:#B4B2BE;
+  --dc-purple:#5B4AD6; --dc-purple-mid:#7C69EE; --dc-purple-deep:#4635BE; --dc-purple-soft:#EEEBFC;
+  --dc-purple-soft2:#F7F5FE; --dc-navy:#211A44;
+  --dc-green:#248A5C; --dc-green-soft:#E2F2E8; --dc-green-deep:#17603F; --dc-green-soft2:#EFF8F2;
+  --dc-amber:#8C6210; --dc-amber-soft:#F6E9CC; --dc-amber-deep:#63450B; --dc-amber-ring:#E3C489; --dc-amber-soft2:#FBF3E3;
+  --dc-red:#B84234; --dc-red-soft:#F8E4E0; --dc-red-deep:#8A2E24; --dc-red-ring:#EBB0A7; --dc-red-soft2:#FCEFEC;
+  /* Deliberately NOT the concept's #3A55BE. That indigo sits close enough to
+     the new purple that info chips would read as a second accent, against the
+     one purple rule. Blue stays a true blue, clearly distinct from the accent.
+     --accent and --accent-l above hold the same two values and stay with it. */
   --dc-blue:#185FA5; --dc-blue-soft:#E6F1FB;
-  --dc-grey:#8F8D84;
-  --dc-r-card:14px; --dc-r-control:10px; --dc-r-pill:20px;
-  --dc-shadow-card:0 2px 8px rgba(0,0,0,.05);
-  --dc-shadow-row:inset 0 -1px 0 rgba(0,0,0,.05);
-  --dc-shadow-field:0 0 0 1px rgba(0,0,0,.08);
+  --dc-grey:#6B7280; --dc-grey-soft:#ECEEF2;
+  --dc-line:rgba(25,23,45,.08);
+  /* Radii unchanged on purpose. The concept uses fully round pills at 99px
+     against this app's 20px, which is shape rather than colour, so it is left
+     for a later decision. --dc-r-mid is added as an unused token so the
+     concept's middle step is available when it is wanted. */
+  --dc-r-card:14px; --dc-r-control:10px; --dc-r-pill:20px; --dc-r-mid:12px;
+  --dc-shadow-card:0 2px 6px rgba(25,20,60,.045),0 14px 30px -18px rgba(25,20,60,.22);
+  --dc-shadow-1:0 1px 2px rgba(25,20,60,.05);
+  --dc-shadow-3:0 4px 12px rgba(25,20,60,.06),0 34px 64px -26px rgba(46,36,110,.32);
+  --dc-glow:0 0 0 1px rgba(91,74,214,.15),0 24px 56px -20px rgba(91,74,214,.36);
+  --dc-shadow-row:inset 0 -1px 0 rgba(25,23,45,.08);
+  --dc-shadow-field:0 0 0 1px rgba(25,23,45,.08);
+  --dc-ease:cubic-bezier(.22,.61,.36,1);
 }
 /* .page already pads 16px 20px, this wrapper cancels that so the calm grey
    page background can bleed edge to edge, then repads inside itself. */
